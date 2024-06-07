@@ -2,6 +2,9 @@
 .azure
 *_env
 
+# Previous evaluation results
+evaluation/results
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -149,3 +152,6 @@ static/
 data/**/*.md5
 
 .DS_Store
+
+evaluation/example_results/experiment*
+evaluation/latest/
