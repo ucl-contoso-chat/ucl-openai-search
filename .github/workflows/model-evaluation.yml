@@ -35,4 +35,4 @@ jobs:
             working-directory: ./evaluation
             run: |
               pip install -r scripts/requirements.txt
-              python -m script evaluate --config=./example_config.json --numquestions=10
+              python -m scripts evaluate --config=./example_config.json --numquestions=10
