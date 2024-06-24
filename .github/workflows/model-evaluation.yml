@@ -10,8 +10,12 @@ on:
   workflow_dispatch:
 
 jobs:
-    prettier:
+    evaluation:
         runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            os: ["ubuntu-20.04"]
+            python_version: ["3.11"]
         env:
           OPENAI_HOST: ${{ vars.OPENAI_HOST }}
           OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
@@ -21,9 +25,14 @@ jobs:
           AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
           AZURE_PRINCIPAL_ID: ${{ vars.AZURE_PRINCIPAL_ID }}
         steps:
-            - uses: actions/checkout@v4
-            - name: Run evaluations
-              run: |
-                cd ./evaluation
-                pip install -r scripts/requirements.txt
-                python -m script evaluate --config=./example_config.json --numquestions=10
+          - uses: actions/checkout@v4
+          - name: Setup python
+            uses: actions/setup-python@v5
+            with:
+              python-version: ${{ matrix.python_version }}
+              architecture: x64
+          - name: Run evaluations
+            run: |
+              cd ./evaluation
+              pip install -r scripts/requirements.txt
+              python -m script evaluate --config=./example_config.json --numquestions=10
