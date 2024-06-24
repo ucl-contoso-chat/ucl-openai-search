@@ -9,8 +9,14 @@ from promptflow.core import AzureOpenAIModelConfiguration, ModelConfiguration, O
 
 logger = logging.getLogger("scripts")
 
+def print_all_env_vars():
+    vars = ['OPENAI_HOST', 'OPENAI_GPT_MODEL', 'AZURE_OPENAI_EVAL_DEPLOYMENT', 'AZURE_OPENAI_SERVICE', 'OPENAICOM_KEY', 'OPENAICOM_ORGANIZATION', 'AZURE_SEARCH_SERVICE', 'AZURE_SEARCH_INDEX', 'AZURE_OPENAI_KEY', 'TENANT_ID', 'CLIENT_ID', 'CLIENT_SECRET', 'AZURE_PRINCIPAL_ID']
+    print('Environment Variables:')
+    for var in vars:
+        print(f"{var}: {os.environ.get(var)}")
 
 def get_openai_config() -> ModelConfiguration:
+    print_all_env_vars()
     if os.environ.get("OPENAI_HOST") == "azure":
         azure_endpoint = f"https://{os.environ['AZURE_OPENAI_SERVICE']}.openai.azure.com"
         azure_deployment = os.environ.get("AZURE_OPENAI_EVAL_DEPLOYMENT")
@@ -71,7 +77,6 @@ def get_openai_config_dict() -> dict:
             "deployment": "none-needed-for-openaicom",
         }
     return openai_config
-
 
 def get_search_client():
     if api_key := os.environ.get("AZURE_SEARCH_KEY"):
