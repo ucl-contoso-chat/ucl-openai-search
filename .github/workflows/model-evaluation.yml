@@ -32,7 +32,7 @@ jobs:
               python-version: ${{ matrix.python_version }}
               architecture: x64
           - name: Run evaluations
+            working-directory: ./evaluation
             run: |
-              cd ./evaluation
               pip install -r scripts/requirements.txt
               python -m script evaluate --config=./example_config.json --numquestions=10
