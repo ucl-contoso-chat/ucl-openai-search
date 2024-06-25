@@ -74,7 +74,12 @@ class ChatApproach(Approach, ABC):
             if query_text.strip() != self.NO_RESPONSE:
                 return query_text
         return user_query
-
+    
+    def extract_search_query(self, output: dict):
+        generated_text = output[0]['generated_text']
+        first_assistant_statement = generated_text.split('assistant:')[1].split('\n')[0].strip()
+        return first_assistant_statement.split(',')[0].strip()
+    
     def extract_followup_questions(self, content: str):
         return content.split("<<")[0], re.findall(r"<<([^>>]+)>>", content)
 
@@ -88,9 +93,14 @@ class ChatApproach(Approach, ABC):
         extra_info, chat_coroutine = await self.run_until_final_call(
             messages, overrides, auth_claims, should_stream=False
         )
-        chat_completion_response: ChatCompletion = await chat_coroutine
-        chat_resp = chat_completion_response.model_dump()  # Convert to dict to make it JSON serializable
-        chat_resp = chat_resp["choices"][0]
+        if self.use_hugging_face:
+            chat_resp = chat_coroutine
+            chat_resp["message"]["content"] = chat_resp["message"]["content"]
+        else:
+            chat_completion_response: ChatCompletion = await chat_coroutine
+            chat_resp = chat_completion_response.model_dump()  # Convert to dict to make it JSON serializable
+            chat_resp = chat_resp["choices"][0]
+            
         chat_resp["context"] = extra_info
         if overrides.get("suggest_followup_questions"):
             content, followup_questions = self.extract_followup_questions(chat_resp["message"]["content"])
@@ -114,6 +124,7 @@ class ChatApproach(Approach, ABC):
         followup_questions_started = False
         followup_content = ""
         async for event_chunk in await chat_coroutine:
+            print(event_chunk, flush=True)
             # "2023-07-01-preview" API version has a bug where first response has empty choices
             event = event_chunk.model_dump()  # Convert pydantic model to dict
             if event["choices"]:

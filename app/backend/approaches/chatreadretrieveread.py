@@ -9,6 +9,8 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
     ChatCompletionToolParam,
 )
+import os
+import requests
 from openai_messages_token_helper import build_messages, get_token_limit
 
 from approaches.approach import ThoughtStep
@@ -38,6 +40,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         content_field: str,
         query_language: str,
         query_speller: str,
+        use_hugging_face: bool,
     ):
         self.search_client = search_client
         self.openai_client = openai_client
@@ -52,6 +55,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         self.query_language = query_language
         self.query_speller = query_speller
         self.chatgpt_token_limit = get_token_limit(chatgpt_model)
+        self.use_hugging_face = use_hugging_face
 
     @property
     def system_message_chat_conversation(self):
@@ -134,19 +138,52 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             new_user_content=user_query_request,
             max_tokens=self.chatgpt_token_limit - query_response_token_limit,
         )
+        
+        if self.use_hugging_face:
+            huggingf_search_prompt = ""
+            
+            for message in query_messages:
+                huggingf_search_prompt += message["role"] + ": "
+                huggingf_search_prompt += message["content"] + '\n'
+                                
+            API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+            API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+            headers = {"Authorization": "Bearer " + API_KEY}
+            
+            def ask_huggingface(payload):
+                response = requests.post(API_URL, headers=headers, json=payload)
+                return response.json()
+            
+            chat_completion = ask_huggingface({
+                "inputs": huggingf_search_prompt,
+                "parameters": {
+                    "temperature" : 1.3,
+                    "max_length": 400,
+                    "return_full_text": False,
+                    "top_k": 1,
+                    "top_p": 0.8,
+                    "repetition_penalty": 0.6,
+                    "max_new_tokens": 250,
+                },
+                "options": {
+                    "use_cache": False
+                }
+            })
+            query_text = self.extract_search_query(chat_completion)
 
-        chat_completion: ChatCompletion = await self.openai_client.chat.completions.create(
-            messages=query_messages,  # type: ignore
+        else:
+            chat_completion: ChatCompletion = await self.openai_client.chat.completions.create(
+            messages=query_messages,  #type: ignore
             # Azure OpenAI takes the deployment name as the model name
             model=self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model,
             temperature=0.0,  # Minimize creativity for search query generation
             max_tokens=query_response_token_limit,  # Setting too low risks malformed JSON, setting too high may affect performance
             n=1,
             tools=tools,
-        )
+            )
+            query_text = self.get_search_query(chat_completion, original_user_query)
 
-        query_text = self.get_search_query(chat_completion, original_user_query)
-
+                
         # STEP 2: Retrieve relevant documents from the search index with the GPT optimized query
 
         # If retrieval mode includes vectors, compute an embedding for the query
@@ -230,14 +267,52 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 ),
             ],
         }
+        
+        huggingf_question_prompt = "For the following question, include citations from the sources below.\n"
+        for message in messages:
+            if message["content"]:
+                huggingf_question_prompt += message["content"] + '\n'
 
-        chat_coroutine = self.openai_client.chat.completions.create(
-            # Azure OpenAI takes the deployment name as the model name
-            model=self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model,
-            messages=messages,
-            temperature=overrides.get("temperature", 0.3),
-            max_tokens=response_token_limit,
-            n=1,
-            stream=should_stream,
-        )
+        if self.use_hugging_face:
+            huggingf_question_answer = ask_huggingface({
+            "inputs": huggingf_question_prompt,
+            "options": {
+                "use_cache": False,
+                "wait_for_model": True
+            },
+            "parameters": {
+                "temperature" : 1.4,
+                "return_full_text": False,
+                "top_k": 1,
+                "top_p": 0.8,
+                "repetition_penalty": 1,
+                "max_new_tokens": 150,
+                # "max_time": 120,
+                # "num_return_sequences": 5,
+                # "do_sample": True
+            }
+        })
+            chat_coroutine = {}
+            chat_coroutine["message"] = {
+                "content": huggingf_question_answer[0]['generated_text'],
+                "role": "assistant",
+                "function_call": None,
+                "tool_calls": None
+            }
+
+            chat_coroutine["context"] = extra_info
+            
+            return (extra_info, chat_coroutine)
+        else:
+            chat_coroutine = self.openai_client.chat.completions.create(
+                # Azure OpenAI takes the deployment name as the model name
+                model=self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model,
+                messages=messages,
+                temperature=overrides.get("temperature", 0.3),
+                max_tokens=response_token_limit,
+                n=1,
+                stream=should_stream,
+            )
+        
+        
         return (extra_info, chat_coroutine)

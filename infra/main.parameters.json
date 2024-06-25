@@ -128,6 +128,9 @@
     "openAiApiKey": {
       "value": "${OPENAI_API_KEY}"
     },
+    "huggingFaceApiKey": {
+      "value": "${HUGGINGFACE_API_KEY}"
+    },
     "openAiApiOrganization": {
       "value": "${OPENAI_ORGANIZATION}"
     },
@@ -148,6 +151,9 @@
     },
     "useGPT4V": {
       "value": "${USE_GPT4V=false}"
+    },
+    "useHuggingFace": {
+      "value": "${USE_HUGGINGFACE=false}"
     },
     "useSpeechInputBrowser": {
       "value": "${USE_SPEECH_INPUT_BROWSER=false}"

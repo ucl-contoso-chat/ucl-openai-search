@@ -5,9 +5,11 @@ from azure.search.documents.models import VectorQuery
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from openai_messages_token_helper import build_messages, get_token_limit
+import os
 
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
+import requests
 
 
 class RetrieveThenReadApproach(Approach):
@@ -53,6 +55,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         content_field: str,
         query_language: str,
         query_speller: str,
+        use_hugging_face: bool,
     ):
         self.search_client = search_client
         self.chatgpt_deployment = chatgpt_deployment
@@ -68,6 +71,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         self.query_language = query_language
         self.query_speller = query_speller
         self.chatgpt_token_limit = get_token_limit(chatgpt_model)
+        self.use_hugging_face = use_hugging_face
 
     async def run(
         self,
@@ -123,18 +127,53 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             new_user_content=user_content,
             max_tokens=self.chatgpt_token_limit - response_token_limit,
         )
+        
+        if(self.use_hugging_face):
+            API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+            API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
-        chat_completion = (
-            await self.openai_client.chat.completions.create(
-                # Azure OpenAI takes the deployment name as the model name
-                model=self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model,
-                messages=updated_messages,
-                temperature=overrides.get("temperature", 0.3),
-                max_tokens=response_token_limit,
-                n=1,
-            )
-        ).model_dump()
+            headers = {"Authorization": "Bearer " + API_KEY}
+            
+            huggingf_question_prompt = ''
+            for message in updated_messages:
+                if message["content"]:
+                    huggingf_question_prompt += message["content"] + '\n'
 
+                                        
+            def ask_huggingface(payload):
+                response = requests.post(API_URL, headers=headers, json=payload)
+                return response.json()
+            
+            chat_completion = ask_huggingface({
+            "inputs": huggingf_question_prompt,
+            "parameters": {
+                "temperature" : 1.6,
+                "max_length": response_token_limit,
+                "return_full_text": False,
+                "top_k": 1,
+                "top_p": 0.8,
+                "repetition_penalty": 0.1,
+                "max_new_tokens": 250,
+            },
+            "options": {
+                "use_cache": False
+            }
+        })
+        else:     
+            chat_completion = (
+                await self.openai_client.chat.completions.create(
+                    # Azure OpenAI takes the deployment name as the model name
+                    model=self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model,
+                    messages=updated_messages,
+                    temperature=overrides.get("temperature", 0.3),
+                    max_tokens=response_token_limit,
+                    n=1,
+                )
+            ).model_dump()
+        
+            
+        
+        
         data_points = {"text": sources_content}
         extra_info = {
             "data_points": data_points,
@@ -165,9 +204,18 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                 ),
             ],
         }
-
         completion = {}
-        completion["message"] = chat_completion["choices"][0]["message"]
+        if self.use_hugging_face:
+            completion["message"] = {
+                "content": chat_completion[0]['generated_text'],
+                "role": "assistant",
+                "function_call": None,
+                "tool_calls": None
+            }
+        else:
+            completion["message"] = chat_completion["choices"][0]["message"]
+
         completion["context"] = extra_info
         completion["session_state"] = session_state
+        
         return completion
