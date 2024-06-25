@@ -16,14 +16,14 @@ jobs:
           matrix:
             os: ["ubuntu-20.04"]
             python_version: ["3.11"]
-        env:
-          OPENAI_HOST: ${{ vars.OPENAI_HOST }}
-          OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
-          AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
-          AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}
-          AZURE_SEARCH_SERVICE: ${{ vars.AZURE_SEARCH_SERVICE }}
-          AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
-          AZURE_PRINCIPAL_ID: ${{ vars.AZURE_PRINCIPAL_ID }}
+        # env:
+        #   OPENAI_HOST: ${{ vars.OPENAI_HOST }}
+        #   OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
+        #   AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+        #   AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}
+        #   AZURE_SEARCH_SERVICE: ${{ vars.AZURE_SEARCH_SERVICE }}
+        #   AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
+        #   AZURE_PRINCIPAL_ID: ${{ vars.AZURE_PRINCIPAL_ID }}
         steps:
           - uses: actions/checkout@v4
           - name: Setup python

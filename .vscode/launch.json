@@ -40,6 +40,18 @@
             "purpose": ["debug-test"],
             "console": "integratedTerminal",
             "justMyCode": false
+          },
+          {
+            "name": "Debug Evaluation",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/evaluation",
+            "module": "scripts",
+            "args": [
+                "evaluate",
+                "--config=./example_config.json",
+                "--numquestions=2"
+            ]
           }
     ],
     "inputs": [
