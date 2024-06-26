@@ -35,13 +35,13 @@ Execute the following commands inside your terminal:
     azd env set AZURE_OPENAI_CHATGPT_MODEL gpt-4
     ```
 
-1. To set the Azure OpenAI deploymemnt capacity, run this command with the desired capacity.
+1. To set the Azure OpenAI deployment capacity, run this command with the desired capacity.
 
     ```bash
     azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_CAPACITY 10
     ```
 
-1. To set the Azure OpenAI deploymemnt version from the [available versions](https://learn.microsoft.com/azure/ai-services/openai/concepts/models), run this command with the appropriate version.
+1. To set the Azure OpenAI deployment version from the [available versions](https://learn.microsoft.com/azure/ai-services/openai/concepts/models), run this command with the appropriate version.
 
     ```bash
     azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION turbo-2024-04-09
@@ -111,7 +111,7 @@ This section covers the integration of GPT-4 Vision with Azure AI Search. Learn 
 
 You can optionally enable speech input/output by setting the azd environment variables.
 
-### Speech Input:
+### Speech Input
 
 The speech input feature uses the browser's built-in [Speech Recognition API](https://developer.mozilla.org/docs/Web/API/SpeechRecognition). It may not work in all browser/OS combinations. To enable speech input, run:
 
@@ -119,7 +119,7 @@ The speech input feature uses the browser's built-in [Speech Recognition API](ht
 azd env set USE_SPEECH_INPUT_BROWSER true
 ```
 
-### Speech Output:
+### Speech Output
 
 The speech output feature uses [Azure Speech Service](https://learn.microsoft.com/azure/ai-services/speech-service/overview) for speech-to-text. Additional costs will be incurred for using the Azure Speech Service. [See pricing](https://azure.microsoft.com/pricing/details/cognitive-services/speech-services/). To enable speech output, run:
 
@@ -133,13 +133,11 @@ To set [the voice](https://learn.microsoft.com/azure/ai-services/speech-service/
 azd env set AZURE_SPEECH_SERVICE_VOICE en-US-AndrewMultilingualNeural
 ```
 
-> [!NOTE]
-> Alternatively you can use the browser's built-in [Speech Synthesis API](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis). It may not work in all browser/OS combinations. To enable speech output, run:
->
->    ```shell
->    azd env set USE_SPEECH_OUTPUT_BROWSER true
->    ```
->
+Alternatively you can use the browser's built-in [Speech Synthesis API](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis). It may not work in all browser/OS combinations. To enable speech output, run:
+
+```shell
+azd env set USE_SPEECH_OUTPUT_BROWSER true
+```
 
 ## Enabling Integrated Vectorization
 
@@ -203,7 +201,7 @@ For the frontend code, change `BACKEND_URI` in `api.ts` to point at the deployed
 For an alternate frontend that's written in Web Components and deployed to Static Web Apps, check out
 [azure-search-openai-javascript](https://github.com/Azure-Samples/azure-search-openai-javascript) and its guide
 on [using a different backend](https://github.com/Azure-Samples/azure-search-openai-javascript#using-a-different-backend).
-Both these repositories adhere to the same [HTTP protocol for RAG chat apps](https://github.com/Azure-Samples/ai-chat-app-protocol).
+Both these repositories adhere to the same [HTTP protocol for AI chat apps](https://aka.ms/chatprotocol).
 
 ## Adding an OpenAI load balancer
 

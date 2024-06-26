@@ -1,4 +1,4 @@
-from typing import Any, AsyncGenerator, Awaitable, Callable, Optional, Union
+from typing import Any, Awaitable, Callable, Optional
 
 from azure.search.documents.aio import SearchClient
 from azure.storage.blob.aio import ContainerClient
@@ -72,34 +72,31 @@ class RetrieveThenReadVisionApproach(Approach):
     async def run(
         self,
         messages: list[ChatCompletionMessageParam],
-        stream: bool = False,  # Stream is not used in this approach
         session_state: Any = None,
         context: dict[str, Any] = {},
-    ) -> Union[dict[str, Any], AsyncGenerator[dict[str, Any], None]]:
+    ) -> dict[str, Any]:
         q = messages[-1]["content"]
         if not isinstance(q, str):
             raise ValueError("The most recent message content must be a string.")
 
         overrides = context.get("overrides", {})
         auth_claims = context.get("auth_claims", {})
-        has_text = overrides.get("retrieval_mode") in ["text", "hybrid", None]
-        has_vector = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
-        vector_fields = overrides.get("vector_fields", ["embedding"])
-
-        include_gtpV_text = overrides.get("gpt4v_input") in ["textAndImages", "texts", None]
-        include_gtpV_images = overrides.get("gpt4v_input") in ["textAndImages", "images", None]
-
-        use_semantic_captions = True if overrides.get("semantic_captions") and has_text else False
+        use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
+        use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
+        use_semantic_ranker = True if overrides.get("semantic_ranker") else False
+        use_semantic_captions = True if overrides.get("semantic_captions") else False
         top = overrides.get("top", 3)
         minimum_search_score = overrides.get("minimum_search_score", 0.0)
         minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
         filter = self.build_filter(overrides, auth_claims)
-        use_semantic_ranker = overrides.get("semantic_ranker") and has_text
+
+        vector_fields = overrides.get("vector_fields", ["embedding"])
+        send_text_to_gptvision = overrides.get("gpt4v_input") in ["textAndImages", "texts", None]
+        send_images_to_gptvision = overrides.get("gpt4v_input") in ["textAndImages", "images", None]
 
         # If retrieval mode includes vectors, compute an embedding for the query
-
         vectors = []
-        if has_vector:
+        if use_vector_search:
             for field in vector_fields:
                 vector = (
                     await self.compute_text_embedding(q)
@@ -108,14 +105,13 @@ class RetrieveThenReadVisionApproach(Approach):
                 )
                 vectors.append(vector)
 
-        # Only keep the text query if the retrieval mode uses text, otherwise drop it
-        query_text = q if has_text else None
-
         results = await self.search(
             top,
-            query_text,
+            q,
             filter,
             vectors,
+            use_text_search,
+            use_vector_search,
             use_semantic_ranker,
             use_semantic_captions,
             minimum_search_score,
@@ -128,10 +124,10 @@ class RetrieveThenReadVisionApproach(Approach):
         # Process results
         sources_content = self.get_sources_content(results, use_semantic_captions, use_image_citation=True)
 
-        if include_gtpV_text:
+        if send_text_to_gptvision:
             content = "\n".join(sources_content)
             user_content.append({"text": content, "type": "text"})
-        if include_gtpV_images:
+        if send_images_to_gptvision:
             for result in results:
                 url = await fetch_image(self.blob_container_client, result)
                 if url:
@@ -165,13 +161,15 @@ class RetrieveThenReadVisionApproach(Approach):
             "thoughts": [
                 ThoughtStep(
                     "Search using user query",
-                    query_text,
+                    q,
                     {
                         "use_semantic_captions": use_semantic_captions,
                         "use_semantic_ranker": use_semantic_ranker,
                         "top": top,
                         "filter": filter,
                         "vector_fields": vector_fields,
+                        "use_vector_search": use_vector_search,
+                        "use_text_search": use_text_search,
                     },
                 ),
                 ThoughtStep(
@@ -189,6 +187,9 @@ class RetrieveThenReadVisionApproach(Approach):
                 ),
             ],
         }
-        chat_completion["choices"][0]["context"] = extra_info
-        chat_completion["choices"][0]["session_state"] = session_state
-        return chat_completion
+
+        completion = {}
+        completion["message"] = chat_completion["choices"][0]["message"]
+        completion["context"] = extra_info
+        completion["session_state"] = session_state
+        return completion
