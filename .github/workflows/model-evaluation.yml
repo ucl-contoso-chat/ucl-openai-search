@@ -43,11 +43,10 @@ jobs:
               AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
               AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}
               AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
-          # - name: Dump results
-          #   uses: actions/upload-artifact@v4
-          #   with:
-          #     name: evaluation-results
-          #     path: | 
-          #       ./evaluation/latest/summary.json
-          #       ./evaluation/latest/evaluation_parameters.json
-          #       ./evaluation/latest/eval_results.json
+          - name: Dump results
+            uses: actions/upload-artifact@v4
+            with:
+              name: evaluation-results
+              path: | 
+                ./evaluation/latest/summary.json
+                ./evaluation/latest/eval_results.json
