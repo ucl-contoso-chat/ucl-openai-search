@@ -7,7 +7,7 @@ from rich.logging import RichHandler
 
 from . import service_setup
 from .evaluate import run_evaluate_from_config
-from .generate import generate_dontknows_qa_data, generate_test_qa_data
+from .generate import generate_dontknows_qa_data, generate_test_qa_data, generate_test_qa_answer
 from typing import Optional
 
 app = typer.Typer(pretty_exceptions_enable=False)
@@ -75,6 +75,18 @@ def generate(
 #         input_file=Path.cwd() / input,
 #         output_file=Path.cwd() / output,
 #     )
+
+@app.command()
+def generate_answers(
+    config: Path = typer.Option(exists=True, dir_okay=False, file_okay=True, help="Path to config.json", default="config.json"),
+    input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
+    output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
+):
+    generate_test_qa_answer(
+        config_path=Path.cwd() / config,
+        question_path=Path.cwd() / input,
+        output_file=Path.cwd() / output,
+    )
 
 
 def cli():
