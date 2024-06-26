@@ -154,3 +154,4 @@ data/**/*.md5
 .DS_Store
 
 evaluation/example_results/experiment*
+evaluation/latest/
