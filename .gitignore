@@ -2,6 +2,9 @@
 .azure
 *_env
 
+# Previous evaluation results
+evaluation/example_results
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -93,7 +93,6 @@ def send_question_to_ask(
 
         try:
             response_dict = r.json()
-            print(response_dict)
         except json.JSONDecodeError:
             raise ValueError(
                 f"Response from target {url} is not valid JSON:\n\n{r.text} \n"
@@ -102,7 +101,6 @@ def send_question_to_ask(
         try:
             expression = 'choices[0].message.content'
             answer = jmespath.search(expression, response_dict)
-            print(answer)
             data_points = jmespath.search('choices[0].context.data_points.text', response_dict)
             context = "\n\n".join(data_points)
         except Exception:
@@ -125,18 +123,6 @@ def send_question_to_ask(
         }
 
 
-def azure_login():
-
-    tenant_id = os.environ.get("TENANT_ID")
-    client_id = os.environ.get("CLIENT_ID")
-    client_secret = os.environ.get("CLIENT_SECRET")
-
-    credential = ClientSecretCredential(tenant_id, client_id, client_secret)
-
-    scope = ["https://management.azure.com/.default"]
-    token = credential.get_token(scope)
-
-    return token.token
 
 def truncate_for_log(s: str, max_length=50):
     return s if len(s) < max_length else s[:max_length] + "..."
@@ -163,7 +149,9 @@ def run_evaluation(
     openai_config: dict,
     testdata_path: Path,
     results_dir: Path,
+    latest_dir: Path,
     target_url: str,
+    passing_rate: int,
     target_parameters={},
     requested_metrics=[],
     num_questions=None,
@@ -231,7 +219,6 @@ def run_evaluation(
             response_answer_jmespath=target_response_answer_jmespath,
             response_context_jmespath=target_response_context_jmespath,
         )
-        print(target_response)
         output.update(target_response)
         for metric in requested_metrics:
             result = metric.evaluator_fn(openai_config=openai_config)(
@@ -253,32 +240,42 @@ def run_evaluation(
     logger.info("Evaluation calls have completed. Calculating overall metrics now...")
     # Make the results directory if it doesn't exist
     results_dir.mkdir(parents=True, exist_ok=True)
+    latest_dir.mkdir(parents=True, exist_ok=True)
     # Save the results
     with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
         for row in questions_with_ratings:
             results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+            
+    with open(latest_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
+        for row in questions_with_ratings:
+            results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-    # # Calculate aggregate metrics
-    # df = pd.DataFrame(questions_with_ratings)
-    # summary = {}
-    # for metric in requested_metrics:
-    #     summary[metric.METRIC_NAME] = metric.get_aggregate_stats(df)
+    # Calculate aggregate metrics
+    df = pd.DataFrame(questions_with_ratings)
+    summary = {}
+    for metric in requested_metrics:
+        summary[metric.METRIC_NAME] = metric.get_aggregate_stats(df, passing_rate)
 
-    # # summary statistics
-    # with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
-    #     summary_file.write(json.dumps(summary, indent=4))
+    # summary statistics
+    with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
+        summary_file.write(json.dumps(summary, indent=4))
+        
+    with open(latest_dir / "summary.json", "w", encoding="utf-8") as summary_file:
+        summary_file.write(json.dumps(summary, indent=4))
+        logger.info("Aggregated results:")
+        logger.info(json.dumps(summary, indent=4))
 
-    # with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
-    #     parameters = {
-    #         "evaluation_gpt_model": openai_config.model,
-    #         "evaluation_timestamp": int(time.time()),
-    #         "testdata_path": str(testdata_path),
-    #         "target_url": target_url,
-    #         "target_parameters": target_parameters,
-    #         "num_questions": num_questions,
-    #     }
-    #     parameters_file.write(json.dumps(parameters, indent=4))
-    # logger.info("Evaluation results saved in %s", results_dir)
+    with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
+        parameters = {
+            "evaluation_gpt_model": openai_config.model,
+            "evaluation_timestamp": int(time.time()),
+            "testdata_path": str(testdata_path),
+            "target_url": target_url,
+            "target_parameters": target_parameters,
+            "num_questions": num_questions,
+        }
+        parameters_file.write(json.dumps(parameters, indent=4))
+    logger.info("Evaluation results saved in %s", results_dir)
     return True
 
 
@@ -306,13 +303,17 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
     with open(config_path, encoding="utf-8") as f:
         config = json.load(f)
         process_config(config)
+        
+    latest_dir=working_dir/Path(config["latest_dir"])
 
     results_dir = working_dir / Path(config["results_dir"])
+    passing_rate=config["passing_rate"]
 
     evaluation_run_complete = run_evaluation(
         openai_config=service_setup.get_openai_config(),
         testdata_path=working_dir / config["testdata_path"],
         results_dir=results_dir,
+        latest_dir=latest_dir,
         target_url=config["target_url"],
         target_parameters=config.get("target_parameters", {}),
         num_questions=num_questions,
@@ -322,6 +323,7 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         ),
         target_response_answer_jmespath=config.get("target_response_answer_jmespath"),
         target_response_context_jmespath=config.get("target_response_context_jmespath"),
+        passing_rate=passing_rate
     )
 
     if evaluation_run_complete:
