@@ -131,18 +131,12 @@ def azure_login():
     client_id = os.environ.get("CLIENT_ID")
     client_secret = os.environ.get("CLIENT_SECRET")
 
-
     credential = ClientSecretCredential(tenant_id, client_id, client_secret)
-
 
     scope = ["https://management.azure.com/.default"]
     token = credential.get_token(scope)
 
-    print("Access Token:", token.token)
     return token.token
-
-
-
 
 def truncate_for_log(s: str, max_length=50):
     return s if len(s) < max_length else s[:max_length] + "..."
