@@ -32,8 +32,10 @@ jobs:
           - name: Run evaluations
             working-directory: ./evaluation
             run: |
-              pip install -r scripts/requirements.txt
-              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID AZURE_OPENAI_KEY=$AZURE_OPENAI_KEY python -m scripts evaluate --config=./example_config.json --numquestions=10 
+                echo "$OPENAI_HOST"
+                python ../test.py
+                export OPENAI_HOST=$OPENAI_HOST
+                python ../test.py
             env:
               OPENAI_HOST: ${{ vars.OPENAI_HOST }}
               OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
