@@ -33,9 +33,9 @@ jobs:
             working-directory: ./evaluation
             run: |
                 echo "$OPENAI_HOST"
-                python ../test.py
+                python test.py
                 export OPENAI_HOST=$OPENAI_HOST
-                python ../test.py
+                python test.py
             env:
               OPENAI_HOST: ${{ vars.OPENAI_HOST }}
               OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
