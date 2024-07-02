@@ -5,7 +5,11 @@ import openai
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import AzureDeveloperCliCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
-from promptflow.core import AzureOpenAIModelConfiguration, ModelConfiguration, OpenAIModelConfiguration
+from promptflow.core import (
+    AzureOpenAIModelConfiguration,
+    ModelConfiguration,
+    OpenAIModelConfiguration,
+)
 
 logger = logging.getLogger("scripts")
 

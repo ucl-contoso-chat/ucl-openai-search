@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Optional
 
 import dotenv
 import typer
@@ -7,8 +8,10 @@ from rich.logging import RichHandler
 
 from . import service_setup
 from .evaluate import run_evaluate_from_config
-from .generate import generate_dontknows_qa_data, generate_test_qa_data, generate_test_qa_answer
-from typing import Optional
+from .generate import (
+    generate_test_qa_answer,
+    generate_test_qa_data,
+)
 
 app = typer.Typer(pretty_exceptions_enable=False)
 

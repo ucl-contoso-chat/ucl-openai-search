@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-import os
 from pathlib import Path
 
 import jmespath
@@ -11,7 +10,6 @@ from rich.progress import track
 
 from . import service_setup
 from .evaluate_metrics import metrics_by_name
-from azure.identity import ClientSecretCredential
 
 logger = logging.getLogger("scripts")
 

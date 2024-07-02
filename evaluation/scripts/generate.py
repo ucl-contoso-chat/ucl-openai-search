@@ -8,7 +8,7 @@ from azure.ai.generative.synthetic.qa import QADataGenerator, QAType
 from azure.search.documents import SearchClient
 
 from . import service_setup
-from .evaluate import send_question_to_ask, process_config
+from .evaluate import process_config, send_question_to_ask
 
 logger = logging.getLogger("scripts")
 
