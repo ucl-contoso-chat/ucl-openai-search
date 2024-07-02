@@ -101,6 +101,18 @@
     "chatGptDeploymentCapacity":{
       "value": "${AZURE_OPENAI_CHATGPT_DEPLOYMENT_CAPACITY}"
     },
+    "huggingFaceModelName":{
+      "value": "${AZURE_HUGGINGFACE_MODEL}"
+    },
+    "huggingFaceDeploymentName": {
+      "value": "${AZURE_HUGGINGFACE_DEPLOYMENT}"
+    },
+    "huggingFaceDeploymentVersion":{
+      "value": "${AZURE_HUGGINGFACE_DEPLOYMENT_VERSION}"
+    },
+    "huggingFaceDeploymentCapacity":{
+      "value": "${AZURE_HUGGINGFACE_DEPLOYMENT_CAPACITY}"
+    },
     "embeddingModelName":{
       "value": "${AZURE_OPENAI_EMB_MODEL_NAME}"
     },
@@ -142,6 +154,9 @@
     },
     "applicationInsightsDashboardName": {
       "value": "${AZURE_APPLICATION_INSIGHTS_DASHBOARD}"
+    },
+    "aiHubName": {
+      "value": "${AZURE_AI_HUB_NAME=aistudio-hub}"
     },
     "logAnalyticsName": {
       "value": "${AZURE_LOG_ANALYTICS}"

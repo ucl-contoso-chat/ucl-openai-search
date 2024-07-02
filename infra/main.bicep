@@ -104,6 +104,20 @@ var chatGpt = {
   deploymentCapacity: chatGptDeploymentCapacity != 0 ? chatGptDeploymentCapacity : 30
 }
 
+param huggingFaceModelUri string = ''
+// param huggingFaceModelName string = ''
+param huggingFaceDeploymentName string = ''
+// param huggingFaceDeploymentVersion string = ''
+param huggingFaceDeploymentCapacity int = 0
+var defaultHuggingFaceModelUri = 'azureml://registries/HuggingFace/models/mistralai-mistral-7b-instruct-v0.2/versions/6'
+var huggingFaceModel = {
+  uri: !empty(huggingFaceModelUri) ? huggingFaceModelUri : defaultHuggingFaceModelUri
+  // modelName: !empty(huggingFaceModelName) ? huggingFaceModelName : 'mistralai-Mistral-7B-Instruct-v0-2'
+  deploymentName: !empty(huggingFaceDeploymentName) ? huggingFaceDeploymentName : 'llm'
+  // deploymentVersion: !empty(huggingFaceDeploymentVersion) ? huggingFaceDeploymentVersion : '4'
+  deploymentCapacity: huggingFaceDeploymentCapacity != 0 ? huggingFaceDeploymentCapacity : 30
+}
+
 param embeddingModelName string = ''
 param embeddingDeploymentName string = ''
 param embeddingDeploymentVersion string = ''
@@ -121,6 +135,20 @@ param gpt4vModelName string = 'gpt-4o'
 param gpt4vDeploymentName string = 'gpt-4o'
 param gpt4vModelVersion string = '2024-05-13'
 param gpt4vDeploymentCapacity int = 10
+
+@minLength(2)
+@maxLength(12)
+@description('Name for the AI Studio Hub and used to derive name of dependent resources.')
+param aiHubName string = 'aistudio-hub'
+var aiHubNameLower = toLower('${aiHubName}')
+
+@minLength(2)
+@maxLength(12)
+@description('Name for the AI Studio Project.')
+param aiProjectName string = 'aistudio-prj'
+var aiProjectNameLower = toLower('${aiProjectName}')
+
+var aiStudioUniqueSuffix = substring(uniqueString(subscription().id), 0, 4)
 
 param tenantId string = tenant().tenantId
 param authTenantId string = ''
@@ -391,6 +419,22 @@ var openAiDeployments = concat(defaultOpenAiDeployments, useGPT4V ? [
     }
   ] : [])
 
+var defaultHuggingFaceDeployments = [
+  {
+    name: huggingFaceModel.deploymentName
+    model: huggingFaceModel.uri
+    // model: {
+    //   format: 'HuggingFace'
+    //   name: huggingFaceModel.modelName
+    //   version: huggingFaceModel.deploymentVersion
+    // }
+    sku: {
+      name: 'Standard'
+      capacity: huggingFaceModel.deploymentCapacity
+    }
+  }
+]
+
 module openAi 'core/ai/cognitiveservices.bicep' = if (isAzureOpenAiHost && deployAzureOpenAi) {
   name: 'openai'
   scope: openAiResourceGroup
@@ -456,6 +500,17 @@ module speech 'core/ai/cognitiveservices.bicep' = if (useSpeechOutputAzure) {
     }
   }
 }
+
+// module huggingFace 'core/ai/workspaces/model-deployments.bicep' = {
+//   name: 'huggingface'
+//   scope: resourceGroup
+//   params: {
+//     location: location
+//     tags: tags
+//     deployments: defaultHuggingFaceDeployments
+//   }
+// }
+
 module searchService 'core/search/search-services.bicep' = {
   name: 'search-service'
   scope: searchServiceResourceGroup
@@ -530,6 +585,42 @@ module userStorage 'core/storage/storage-account.bicep' = if (useUserUpload) {
         publicAccess: 'None'
       }
     ]
+  }
+}
+
+// Dependent resources for the Azure Machine Learning workspace
+module aiDependencies 'core/ai/workspaces/hub-dependencies.bicep' = {
+  name: 'hub-dependencies-${aiHubNameLower}-${aiStudioUniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    location: location
+    keyvaultName: '${abbrs.keyVaultVaults}${aiHubNameLower}-${aiStudioUniqueSuffix}'
+    containerRegistryName: '${abbrs.containerRegistryRegistries}${aiHubNameLower}-${aiStudioUniqueSuffix}'
+    tags: tags
+  }
+}
+
+module aiHub 'core/ai/workspaces/hub.bicep' = {
+  name: 'ai-${aiHubNameLower}-${aiStudioUniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    // workspace organization
+    aiHubName: '${abbrs.machineLearningServicesWorkspacesHub}${aiHubNameLower}-${aiStudioUniqueSuffix}'
+    aiProjectName: '${abbrs.machineLearningServicesWorkspacesProject}${aiProjectNameLower}-${aiStudioUniqueSuffix}'
+    location: location
+    tags: tags
+
+    // connections
+    aiServicesId: openAi.outputs.id
+    aiServicesTarget: openAi.outputs.endpoint
+    aiSearchId: searchService.outputs.id
+    aiSearchTarget: searchService.outputs.endpoint
+
+    // dependencies
+    applicationInsightsId: useApplicationInsights ? monitoring.outputs.applicationInsightsId : ''
+    containerRegistryId: aiDependencies.outputs.containerRegistryId
+    keyVaultId: aiDependencies.outputs.keyvaultId
+    storageAccountId: storage.outputs.id
   }
 }
 
