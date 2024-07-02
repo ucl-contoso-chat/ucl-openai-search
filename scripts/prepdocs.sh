@@ -69,7 +69,12 @@ elif [ -n "$OPENAI_API_KEY" ]; then
   openAiApiKeyArg="--openaikey $OPENAI_API_KEY"
 fi
 
+if [ "$FORCE_DOC_UPLOAD" = true ]; then
+  forceUploadArg="--forceupload"
+fi
+
 ./.venv/bin/python ./app/backend/prepdocs.py './data/*' --verbose \
+$forceUploadArg \
 --subscriptionid $AZURE_SUBSCRIPTION_ID  \
 --storageaccount "$AZURE_STORAGE_ACCOUNT" --container "$AZURE_STORAGE_CONTAINER" --storageresourcegroup $AZURE_STORAGE_RESOURCE_GROUP \
 --searchservice "$AZURE_SEARCH_SERVICE" --index "$AZURE_SEARCH_INDEX" \

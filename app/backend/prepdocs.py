@@ -79,6 +79,7 @@ def setup_blob_manager(
 def setup_list_file_strategy(
     azure_credential: AsyncTokenCredential,
     local_files: Union[str, None],
+    check_md5: Union[bool, None],
     datalake_storage_account: Union[str, None],
     datalake_filesystem: Union[str, None],
     datalake_path: Union[str, None],
@@ -98,7 +99,7 @@ def setup_list_file_strategy(
         )
     elif local_files:
         logger.info("Using local files: %s", local_files)
-        list_file_strategy = LocalListFileStrategy(path_pattern=local_files)
+        list_file_strategy = LocalListFileStrategy(path_pattern=local_files, check_md5=check_md5)
     else:
         raise ValueError("Either local_files or datalake_storage_account must be provided.")
     return list_file_strategy
@@ -221,6 +222,9 @@ if __name__ == "__main__":
         epilog="Example: prepdocs.py '.\\data\*' --storageaccount myaccount --container mycontainer --searchservice mysearch --index myindex -v",
     )
     parser.add_argument("files", nargs="?", help="Files to be processed")
+    parser.add_argument(
+        "--forceupload", action="store_true", help="Optional. Force upload by bypassing file hash check"
+    )
     parser.add_argument(
         "--datalakestorageaccount", required=False, help="Optional. Azure Data Lake Storage Gen2 Account name"
     )
@@ -417,6 +421,7 @@ if __name__ == "__main__":
     list_file_strategy = setup_list_file_strategy(
         azure_credential=azd_credential,
         local_files=args.files,
+        check_md5=not args.forceupload,
         datalake_storage_account=args.datalakestorageaccount,
         datalake_filesystem=args.datalakefilesystem,
         datalake_path=args.datalakepath,

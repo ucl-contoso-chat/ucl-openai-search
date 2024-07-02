@@ -123,12 +123,16 @@ def test_locallistfilestrategy_checkmd5():
             md5_file.write(f1_hash)
 
         local_list_strategy = LocalListFileStrategy(path_pattern=f"{tmpdirname}/*")
+        local_list_strategy_no_check = LocalListFileStrategy(path_pattern=f"{tmpdirname}/*", check_md5=False)
         assert local_list_strategy.check_md5(md5_file.name) is True
         assert local_list_strategy.check_md5(pdf_file.name) is True
+        assert local_list_strategy_no_check.check_md5(md5_file.name) is True
+        assert local_list_strategy_no_check.check_md5(pdf_file.name) is False
         # now change the file, hash should no longer match
         with open(os.path.join(tmpdirname, "test.pdf"), "w") as pdf_file:
             pdf_file.write("test2")
         assert local_list_strategy.check_md5(pdf_file.name) is False
+        assert local_list_strategy_no_check.check_md5(pdf_file.name) is False
 
 
 @pytest.mark.asyncio

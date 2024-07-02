@@ -65,8 +65,9 @@ class LocalListFileStrategy(ListFileStrategy):
     Concrete strategy for listing files that are located in a local filesystem
     """
 
-    def __init__(self, path_pattern: str):
+    def __init__(self, path_pattern: str, check_md5: bool = True):
         self.path_pattern = path_pattern
+        self._check_md5 = check_md5
 
     async def list_paths(self) -> AsyncGenerator[str, None]:
         async for p in self._list_paths(self.path_pattern):
@@ -96,13 +97,15 @@ class LocalListFileStrategy(ListFileStrategy):
         with open(path, "rb") as file:
             existing_hash = hashlib.md5(file.read()).hexdigest()
         hash_path = f"{path}.md5"
-        if os.path.exists(hash_path):
-            with open(hash_path, encoding="utf-8") as md5_f:
-                stored_hash = md5_f.read()
 
-        if stored_hash and stored_hash.strip() == existing_hash.strip():
-            logger.info("Skipping %s, no changes detected.", path)
-            return True
+        if self._check_md5:
+            if os.path.exists(hash_path):
+                with open(hash_path, encoding="utf-8") as md5_f:
+                    stored_hash = md5_f.read()
+
+            if stored_hash and stored_hash.strip() == existing_hash.strip():
+                logger.info("Skipping %s, no changes detected.", path)
+                return True
 
         # Write the hash
         with open(hash_path, "w", encoding="utf-8") as md5_f:

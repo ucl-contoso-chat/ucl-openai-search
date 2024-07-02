@@ -71,10 +71,15 @@ if ($env:AZURE_OPENAI_API_KEY) {
   $openaiApiKeyArg = "--openaikey $env:OPENAI_API_KEY"
 }
 
+if ($env:FORCE_DOC_UPLOAD -eq $true) {
+  $forceUploadArg = "--forceupload"
+}
+
 $cwd = (Get-Location)
 $dataArg = "`"$cwd/data/*`""
 
 $argumentList = "./app/backend/prepdocs.py $dataArg --verbose " + `
+"$forceUploadArg " + `
 "--subscriptionid $env:AZURE_SUBSCRIPTION_ID " + `
 "--storageaccount $env:AZURE_STORAGE_ACCOUNT --container $env:AZURE_STORAGE_CONTAINER --storageresourcegroup $env:AZURE_STORAGE_RESOURCE_GROUP " + `
 "--searchservice $env:AZURE_SEARCH_SERVICE --index $env:AZURE_SEARCH_INDEX " + `
