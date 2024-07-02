@@ -12,14 +12,14 @@ class BaseMetric(ABC):
 
     @classmethod
     @abstractmethod
-    def get_aggregate_stats(cls, df, passing_rate):
+    def get_aggregate_stats(cls, df, passing_rate = 0):
         """Returns a dictionary of aggregate statistics for the metric"""
         pass
 
     @classmethod
-    def get_aggregate_stats_for_numeric_rating(cls, df, rating_column_name,passing_rate):
+    def get_aggregate_stats_for_numeric_rating(cls, df, rating_column_name, passing_rate):
         # Narrow down dataframe to just the metric
-            
+
         df = df[[rating_column_name]]
 
         # Drop invalid ratings - strings like "Failed"
