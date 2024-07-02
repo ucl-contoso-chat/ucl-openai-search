@@ -79,9 +79,12 @@ def generate(
 #         output_file=Path.cwd() / output,
 #     )
 
+
 @app.command()
 def generate_answers(
-    config: Path = typer.Option(exists=True, dir_okay=False, file_okay=True, help="Path to config.json", default="config.json"),
+    config: Path = typer.Option(
+        exists=True, dir_okay=False, file_okay=True, help="Path to config.json", default="config.json"
+    ),
     input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
     output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
 ):
