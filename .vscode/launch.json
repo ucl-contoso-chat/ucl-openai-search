@@ -52,6 +52,15 @@
                 "--config=./example_config.json",
                 "--numquestions=2"
             ]
+          },
+          {
+            "name": "Python Test",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-v",
+            ],
           }
     ],
     "inputs": [

@@ -19,8 +19,8 @@ def send_question_to_target(
     url: str,
     parameters: dict = {},
     raise_error=False,
-    response_answer_jmespath="choices[0].message.content",
-    response_context_jmespath="choices[0].context.data_points.text",
+    response_answer_jmespath="message.content",
+    response_context_jmespath="context.data_points.text",
 ):
     headers = {"Content-Type": "application/json"}
     body = {
