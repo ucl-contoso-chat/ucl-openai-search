@@ -2,7 +2,7 @@
 target-version = "py38"
 lint.select = ["E", "F", "I", "UP"]
 lint.ignore = ["E501", "E701"] # line too long, multiple statements on one line
-src = ["/", "app/backend", "scripts", "evaluation"]
+src = ["app/backend", "scripts"]
 
 [tool.ruff.lint.isort]
 known-local-folder = ["scripts"]
@@ -12,10 +12,10 @@ line-length = 120
 
 [tool.pytest.ini_options]
 addopts = "-ra"
-pythonpath = ["app/backend", "scripts", "evaluation/scripts"]
+pythonpath = ["app/backend", "scripts"]
 
 [tool.coverage.paths]
-source = ["scripts", "app", "evaluation/scripts"]
+source = ["scripts", "app"]
 
 [tool.coverage.report]
 show_missing = true
