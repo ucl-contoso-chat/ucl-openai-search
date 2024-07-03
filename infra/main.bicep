@@ -71,6 +71,7 @@ param openAiApiKey string = ''
 param openAiApiOrganization string = ''
 
 param huggingFaceApiKey string = ''
+param huggingFaceApiURL string = ''
 
 param documentIntelligenceServiceName string = '' // Set in main.parameters.json
 param documentIntelligenceResourceGroupName string = '' // Set in main.parameters.json

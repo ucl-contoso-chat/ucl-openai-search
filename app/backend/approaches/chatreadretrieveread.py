@@ -146,7 +146,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 huggingf_search_prompt += message["role"] + ": "
                 huggingf_search_prompt += message["content"] + '\n'
                                 
-            API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+            API_URL = os.gentenv("HUGGINGFACE_API_URL")
             API_KEY = os.getenv("HUGGINGFACE_API_KEY")
             headers = {"Authorization": "Bearer " + API_KEY}
             

@@ -131,6 +131,9 @@
     "huggingFaceApiKey": {
       "value": "${HUGGINGFACE_API_KEY}"
     },
+    "huggingFaceApiURL":{
+      "value": "${HUGGINGFACE_API_URL"
+    },
     "openAiApiOrganization": {
       "value": "${OPENAI_ORGANIZATION}"
     },
