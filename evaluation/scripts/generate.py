@@ -6,9 +6,10 @@ from pathlib import Path
 
 from azure.ai.generative.synthetic.qa import QADataGenerator, QAType
 from azure.search.documents import SearchClient
-
+from openai_messages_token_helper import build_messages, get_token_limit
+from promptflow.core import AzureOpenAIModelConfiguration, ModelConfiguration, OpenAIModelConfiguration
+from promptflow.connections import AzureOpenAIConnection
 from . import service_setup
-from .evaluate import process_config, send_question_to_ask
 
 logger = logging.getLogger("scripts")
 
@@ -127,29 +128,38 @@ def generate_dontknows_qa_data(openai_config: dict, num_questions_total: int, in
             f.write(json.dumps(item) + "\n")
 
 
-def generate_test_qa_answer(config_path: Path, question_path: Path, output_file: Path, using_huggingface: bool = False):
+def generate_test_qa_answer(
+    openai_config,
+    question_path: Path,
+    output_file: Path,
+    using_huggingface: bool = False
+):
     logger.info("Generating answers based on the quesion of %s", question_path)
     with open(question_path, encoding="utf-8") as f:
         questions = [json.loads(line) for line in f.readlines()]
-
-    config_path = Path(config_path)
-    with open(config_path, encoding="utf-8") as f:
-        config = json.load(f)
-        process_config(config)
-
+    
     if not using_huggingface:
         logger.info("Using Azure OpenAI Service")
+        openai_client = service_setup.get_openai_client(openai_config)
+    
         for question in questions:
-            response = send_question_to_ask(
-                question=question["question"],
-                url=config["target_url"],
-                parameters=config.get("target_parameters", {}),
-                response_answer_jmespath=config.get("target_response_answer_jmespath"),
-                response_context_jmespath=config.get("target_response_context_jmespath"),
+            response = openai_client.chat.completions.create(
+                model=openai_config.model,
+                messages=[
+                        {
+                            "role": "user",
+                            "content": f"{question['question']}",
+                        }
+                    ],
+                n=1,
+            max_tokens=get_token_limit(openai_config.model),
+            temperature=0.3,
             )
-            question["answer"] = response["answer"]
-
+            answer = response.choices[0].message.content.split("\n")[0]
+            print(answer)
+            question["answer"] = answer
     else:
+        # TODO: Implement Hugging Face Service
         logger.info("Using Hugging Face Service")
 
     logger.info("Writing %d questions with answer to %s", len(questions), output_file)

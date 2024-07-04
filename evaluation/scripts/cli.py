@@ -82,14 +82,11 @@ def generate(
 
 @app.command()
 def generate_answers(
-    config: Path = typer.Option(
-        exists=True, dir_okay=False, file_okay=True, help="Path to config.json", default="config.json"
-    ),
     input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
     output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
 ):
     generate_test_qa_answer(
-        config_path=Path.cwd() / config,
+        openai_config=service_setup.get_openai_config(),
         question_path=Path.cwd() / input,
         output_file=Path.cwd() / output,
     )
