@@ -129,7 +129,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         )
         
         if(self.use_hugging_face):
-            API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+            API_URL = os.getenv("HUGGINGFACE_API_URL")
             API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
             headers = {"Authorization": "Bearer " + API_KEY}
