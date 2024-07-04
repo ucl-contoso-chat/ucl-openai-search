@@ -17,9 +17,9 @@ class BaseMetric(ABC):
         pass
 
     @classmethod
-    def get_aggregate_stats_for_numeric_rating(cls, df, rating_column_name,passing_rate):
+    def get_aggregate_stats_for_numeric_rating(cls, df, rating_column_name, passing_threshold):
         # Narrow down dataframe to just the metric
-            
+
         df = df[[rating_column_name]]
 
         # Drop invalid ratings - strings like "Failed"
@@ -35,7 +35,7 @@ class BaseMetric(ABC):
             )
 
         # Count how many ratings passed threshold of passing rate
-        pass_count = int(df[rating_column_name].apply(lambda rating: rating >= passing_rate).sum())
+        pass_count = int(df[rating_column_name].apply(lambda rating: rating >= passing_threshold).sum())
 
         return {
             "pass_count": pass_count,

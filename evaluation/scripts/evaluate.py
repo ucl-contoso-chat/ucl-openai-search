@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-import os
 from pathlib import Path
 
 import jmespath
@@ -11,7 +10,6 @@ from rich.progress import track
 
 from . import service_setup
 from .evaluate_metrics import metrics_by_name
-from azure.identity import ClientSecretCredential
 
 logger = logging.getLogger("scripts")
 
@@ -21,8 +19,8 @@ def send_question_to_target(
     url: str,
     parameters: dict = {},
     raise_error=False,
-    response_answer_jmespath="choices[0].message.content",
-    response_context_jmespath="choices[0].context.data_points.text",
+    response_answer_jmespath="message.content",
+    response_context_jmespath="context.data_points.text",
 ):
     headers = {"Content-Type": "application/json"}
     body = {
@@ -68,11 +66,10 @@ def send_question_to_target(
         }
 
 
-
 def send_question_to_ask(
     question: str,
     url: str,
-    # token: str, 
+    # token: str,
     parameters: dict = {},
     raise_error=False,
     response_answer_jmespath="choices[0].message.content",
@@ -80,7 +77,7 @@ def send_question_to_ask(
 ):
     headers = {
         "Content-Type": "application/json",
-        # "Authorization": f"Bearer {token}" 
+        # "Authorization": f"Bearer {token}"
     }
     body = {
         "messages": [{"content": question, "role": "user"}],
@@ -99,9 +96,9 @@ def send_question_to_ask(
                 "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
             )
         try:
-            expression = 'choices[0].message.content'
+            expression = "choices[0].message.content"
             answer = jmespath.search(expression, response_dict)
-            data_points = jmespath.search('choices[0].context.data_points.text', response_dict)
+            data_points = jmespath.search("choices[0].context.data_points.text", response_dict)
             context = "\n\n".join(data_points)
         except Exception:
             raise ValueError(
@@ -123,7 +120,6 @@ def send_question_to_ask(
         }
 
 
-
 def truncate_for_log(s: str, max_length=50):
     return s if len(s) < max_length else s[:max_length] + "..."
 
@@ -131,8 +127,8 @@ def truncate_for_log(s: str, max_length=50):
 def load_jsonl(path: Path) -> list[dict]:
     with open(path, encoding="utf-8") as f:
         return [json.loads(line) for line in f.readlines()]
-    
-    
+
+
 # def load_jsonl(file_path):
 #     with open(file_path, 'r', encoding='utf-8') as f:
 #         lines = f.readlines()
@@ -231,7 +227,6 @@ def run_evaluation(
 
         return output
 
-
     questions_with_ratings = []
     # token= azure_login()
     for row in track(testdata, description="Processing..."):
@@ -245,7 +240,7 @@ def run_evaluation(
     with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
         for row in questions_with_ratings:
             results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
-            
+
     with open(latest_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
         for row in questions_with_ratings:
             results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
@@ -259,7 +254,7 @@ def run_evaluation(
     # summary statistics
     with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summary, indent=4))
-        
+
     with open(latest_dir / "summary.json", "w", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summary, indent=4))
         logger.info("Aggregated results:")
@@ -303,11 +298,11 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
     with open(config_path, encoding="utf-8") as f:
         config = json.load(f)
         process_config(config)
-        
-    latest_dir=working_dir/Path(config["latest_dir"])
+
+    latest_dir = working_dir / Path(config["latest_dir"])
 
     results_dir = working_dir / Path(config["results_dir"])
-    passing_rate=config["passing_rate"]
+    passing_rate = config["passing_rate"]
 
     evaluation_run_complete = run_evaluation(
         openai_config=service_setup.get_openai_config(),
@@ -323,7 +318,7 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         ),
         target_response_answer_jmespath=config.get("target_response_answer_jmespath"),
         target_response_context_jmespath=config.get("target_response_context_jmespath"),
-        passing_rate=passing_rate
+        passing_rate=passing_rate,
     )
 
     if evaluation_run_complete:

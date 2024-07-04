@@ -8,13 +8,13 @@ on:
       - ".azdo/**"
       - ".devcontainer/**"
       - ".github/**"
-  # pull_request:
-  #   branches: [ main ]
-  #   paths-ignore:
-  #     - "**.md"
-  #     - ".azdo/**"
-  #     - ".devcontainer/**"
-  #     - ".github/**"
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - "**.md"
+      - ".azdo/**"
+      - ".devcontainer/**"
+      - ".github/**"
   workflow_call:
 
 jobs:
@@ -24,8 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-20.04", "windows-latest"]
-        python_version: ["3.9", "3.10", "3.11", "3.12"]
+        os: ["ubuntu-20.04"]
+        python_version: ["3.11"]
     steps:
         - uses: actions/checkout@v4
         - name: Setup python
@@ -33,21 +33,21 @@ jobs:
           with:
             python-version: ${{ matrix.python_version }}
             architecture: x64
-        - name: Setup node
-          uses: actions/setup-node@v4
-          with:
-            node-version: 18
-        - name: Build frontend
-          run: |
-            cd ./app/frontend
-            npm install
-            npm run build
+        # - name: Setup node
+        #   uses: actions/setup-node@v4
+        #   with:
+        #     node-version: 18
+        # - name: Build frontend
+        #   run: |
+        #     cd ./app/frontend
+        #     npm install
+        #     npm run build
         - name: Install dependencies
           run: |
             python -m pip install --upgrade pip
-            pip install -r requirements-dev.txt
+            pip install -r requirements-freeze.txt
         - name: Lint with ruff
-          run: ruff .
+          run: ruff check .
         - name: Check types with mypy
           run: |
             cd scripts/

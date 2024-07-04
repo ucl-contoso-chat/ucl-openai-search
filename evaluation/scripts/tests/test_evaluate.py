@@ -1,8 +1,7 @@
 from datetime import timedelta
 
 import requests
-
-from scripts.evaluate import send_question_to_target
+from evaluation.scripts.evaluate import send_question_to_target
 
 
 def test_send_question_to_target_valid():

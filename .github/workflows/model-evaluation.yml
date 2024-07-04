@@ -2,9 +2,8 @@ name: Model Evaluation
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - "evaluation/**"
+    branches:
+      - main
   pull_request:
   workflow_call:
   workflow_dispatch:
@@ -36,12 +35,20 @@ jobs:
             working-directory: ./evaluation
             run: |
               pip install -r scripts/requirements.txt
-              python -m scripts evaluate --config=./example_config.json --numquestions=10
-          # - name: Dump results
-          #   uses: actions/upload-artifact@v4
-          #   with:
-          #     name: evaluation-results
-          #     path: | 
-          #       ./evaluation/latest/summary.json
-          #       ./evaluation/latest/evaluation_parameters.json
-          #       ./evaluation/latest/eval_results.json
+              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID AZURE_OPENAI_KEY=$AZURE_OPENAI_KEY python -m scripts evaluate --config=./example_config.json --numquestions=10 
+            env:
+              OPENAI_HOST: ${{ vars.OPENAI_HOST }}
+              OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
+              AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+              AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}
+              AZURE_SEARCH_SERVICE: ${{ vars.AZURE_SEARCH_SERVICE }}
+              AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
+              AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}
+              AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
+          - name: Dump results
+            uses: actions/upload-artifact@v4
+            with:
+              name: evaluation-results
+              path: | 
+                ./evaluation/latest/summary.json
+                ./evaluation/latest/eval_results.json

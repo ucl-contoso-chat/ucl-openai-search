@@ -5,15 +5,38 @@ import openai
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import AzureDeveloperCliCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
-from promptflow.core import AzureOpenAIModelConfiguration, ModelConfiguration, OpenAIModelConfiguration
+from promptflow.core import (
+    AzureOpenAIModelConfiguration,
+    ModelConfiguration,
+    OpenAIModelConfiguration,
+)
 
 logger = logging.getLogger("scripts")
 
+
 def print_all_env_vars():
-    vars = ['OPENAI_HOST', 'OPENAI_GPT_MODEL', 'AZURE_OPENAI_EVAL_DEPLOYMENT', 'AZURE_OPENAI_SERVICE', 'OPENAICOM_KEY', 'OPENAICOM_ORGANIZATION', 'AZURE_SEARCH_SERVICE', 'AZURE_SEARCH_INDEX', 'AZURE_OPENAI_KEY', 'TENANT_ID', 'CLIENT_ID', 'CLIENT_SECRET', 'AZURE_PRINCIPAL_ID', 'AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'AZURE_CLIENT_SECRET']
-    print('Environment Variables:')
+    vars = [
+        "OPENAI_HOST",
+        "OPENAI_GPT_MODEL",
+        "AZURE_OPENAI_EVAL_DEPLOYMENT",
+        "AZURE_OPENAI_SERVICE",
+        "OPENAICOM_KEY",
+        "OPENAICOM_ORGANIZATION",
+        "AZURE_SEARCH_SERVICE",
+        "AZURE_SEARCH_INDEX",
+        "AZURE_OPENAI_KEY",
+        "TENANT_ID",
+        "CLIENT_ID",
+        "CLIENT_SECRET",
+        "AZURE_PRINCIPAL_ID",
+        "AZURE_CLIENT_ID",
+        "AZURE_TENANT_ID",
+        "AZURE_CLIENT_SECRET",
+    ]
+    print("Environment Variables:")
     for var in vars:
         print(f"{var}: {os.environ.get(var)}")
+
 
 def get_openai_config() -> ModelConfiguration:
     print_all_env_vars()
@@ -77,6 +100,7 @@ def get_openai_config_dict() -> dict:
             "deployment": "none-needed-for-openaicom",
         }
     return openai_config
+
 
 def get_search_client():
     if api_key := os.environ.get("AZURE_SEARCH_KEY"):
