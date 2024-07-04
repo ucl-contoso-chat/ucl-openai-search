@@ -1,15 +1,15 @@
+import os
 from typing import Any, Optional
 
+import requests
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from openai_messages_token_helper import build_messages, get_token_limit
-import os
 
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
-import requests
 
 
 class RetrieveThenReadApproach(Approach):
@@ -126,39 +126,38 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             new_user_content=user_content,
             max_tokens=self.chatgpt_token_limit - response_token_limit,
         )
-        
-        if(self.use_hugging_face):
+
+        if self.use_hugging_face:
             API_URL = os.getenv("HUGGINGFACE_API_URL")
             API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
             headers = {"Authorization": "Bearer " + API_KEY}
-            
-            huggingf_question_prompt = ''
+
+            huggingf_question_prompt = ""
             for message in updated_messages:
                 if message["content"]:
-                    huggingf_question_prompt += message["content"] + '\n'
+                    huggingf_question_prompt += message["content"] + "\n"
 
-                                        
             def ask_huggingface(payload):
                 response = requests.post(API_URL, headers=headers, json=payload)
                 return response.json()
-            
-            chat_completion = ask_huggingface({
-            "inputs": huggingf_question_prompt,
-            "parameters": {
-                "temperature" : 1.6,
-                "max_length": response_token_limit,
-                "return_full_text": False,
-                "top_k": 1,
-                "top_p": 0.8,
-                "repetition_penalty": 0.1,
-                "max_new_tokens": 250,
-            },
-            "options": {
-                "use_cache": False
-            }
-        })
-        else:     
+
+            chat_completion = ask_huggingface(
+                {
+                    "inputs": huggingf_question_prompt,
+                    "parameters": {
+                        "temperature": 1.6,
+                        "max_length": response_token_limit,
+                        "return_full_text": False,
+                        "top_k": 1,
+                        "top_p": 0.8,
+                        "repetition_penalty": 0.1,
+                        "max_new_tokens": 250,
+                    },
+                    "options": {"use_cache": False},
+                }
+            )
+        else:
             chat_completion = (
                 await self.openai_client.chat.completions.create(
                     # Azure OpenAI takes the deployment name as the model name
@@ -169,10 +168,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                     n=1,
                 )
             ).model_dump()
-        
-            
-        
-        
+
         data_points = {"text": sources_content}
         extra_info = {
             "data_points": data_points,
@@ -207,15 +203,15 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         completion = {}
         if self.use_hugging_face:
             completion["message"] = {
-                "content": chat_completion[0]['generated_text'],
+                "content": chat_completion[0]["generated_text"],
                 "role": "assistant",
                 "function_call": None,
-                "tool_calls": None
+                "tool_calls": None,
             }
         else:
             completion["message"] = chat_completion["choices"][0]["message"]
 
         completion["context"] = extra_info
         completion["session_state"] = session_state
-        
+
         return completion

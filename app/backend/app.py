@@ -69,10 +69,10 @@ from config import (
     CONFIG_SPEECH_SERVICE_LOCATION,
     CONFIG_SPEECH_SERVICE_TOKEN,
     CONFIG_SPEECH_SERVICE_VOICE,
+    CONFIG_USE_HUGGINGFACE,
     CONFIG_USER_BLOB_CONTAINER_CLIENT,
     CONFIG_USER_UPLOAD_ENABLED,
     CONFIG_VECTOR_SEARCH_ENABLED,
-    CONFIG_USE_HUGGINGFACE
 )
 from core.authentication import AuthenticationHelper
 from decorators import authenticated, authenticated_path

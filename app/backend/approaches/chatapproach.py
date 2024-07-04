@@ -74,12 +74,12 @@ class ChatApproach(Approach, ABC):
             if query_text.strip() != self.NO_RESPONSE:
                 return query_text
         return user_query
-    
+
     def extract_search_query(self, output: dict):
-        generated_text = output[0]['generated_text']
-        first_assistant_statement = generated_text.split('assistant:')[1].split('\n')[0].strip()
-        return first_assistant_statement.split(',')[0].strip()
-    
+        generated_text = output[0]["generated_text"]
+        first_assistant_statement = generated_text.split("assistant:")[1].split("\n")[0].strip()
+        return first_assistant_statement.split(",")[0].strip()
+
     def extract_followup_questions(self, content: str):
         return content.split("<<")[0], re.findall(r"<<([^>>]+)>>", content)
 
@@ -100,7 +100,7 @@ class ChatApproach(Approach, ABC):
             chat_completion_response: ChatCompletion = await chat_coroutine
             chat_resp = chat_completion_response.model_dump()  # Convert to dict to make it JSON serializable
             chat_resp = chat_resp["choices"][0]
-            
+
         chat_resp["context"] = extra_info
         if overrides.get("suggest_followup_questions"):
             content, followup_questions = self.extract_followup_questions(chat_resp["message"]["content"])
