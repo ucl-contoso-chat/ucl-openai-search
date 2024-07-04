@@ -363,6 +363,7 @@ regex==2024.5.15
     # via tiktoken
 requests==2.32.3
     # via
+    #   -r requirements.in
     #   azure-core
     #   msal
     #   msrest
