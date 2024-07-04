@@ -124,6 +124,7 @@ def get_openai_client(oai_config: ModelConfiguration):
             azure_token_provider = get_bearer_token_provider(
                 AzureDeveloperCliCredential(), "https://cognitiveservices.azure.com/.default"
             )
+        logger.info(azure_token_provider)
         return openai.AzureOpenAI(
             api_version=oai_config.api_version,
             azure_endpoint=oai_config.azure_endpoint,
