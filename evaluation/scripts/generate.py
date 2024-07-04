@@ -8,7 +8,7 @@ from azure.ai.generative.synthetic.qa import QADataGenerator, QAType
 from azure.search.documents import SearchClient
 from openai_messages_token_helper import build_messages, get_token_limit
 from promptflow.core import AzureOpenAIModelConfiguration, ModelConfiguration, OpenAIModelConfiguration
-
+from promptflow.connections import AzureOpenAIConnection
 from . import service_setup
 
 logger = logging.getLogger("scripts")
@@ -142,7 +142,6 @@ def generate_test_qa_answer(
         logger.info("Using Azure OpenAI Service")
         openai_client = service_setup.get_openai_client(openai_config)
     
-        logger.info("!!!!!!!!!%s",openai_client)
         for question in questions:
             response = openai_client.chat.completions.create(
                 model=openai_config.model,
@@ -155,9 +154,10 @@ def generate_test_qa_answer(
                 n=1,
             max_tokens=get_token_limit(openai_config.model),
             temperature=0.3,
-        )
-        answer = response.choices[0].message.content.split("\n")[0]
-        print(answer)
+            )
+            answer = response.choices[0].message.content.split("\n")[0]
+            print(answer)
+            question["answer"] = answer
     else:
         # TODO: Implement Hugging Face Service
         logger.info("Using Hugging Face Service")
