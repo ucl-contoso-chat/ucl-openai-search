@@ -72,6 +72,7 @@ from config import (
     CONFIG_USER_BLOB_CONTAINER_CLIENT,
     CONFIG_USER_UPLOAD_ENABLED,
     CONFIG_VECTOR_SEARCH_ENABLED,
+    CONFIG_USE_HUGGINGFACE
 )
 from core.authentication import AuthenticationHelper
 from decorators import authenticated, authenticated_path
@@ -270,6 +271,7 @@ def config():
             "showSpeechInput": current_app.config[CONFIG_SPEECH_INPUT_ENABLED],
             "showSpeechOutputBrowser": current_app.config[CONFIG_SPEECH_OUTPUT_BROWSER_ENABLED],
             "showSpeechOutputAzure": current_app.config[CONFIG_SPEECH_OUTPUT_AZURE_ENABLED],
+            "useHuggingFace": current_app.config[CONFIG_USE_HUGGINGFACE],
         }
     )
 
@@ -558,6 +560,7 @@ async def setup_clients():
     current_app.config[CONFIG_AUTH_CLIENT] = auth_helper
 
     current_app.config[CONFIG_GPT4V_DEPLOYED] = bool(USE_GPT4V)
+    current_app.config[CONFIG_USE_HUGGINGFACE] = USE_HUGGINGFACE
     current_app.config[CONFIG_SEMANTIC_RANKER_DEPLOYED] = AZURE_SEARCH_SEMANTIC_RANKER != "disabled"
     current_app.config[CONFIG_VECTOR_SEARCH_ENABLED] = os.getenv("USE_VECTORS", "").lower() != "false"
     current_app.config[CONFIG_USER_UPLOAD_ENABLED] = bool(USE_USER_UPLOAD)

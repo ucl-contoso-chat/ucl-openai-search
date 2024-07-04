@@ -43,7 +43,7 @@ const Chat = () => {
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
     const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>(RetrievalMode.Hybrid);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
-    const [shouldStream, setShouldStream] = useState<boolean>(false);
+    const [shouldStream, setShouldStream] = useState<boolean>(true);
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
@@ -75,6 +75,7 @@ const Chat = () => {
     const [showSpeechInput, setShowSpeechInput] = useState<boolean>(false);
     const [showSpeechOutputBrowser, setShowSpeechOutputBrowser] = useState<boolean>(false);
     const [showSpeechOutputAzure, setShowSpeechOutputAzure] = useState<boolean>(false);
+    const [useHuggingFace, setUseHuggingFace] = useState<boolean>(false);
 
     const getConfig = async () => {
         configApi().then(config => {
@@ -89,6 +90,7 @@ const Chat = () => {
             setShowSpeechInput(config.showSpeechInput);
             setShowSpeechOutputBrowser(config.showSpeechOutputBrowser);
             setShowSpeechOutputAzure(config.showSpeechOutputAzure);
+            setUseHuggingFace(config.useHuggingFace);
         });
     };
 
@@ -177,12 +179,19 @@ const Chat = () => {
                 // ChatAppProtocol: Client must pass on any session state received from the server
                 session_state: answers.length ? answers[answers.length - 1][1].session_state : null
             };
+            let currentShouldStream = shouldStream;
+            if (useHuggingFace) {
+                currentShouldStream = false;
+                setShouldStream(false);
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
 
-            const response = await chatApi(request, shouldStream, token);
+            console.log("useHuggingFace: " + useHuggingFace);
+            const response = await chatApi(request, currentShouldStream, token);
             if (!response.body) {
                 throw Error("No response body");
             }
-            if (shouldStream) {
+            if (currentShouldStream) {
                 const parsedResponse: ChatAppResponse = await handleAsyncRequest(question, answers, response.body);
                 setAnswers([...answers, [question, parsedResponse]]);
             } else {

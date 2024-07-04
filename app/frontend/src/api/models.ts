@@ -86,6 +86,7 @@ export type Config = {
     showSpeechInput: boolean;
     showSpeechOutputBrowser: boolean;
     showSpeechOutputAzure: boolean;
+    useHuggingFace: boolean;
 };
 
 export type SimpleAPIResponse = {
