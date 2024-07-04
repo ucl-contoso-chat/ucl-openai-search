@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-    evaluation:
+    model-evaluation:
         runs-on: ubuntu-latest
         strategy:
           matrix:
@@ -31,7 +31,7 @@ jobs:
             with:
               python-version: ${{ matrix.python_version }}
               architecture: x64
-          - name: Run evaluations
+          - name: Run AI Rag Evaluations
             working-directory: ./evaluation
             run: |
               pip install -r scripts/requirements.txt
@@ -45,6 +45,15 @@ jobs:
               AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
               AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}
               AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
+          - name: Run Red Teaming Evaluations
+            working-directory: ./evaluation/red_teaming
+            run: |
+              pip install -r requirements.txt
+              AZURE_OPENAI_CHAT_ENDPOINT=$AZURE_OPENAI_CHAT_ENDPOINT AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT python red_teaming.py
+            env:
+              AZURE_OPENAI_CHAT_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
+              AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+          
           - name: Dump results
             uses: actions/upload-artifact@v4
             with:
