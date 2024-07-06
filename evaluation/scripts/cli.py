@@ -5,6 +5,7 @@ from typing import Optional
 import dotenv
 import typer
 from rich.logging import RichHandler
+import asyncio
 
 from . import service_setup
 from .evaluate import run_evaluate_from_config
@@ -12,6 +13,7 @@ from .generate import (
     generate_test_qa_answer,
     generate_test_qa_data,
 )
+from .red_teaming import run_red_teaming
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -91,6 +93,9 @@ def generate_answers(
         output_file=Path.cwd() / output,
     )
 
-
+@app.command()
+def red_teaming():
+    asyncio.run(run_red_teaming())
+    
 def cli():
     app()
