@@ -1,6 +1,9 @@
 name: Full Model Evaluation
 
 on:
+  push:
+    branches:
+      - ci
   workflow_call:
   workflow_dispatch:
     inputs:
