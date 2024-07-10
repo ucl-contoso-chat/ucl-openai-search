@@ -10,6 +10,8 @@ from promptflow.core import (
     ModelConfiguration,
     OpenAIModelConfiguration,
 )
+from pyrit.prompt_target import AzureOpenAIChatTarget, AzureMLChatTarget, PromptChatTarget, OpenAIChatTarget
+from pyrit.chat_message_normalizer import ChatMessageNormalizer, ChatMessageNop
 
 logger = logging.getLogger("scripts")
 
@@ -137,3 +139,37 @@ def get_openai_client(oai_config: ModelConfiguration):
         return openai.OpenAI(api_key=oai_config.api_key, organization=oai_config.organization)
     else:
         raise ValueError(f"Unsupported OpenAI configuration type: {type(oai_config)}")
+
+
+def get_openai_target() -> PromptChatTarget:
+    if os.environ["OPENAI_HOST"] == "": 
+        logger.info("Using Azure OpenAI Chat Target")
+        deployment= os.environ["AZURE_OPENAI_EVAL_DEPLOYMENT"]
+        endpoint= os.environ["AZURE_OPENAI_EVAL_ENDPOINT"]
+        if api_key := os.environ.get("AZURE_OPENAI_KEY"):
+            return AzureOpenAIChatTarget(
+                deployment_name=deployment,
+                endpoint_uri=endpoint,
+                api_key=api_key,
+            )
+        else:
+            return AzureOpenAIChatTarget(
+                deployment_name=deployment,
+                endpoint_uri=endpoint,
+                use_aad_auth=True
+            )
+    else:
+        logger.info("Using OpenAI Chat Target")
+        return OpenAIChatTarget(
+            api_key=os.environ["OPENAICOM_KEY"]
+        )
+    
+
+def get_azure_ml_chat_target(chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop) -> AzureMLChatTarget:
+    endpoint=os.environ["AZURE_ML_ENDPOINT"]
+    api_key=os.environ["AZURE_ML_MANAGED_KEY"]
+    return AzureMLChatTarget(
+        endpoint_uri=endpoint, 
+        api_key=api_key,
+        chat_message_normalizer=chat_message_normalizer)
+    

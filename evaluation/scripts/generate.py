@@ -55,3 +55,45 @@ def generate_test_qa_data(
         for item in qa:
             f.write(json.dumps(item) + "\n")
 
+def generate_test_qa_answer(
+    openai_config,
+    question_path: Path,
+    output_file: Path,
+    using_huggingface: bool = False
+):
+    logger.info("Generating answers based on the quesion of %s", question_path)
+    with open(question_path, encoding="utf-8") as f:
+        questions = [json.loads(line) for line in f.readlines()]
+
+    if not using_huggingface:
+        logger.info("Using Azure OpenAI Service")
+        openai_client = service_setup.get_openai_client(openai_config)
+
+        for question in questions:
+            response = openai_client.chat.completions.create(
+                model=openai_config.model,
+                messages=[
+                        {
+                            "role": "user",
+                            "content": f"{question['question']}",
+                        }
+                    ],
+                n=1,
+            max_tokens=get_token_limit(openai_config.model),
+            temperature=0.3,
+            )
+            answer = response.choices[0].message.content.split("\n")[0]
+            print(answer)
+            question["answer"] = answer
+    else:
+        # TODO: Implement Hugging Face Service
+        logger.info("Using Hugging Face Service")
+
+    logger.info("Writing %d questions with answer to %s", len(questions), output_file)
+
+    directory = Path(output_file).parent
+    if not directory.exists():
+        directory.mkdir(parents=True)
+    with open(output_file, "w", encoding="utf-8") as f:
+        for item in questions:
+            f.write(json.dumps(item) + "\n")
