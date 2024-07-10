@@ -134,16 +134,6 @@ def load_jsonl(path: Path) -> list[dict]:
         return [json.loads(line) for line in f.readlines()]
     
     
-# def load_jsonl(file_path):
-#     with open(file_path, 'r', encoding='utf-8') as f:
-#         lines = f.readlines()
-#         if not lines:
-#             raise ValueError("Input file is empty")
-#         try:
-#             return [json.loads(line) for line in lines]
-#         except json.JSONDecodeError as e:
-#             print(f"Error decoding JSON on line {lines.index(line)+1}: {line}")
-#             raise e
 
 
 def run_evaluation(
@@ -165,38 +155,7 @@ def run_evaluation(
         logger.info("Limiting evaluation to %s questions", num_questions)
         testdata = testdata[:num_questions]
 
-    # logger.info("Sending a test question to the target to ensure it is running...")
-    # try:
-    #     question = "What information is in your knowledge base?"
-    #     target_data = send_question_to_target(
-    #         question,
-    #         target_url,
-    #         target_parameters,
-    #         raise_error=True,
-    #         response_answer_jmespath=target_response_answer_jmespath,
-    #         response_context_jmespath=target_response_context_jmespath,
-    #     )
-    #     logger.info(
-    #         'Successfully received response from target for question: "%s"\n"answer": "%s"\n"context": "%s"',
-    #         truncate_for_log(question),
-    #         truncate_for_log(target_data["answer"]),
-    #         truncate_for_log(target_data["context"]),
-    #     )
-    # except Exception as e:
-    #     logger.error("Failed to send a test question to the target due to error: \n%s", e)
-    #     return False
 
-    # logger.info("Sending a test chat completion to the GPT deployment to ensure it is running...")
-    # try:
-    #     gpt_response = service_setup.get_openai_client(openai_config).chat.completions.create(
-    #         model=openai_config.model,
-    #         messages=[{"role": "user", "content": "Hello!"}],
-    #         n=1,
-    #     )
-    #     logger.info('Successfully received response from GPT: "%s"', gpt_response.choices[0].message.content)
-    # except Exception as e:
-    #     logger.error("Failed to send a test chat completion to the GPT deployment due to error: \n%s", e)
-    #     return False
 
     logger.info("Starting evaluation...")
     for metric in requested_metrics:

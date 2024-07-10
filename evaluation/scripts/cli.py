@@ -21,8 +21,7 @@ logging.basicConfig(
     level=logging.WARNING, format="%(message)s", datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
 )
 logger = logging.getLogger("scripts")
-# We only set the level to INFO for our logger,
-# to avoid seeing the noisy INFO level logs from the Azure SDKs
+
 logger.setLevel(logging.INFO)
 
 dotenv.load_dotenv(override=True)
@@ -68,30 +67,18 @@ def generate(
     )
 
 
+
+
 # @app.command()
-# def generate_dontknows(
+# def generate_answers(
 #     input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
 #     output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
-#     numquestions: int = typer.Option(help="Number of questions to generate", default=40),
 # ):
-#     generate_dontknows_qa_data(
+#     generate_test_qa_answer(
 #         openai_config=service_setup.get_openai_config(),
-#         num_questions_total=numquestions,
-#         input_file=Path.cwd() / input,
+#         question_path=Path.cwd() / input,
 #         output_file=Path.cwd() / output,
 #     )
-
-
-@app.command()
-def generate_answers(
-    input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
-    output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
-):
-    generate_test_qa_answer(
-        openai_config=service_setup.get_openai_config(),
-        question_path=Path.cwd() / input,
-        output_file=Path.cwd() / output,
-    )
 
 @app.command()
 def red_teaming():
