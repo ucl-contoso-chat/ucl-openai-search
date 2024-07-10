@@ -140,7 +140,6 @@ def run_evaluation(
     openai_config: dict,
     testdata_path: Path,
     results_dir: Path,
-    latest_dir: Path,
     target_url: str,
     passing_rate: int,
     target_parameters={},
@@ -193,22 +192,17 @@ def run_evaluation(
 
 
     questions_with_ratings = []
-    # token= azure_login()
     for row in track(testdata, description="Processing..."):
         questions_with_ratings.append(evaluate_row(row))
 
     logger.info("Evaluation calls have completed. Calculating overall metrics now...")
     # Make the results directory if it doesn't exist
     results_dir.mkdir(parents=True, exist_ok=True)
-    latest_dir.mkdir(parents=True, exist_ok=True)
     # Save the results
     with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
         for row in questions_with_ratings:
             results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
             
-    with open(latest_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
-        for row in questions_with_ratings:
-            results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
     # Calculate aggregate metrics
     df = pd.DataFrame(questions_with_ratings)
@@ -220,10 +214,6 @@ def run_evaluation(
     with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summary, indent=4))
         
-    with open(latest_dir / "summary.json", "w", encoding="utf-8") as summary_file:
-        summary_file.write(json.dumps(summary, indent=4))
-        logger.info("Aggregated results:")
-        logger.info(json.dumps(summary, indent=4))
 
     with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
         parameters = {
@@ -264,7 +254,6 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         config = json.load(f)
         process_config(config)
         
-    latest_dir=working_dir/Path(config["latest_dir"])
 
     results_dir = working_dir / Path(config["results_dir"])
     passing_rate=config["passing_rate"]
@@ -273,7 +262,6 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         openai_config=service_setup.get_openai_config(),
         testdata_path=working_dir / config["testdata_path"],
         results_dir=results_dir,
-        latest_dir=latest_dir,
         target_url=config["target_url"],
         target_parameters=config.get("target_parameters", {}),
         num_questions=num_questions,

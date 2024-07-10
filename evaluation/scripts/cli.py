@@ -66,20 +66,6 @@ def generate(
         output_file=Path.cwd() / output,
     )
 
-
-
-
-# @app.command()
-# def generate_answers(
-#     input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
-#     output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
-# ):
-#     generate_test_qa_answer(
-#         openai_config=service_setup.get_openai_config(),
-#         question_path=Path.cwd() / input,
-#         output_file=Path.cwd() / output,
-#     )
-
 @app.command()
 def red_teaming(
     scorer_path: Path =  typer.Option(exists=True, dir_okay=False, file_okay=True, default="scorer_definitions/key_logger_classifier.yaml"),
