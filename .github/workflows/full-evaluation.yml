@@ -6,17 +6,17 @@ on:
       provision:
         description: 'Whether to provision the deployment'
         required: true
-        default: true
+        default: false
         type: boolean
       deploy:
         description: 'Whether to deploy the application'
         required: true
-        default: true
+        default: false
         type: boolean
       purge:
         description: 'Whether to purge the deployment after evaluation'
         required: true
-        default: true
+        default: false
         type: boolean
 
 permissions:
@@ -153,6 +153,7 @@ jobs:
               AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
           - name: Provision Infrastructure
+            if: ${{ github.event.inputs.provision == true }}
             run: azd provision --no-prompt
             env:
               AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
@@ -160,6 +161,7 @@ jobs:
               AZURE_CLIENT_APP_SECRET: ${{ secrets.AZURE_CLIENT_APP_SECRET }}
 
           - name: Deploy Application
+            if: ${{ github.event.inputs.deploy == true }}
             run: azd deploy --no-prompt
 
           #--------------------------Run Evaluation--------------------------------
@@ -202,4 +204,5 @@ jobs:
                 ./evaluation/latest/eval_results.json
           #--------------------------Cleanup--------------------------------
           - name: Cleanup
+            if: ${{ github.event.inputs.purge == true }}
             run: azd down --no-prompt --purge
