@@ -55,7 +55,9 @@ def get_openai_config() -> ModelConfiguration:
         else:
             logger.info("Using Azure OpenAI Service with Azure Developer CLI Credential")
             openai_config = AzureOpenAIModelConfiguration(
-                azure_endpoint=azure_endpoint, azure_deployment=azure_deployment, api_version=api_version
+                azure_endpoint=azure_endpoint,
+                azure_deployment=azure_deployment,
+                api_version=api_version,
             )
             # PromptFlow will call DefaultAzureCredential behind the scenes
         openai_config.model = os.environ["OPENAI_GPT_MODEL"]
@@ -122,7 +124,8 @@ def get_openai_client(oai_config: ModelConfiguration):
         azure_token_provider = None
         if not os.environ.get("AZURE_OPENAI_KEY"):
             azure_token_provider = get_bearer_token_provider(
-                AzureDeveloperCliCredential(), "https://cognitiveservices.azure.com/.default"
+                AzureDeveloperCliCredential(),
+                "https://cognitiveservices.azure.com/.default",
             )
         logger.info(azure_token_provider)
         return openai.AzureOpenAI(

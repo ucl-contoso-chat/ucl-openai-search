@@ -9,4 +9,3 @@ openai-messages-token-helper==0.1.5
 pandas
 rich
 jmespath
-pyrit

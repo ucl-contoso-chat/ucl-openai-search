@@ -14,7 +14,7 @@ jobs:
         strategy:
           matrix:
             os: ["ubuntu-20.04"]
-            python_version: ["3.11"]
+            python_version: ["3.12"]
         env:
           OPENAI_HOST: ${{ vars.OPENAI_HOST }}
           OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
@@ -31,11 +31,47 @@ jobs:
             with:
               python-version: ${{ matrix.python_version }}
               architecture: x64
+          - name: Log in with Azure (Federated Credentials)
+            if: ${{ env.AZURE_CLIENT_ID != '' }}
+            run: |
+              azd auth login `
+                --client-id "$Env:AZURE_CLIENT_ID" `
+                --federated-credential-provider "github" `
+                --tenant-id "$Env:AZURE_TENANT_ID"
+            shell: pwsh
+
+          - name: Log in with Azure (Client Credentials)
+            if: ${{ env.AZURE_CREDENTIALS != '' }}
+            run: |
+              $info = $Env:AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
+              Write-Host "::add-mask::$($info.clientSecret)"
+
+              azd auth login `
+                --client-id "$($info.clientId)" `
+                --client-secret "$($info.clientSecret)" `
+                --tenant-id "$($info.tenantId)"
+            shell: pwsh
+            env:
+              AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+
+          - name: Provision Infrastructure
+            run: azd provision --no-prompt
+            env:
+              AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+              AZURE_SERVER_APP_SECRET: ${{ secrets.AZURE_SERVER_APP_SECRET }}
+              AZURE_CLIENT_APP_SECRET: ${{ secrets.AZURE_CLIENT_APP_SECRET }}
+
+          - name: Deploy Application
+            run: azd deploy --no-prompt
+          - name: Install dependencies
+            working-directory: ./evaluation
+            run: |
+              python -m pip install --upgrade pip
+              pip install -r scripts/requirements.txt
           - name: Run AI Rag Evaluations
             working-directory: ./evaluation
             run: |
-              pip install -r scripts/requirements.txt
-              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID AZURE_OPENAI_KEY=$AZURE_OPENAI_KEY python -m scripts evaluate --config=./example_config.json --numquestions=10 
+              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID AZURE_OPENAI_KEY=$AZURE_OPENAI_KEY python -m scripts evaluate --config=./example_config.json --numquestions=10
             env:
               OPENAI_HOST: ${{ vars.OPENAI_HOST }}
               OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
@@ -48,16 +84,15 @@ jobs:
           - name: Run Red Teaming Evaluations
             working-directory: ./evaluation
             run: |
-              pip install -r requirements.txt
               AZURE_OPENAI_CHAT_ENDPOINT=$AZURE_OPENAI_CHAT_ENDPOINT AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT python -m scripts red-teaming
             env:
               AZURE_OPENAI_CHAT_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
               AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
-          
+
           - name: Dump results
             uses: actions/upload-artifact@v4
             with:
               name: evaluation-results
-              path: | 
+              path: |
                 ./evaluation/latest/summary.json
                 ./evaluation/latest/eval_results.json

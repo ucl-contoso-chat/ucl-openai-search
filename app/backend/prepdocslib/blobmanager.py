@@ -47,7 +47,9 @@ class BlobManager:
 
     async def upload_blob(self, file: File) -> Optional[List[str]]:
         async with BlobServiceClient(
-            account_url=self.endpoint, credential=self.credential, max_single_put_size=4 * 1024 * 1024
+            account_url=self.endpoint,
+            credential=self.credential,
+            max_single_put_size=4 * 1024 * 1024,
         ) as service_client, service_client.get_container_client(self.container) as container_client:
             if not await container_client.exists():
                 await container_client.create_container()
@@ -72,7 +74,10 @@ class BlobManager:
         return f"ResourceId=/subscriptions/{self.subscriptionId}/resourceGroups/{self.resourceGroup}/providers/Microsoft.Storage/storageAccounts/{self.account};"
 
     async def upload_pdf_blob_images(
-        self, service_client: BlobServiceClient, container_client: ContainerClient, file: File
+        self,
+        service_client: BlobServiceClient,
+        container_client: ContainerClient,
+        file: File,
     ) -> List[str]:
         with open(file.content.name, "rb") as reopened_file:
             reader = PdfReader(reopened_file)

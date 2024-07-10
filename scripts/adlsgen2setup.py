@@ -83,7 +83,8 @@ class AdlsGen2Setup:
                             logging.error(f"File {file} has unknown directory {directory}, exiting...")
                             return
                         await self.upload_file(
-                            directory_client=directories[directory], file_path=os.path.join(self.data_directory, file)
+                            directory_client=directories[directory],
+                            file_path=os.path.join(self.data_directory, file),
                         )
 
                     logging.info("Setting access control...")
@@ -108,7 +109,8 @@ class AdlsGen2Setup:
 
     def create_service_client(self):
         return DataLakeServiceClient(
-            account_url=f"https://{self.storage_account_name}.dfs.core.windows.net", credential=self.credentials
+            account_url=f"https://{self.storage_account_name}.dfs.core.windows.net",
+            credential=self.credentials,
         )
 
     async def upload_file(self, directory_client: DataLakeDirectoryClient, file_path: str):
@@ -180,7 +182,9 @@ if __name__ == "__main__":
         help="Whether or not the sample groups created are security enabled in Microsoft Entra",
     )
     parser.add_argument(
-        "--data-access-control", required=True, help="JSON file describing access control for the sample data"
+        "--data-access-control",
+        required=True,
+        help="JSON file describing access control for the sample data",
     )
     parser.add_argument("--verbose", "-v", required=False, action="store_true", help="Verbose output")
     args = parser.parse_args()

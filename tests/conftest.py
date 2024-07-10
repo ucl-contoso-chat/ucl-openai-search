@@ -66,17 +66,29 @@ def mock_compute_embeddings_call(monkeypatch):
 
 @pytest.fixture
 def mock_speech_success(monkeypatch):
-    monkeypatch.setattr(azure.cognitiveservices.speech.SpeechSynthesizer, "speak_text_async", mock_speak_text_success)
+    monkeypatch.setattr(
+        azure.cognitiveservices.speech.SpeechSynthesizer,
+        "speak_text_async",
+        mock_speak_text_success,
+    )
 
 
 @pytest.fixture
 def mock_speech_cancelled(monkeypatch):
-    monkeypatch.setattr(azure.cognitiveservices.speech.SpeechSynthesizer, "speak_text_async", mock_speak_text_cancelled)
+    monkeypatch.setattr(
+        azure.cognitiveservices.speech.SpeechSynthesizer,
+        "speak_text_async",
+        mock_speak_text_cancelled,
+    )
 
 
 @pytest.fixture
 def mock_speech_failed(monkeypatch):
-    monkeypatch.setattr(azure.cognitiveservices.speech.SpeechSynthesizer, "speak_text_async", mock_speak_text_failed)
+    monkeypatch.setattr(
+        azure.cognitiveservices.speech.SpeechSynthesizer,
+        "speak_text_async",
+        mock_speak_text_failed,
+    )
 
 
 @pytest.fixture
@@ -112,10 +124,22 @@ def mock_openai_chatcompletion(monkeypatch):
             chunk_id = "test-id"
             model = "gpt-35-turbo"
             self.responses = [
-                {"object": "chat.completion.chunk", "choices": [], "id": chunk_id, "model": model, "created": 1},
                 {
                     "object": "chat.completion.chunk",
-                    "choices": [{"delta": {"role": "assistant"}, "index": 0, "finish_reason": None}],
+                    "choices": [],
+                    "id": chunk_id,
+                    "model": model,
+                    "created": 1,
+                },
+                {
+                    "object": "chat.completion.chunk",
+                    "choices": [
+                        {
+                            "delta": {"role": "assistant"},
+                            "index": 0,
+                            "finish_reason": None,
+                        }
+                    ],
                     "id": chunk_id,
                     "model": model,
                     "created": 1,
@@ -129,7 +153,10 @@ def mock_openai_chatcompletion(monkeypatch):
                         "object": "chat.completion.chunk",
                         "choices": [
                             {
-                                "delta": {"role": "assistant", "content": parts[0] + "<<"},
+                                "delta": {
+                                    "role": "assistant",
+                                    "content": parts[0] + "<<",
+                                },
                                 "index": 0,
                                 "finish_reason": None,
                             }
@@ -143,7 +170,11 @@ def mock_openai_chatcompletion(monkeypatch):
                     {
                         "object": "chat.completion.chunk",
                         "choices": [
-                            {"delta": {"role": "assistant", "content": parts[1]}, "index": 0, "finish_reason": None}
+                            {
+                                "delta": {"role": "assistant", "content": parts[1]},
+                                "index": 0,
+                                "finish_reason": None,
+                            }
                         ],
                         "id": chunk_id,
                         "model": model,
@@ -153,7 +184,13 @@ def mock_openai_chatcompletion(monkeypatch):
                 self.responses.append(
                     {
                         "object": "chat.completion.chunk",
-                        "choices": [{"delta": {"role": None, "content": None}, "index": 0, "finish_reason": "stop"}],
+                        "choices": [
+                            {
+                                "delta": {"role": None, "content": None},
+                                "index": 0,
+                                "finish_reason": "stop",
+                            }
+                        ],
                         "id": chunk_id,
                         "model": model,
                         "created": 1,
@@ -163,7 +200,13 @@ def mock_openai_chatcompletion(monkeypatch):
                 self.responses.append(
                     {
                         "object": "chat.completion.chunk",
-                        "choices": [{"delta": {"content": answer}, "index": 0, "finish_reason": None}],
+                        "choices": [
+                            {
+                                "delta": {"content": answer},
+                                "index": 0,
+                                "finish_reason": None,
+                            }
+                        ],
                         "id": chunk_id,
                         "model": model,
                         "created": 1,
@@ -199,7 +242,9 @@ def mock_openai_chatcompletion(monkeypatch):
                 object="chat.completion",
                 choices=[
                     Choice(
-                        message=ChatCompletionMessage(role="assistant", content=answer), finish_reason="stop", index=0
+                        message=ChatCompletionMessage(role="assistant", content=answer),
+                        finish_reason="stop",
+                        index=0,
                     )
                 ],
                 id="test-123",
@@ -437,7 +482,11 @@ def mock_validate_token_success(monkeypatch):
     async def mock_validate_access_token(self, token):
         pass
 
-    monkeypatch.setattr(core.authentication.AuthenticationHelper, "validate_access_token", mock_validate_access_token)
+    monkeypatch.setattr(
+        core.authentication.AuthenticationHelper,
+        "validate_access_token",
+        mock_validate_access_token,
+    )
 
 
 @pytest.fixture
@@ -446,10 +495,15 @@ def mock_confidential_client_success(monkeypatch):
         assert kwargs.get("user_assertion") is not None
         scopes = kwargs.get("scopes")
         assert scopes == [AuthenticationHelper.scope]
-        return {"access_token": "MockToken", "id_token_claims": {"oid": "OID_X", "groups": ["GROUP_Y", "GROUP_Z"]}}
+        return {
+            "access_token": "MockToken",
+            "id_token_claims": {"oid": "OID_X", "groups": ["GROUP_Y", "GROUP_Z"]},
+        }
 
     monkeypatch.setattr(
-        msal.ConfidentialClientApplication, "acquire_token_on_behalf_of", mock_acquire_token_on_behalf_of
+        msal.ConfidentialClientApplication,
+        "acquire_token_on_behalf_of",
+        mock_acquire_token_on_behalf_of,
     )
 
     def mock_init(self, *args, **kwargs):
@@ -467,7 +521,9 @@ def mock_confidential_client_unauthorized(monkeypatch):
         return {"error": "unauthorized"}
 
     monkeypatch.setattr(
-        msal.ConfidentialClientApplication, "acquire_token_on_behalf_of", mock_acquire_token_on_behalf_of
+        msal.ConfidentialClientApplication,
+        "acquire_token_on_behalf_of",
+        mock_acquire_token_on_behalf_of,
     )
 
     def mock_init(self, *args, **kwargs):
@@ -492,7 +548,9 @@ def mock_confidential_client_overage(monkeypatch):
         }
 
     monkeypatch.setattr(
-        msal.ConfidentialClientApplication, "acquire_token_on_behalf_of", mock_acquire_token_on_behalf_of
+        msal.ConfidentialClientApplication,
+        "acquire_token_on_behalf_of",
+        mock_acquire_token_on_behalf_of,
     )
 
     def mock_init(self, *args, **kwargs):
@@ -512,7 +570,10 @@ def mock_list_groups_success(monkeypatch):
                 self.num = 1
                 return MockResponse(
                     text=json.dumps(
-                        {"@odata.nextLink": "https://odatanextlink.com", "value": [{"id": "OVERAGE_GROUP_Y"}]}
+                        {
+                            "@odata.nextLink": "https://odatanextlink.com",
+                            "value": [{"id": "OVERAGE_GROUP_Y"}],
+                        }
                     ),
                     status=200,
                 )
@@ -579,14 +640,22 @@ def mock_data_lake_service_client(monkeypatch):
 
     monkeypatch.setattr(azure.storage.filedatalake.DataLakeServiceClient, "__init__", mock_init)
     monkeypatch.setattr(
-        azure.storage.filedatalake.DataLakeServiceClient, "get_file_system_client", mock_get_file_system_client
+        azure.storage.filedatalake.DataLakeServiceClient,
+        "get_file_system_client",
+        mock_get_file_system_client,
     )
 
-    monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeServiceClient, "__init__", mock_init_service_client_aio)
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.DataLakeServiceClient,
+        "__init__",
+        mock_init_service_client_aio,
+    )
     monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeServiceClient, "__aenter__", mock_aenter)
     monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeServiceClient, "__aexit__", mock_aexit)
     monkeypatch.setattr(
-        azure.storage.filedatalake.aio.DataLakeServiceClient, "get_file_system_client", mock_get_file_system_client_aio
+        azure.storage.filedatalake.aio.DataLakeServiceClient,
+        "get_file_system_client",
+        mock_get_file_system_client_aio,
     )
 
     def mock_init_filesystem_aio(self, *args, **kwargs):
@@ -623,19 +692,37 @@ def mock_data_lake_service_client(monkeypatch):
         return MockAsyncPageIterator([azure.storage.filedatalake.PathProperties(name=path) for path in paths])
 
     monkeypatch.setattr(azure.storage.filedatalake.FileSystemClient, "__init__", mock_init)
-    monkeypatch.setattr(azure.storage.filedatalake.FileSystemClient, "get_file_client", mock_get_file_client)
+    monkeypatch.setattr(
+        azure.storage.filedatalake.FileSystemClient,
+        "get_file_client",
+        mock_get_file_client,
+    )
 
-    monkeypatch.setattr(azure.storage.filedatalake.aio.FileSystemClient, "__init__", mock_init_filesystem_aio)
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.FileSystemClient,
+        "__init__",
+        mock_init_filesystem_aio,
+    )
     monkeypatch.setattr(azure.storage.filedatalake.aio.FileSystemClient, "__aenter__", mock_aenter)
     monkeypatch.setattr(azure.storage.filedatalake.aio.FileSystemClient, "__aexit__", mock_aexit)
     monkeypatch.setattr(azure.storage.filedatalake.aio.FileSystemClient, "get_paths", mock_get_paths)
     monkeypatch.setattr(azure.storage.filedatalake.aio.FileSystemClient, "exists", mock_exists_aio)
     monkeypatch.setattr(azure.storage.filedatalake.aio.FileSystemClient, "get_paths", mock_get_paths)
-    monkeypatch.setattr(azure.storage.filedatalake.aio.FileSystemClient, "get_file_client", mock_get_file_client)
     monkeypatch.setattr(
-        azure.storage.filedatalake.aio.FileSystemClient, "create_file_system", mock_create_filesystem_aio
+        azure.storage.filedatalake.aio.FileSystemClient,
+        "get_file_client",
+        mock_get_file_client,
     )
-    monkeypatch.setattr(azure.storage.filedatalake.aio.FileSystemClient, "create_directory", mock_create_directory_aio)
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.FileSystemClient,
+        "create_file_system",
+        mock_create_filesystem_aio,
+    )
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.FileSystemClient,
+        "create_directory",
+        mock_create_directory_aio,
+    )
     monkeypatch.setattr(
         azure.storage.filedatalake.aio.FileSystemClient,
         "_get_root_directory_client",
@@ -670,20 +757,36 @@ def mock_data_lake_service_client(monkeypatch):
         pass
 
     monkeypatch.setattr(azure.storage.filedatalake.DataLakeFileClient, "__init__", mock_init_file)
-    monkeypatch.setattr(azure.storage.filedatalake.DataLakeFileClient, "download_file", mock_download_file)
     monkeypatch.setattr(
-        azure.storage.filedatalake.aio.DataLakeFileClient, "get_access_control", mock_get_access_control
+        azure.storage.filedatalake.DataLakeFileClient,
+        "download_file",
+        mock_download_file,
+    )
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.DataLakeFileClient,
+        "get_access_control",
+        mock_get_access_control,
     )
 
     monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeFileClient, "__init__", mock_init_file)
     monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeFileClient, "url", property(mock_url))
     monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeFileClient, "__aenter__", mock_aenter)
     monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeFileClient, "__aexit__", mock_aexit)
-    monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeFileClient, "download_file", mock_download_file_aio)
     monkeypatch.setattr(
-        azure.storage.filedatalake.aio.DataLakeFileClient, "get_access_control", mock_get_access_control
+        azure.storage.filedatalake.aio.DataLakeFileClient,
+        "download_file",
+        mock_download_file_aio,
     )
-    monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeFileClient, "upload_data", mock_upload_data_aio)
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.DataLakeFileClient,
+        "get_access_control",
+        mock_get_access_control,
+    )
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.DataLakeFileClient,
+        "upload_data",
+        mock_upload_data_aio,
+    )
 
     def mock_init_directory(self, path, *args, **kwargs):
         self.path = path
@@ -708,11 +811,21 @@ def mock_data_lake_service_client(monkeypatch):
     async def mock_close_aio(self, *args, **kwargs):
         pass
 
-    monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeDirectoryClient, "__init__", mock_init_directory)
-    monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeDirectoryClient, "__aenter__", mock_aenter)
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.DataLakeDirectoryClient,
+        "__init__",
+        mock_init_directory,
+    )
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.DataLakeDirectoryClient,
+        "__aenter__",
+        mock_aenter,
+    )
     monkeypatch.setattr(azure.storage.filedatalake.aio.DataLakeDirectoryClient, "__aexit__", mock_aexit)
     monkeypatch.setattr(
-        azure.storage.filedatalake.aio.DataLakeDirectoryClient, "get_file_client", mock_directory_get_file_client
+        azure.storage.filedatalake.aio.DataLakeDirectoryClient,
+        "get_file_client",
+        mock_directory_get_file_client,
     )
     monkeypatch.setattr(
         azure.storage.filedatalake.aio.DataLakeDirectoryClient,
@@ -729,4 +842,8 @@ def mock_data_lake_service_client(monkeypatch):
     monkeypatch.setattr(azure.storage.filedatalake.StorageStreamDownloader, "readinto", mock_readinto)
 
     monkeypatch.setattr(azure.storage.filedatalake.aio.StorageStreamDownloader, "__init__", mock_init)
-    monkeypatch.setattr(azure.storage.filedatalake.aio.StorageStreamDownloader, "readinto", mock_readinto)
+    monkeypatch.setattr(
+        azure.storage.filedatalake.aio.StorageStreamDownloader,
+        "readinto",
+        mock_readinto,
+    )

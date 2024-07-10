@@ -67,7 +67,10 @@ class AuthenticationHelper:
             self.enable_global_documents = enable_global_documents
             self.enable_unauthenticated_access = enable_unauthenticated_access
             self.confidential_client = ConfidentialClientApplication(
-                server_app_id, authority=self.authority, client_credential=server_app_secret, token_cache=TokenCache()
+                server_app_id,
+                authority=self.authority,
+                client_credential=server_app_secret,
+                token_cache=TokenCache(),
             )
         else:
             self.has_auth_fields = False
@@ -145,7 +148,8 @@ class AuthenticationHelper:
 
         if (use_oid_security_filter or use_groups_security_filter) and not self.has_auth_fields:
             raise AuthError(
-                error="oids and groups must be defined in the search index to use authentication", status_code=400
+                error="oids and groups must be defined in the search index to use authentication",
+                status_code=400,
             )
 
         oid_security_filter = (
@@ -219,7 +223,8 @@ class AuthenticationHelper:
             # Use the on-behalf-of-flow to acquire another token for use with Microsoft Graph
             # See https://learn.microsoft.com/entra/identity-platform/v2-oauth2-on-behalf-of-flow for more information
             graph_resource_access_token = self.confidential_client.acquire_token_on_behalf_of(
-                user_assertion=auth_token, scopes=["https://graph.microsoft.com/.default"]
+                user_assertion=auth_token,
+                scopes=["https://graph.microsoft.com/.default"],
             )
             if "error" in graph_resource_access_token:
                 raise AuthError(error=str(graph_resource_access_token), status_code=401)
@@ -227,7 +232,10 @@ class AuthenticationHelper:
             # Read the claims from the response. The oid and groups claims are used for security filtering
             # https://learn.microsoft.com/entra/identity-platform/id-token-claims-reference
             id_token_claims = graph_resource_access_token["id_token_claims"]
-            auth_claims = {"oid": id_token_claims["oid"], "groups": id_token_claims.get("groups", [])}
+            auth_claims = {
+                "oid": id_token_claims["oid"],
+                "groups": id_token_claims.get("groups", []),
+            }
 
             # A groups claim may have been omitted either because it was not added in the application manifest for the API application,
             # or a groups overage claim may have been emitted.
@@ -299,12 +307,19 @@ class AuthenticationHelper:
                         resp_status = resp.status
                         if resp_status in [500, 502, 503, 504]:
                             raise AuthError(
-                                error=f"Failed to get keys info: {await resp.text()}", status_code=resp_status
+                                error=f"Failed to get keys info: {await resp.text()}",
+                                status_code=resp_status,
                             )
                         jwks = await resp.json()
 
         if not jwks or "keys" not in jwks:
-            raise AuthError({"code": "invalid_keys", "description": "Unable to get keys to validate auth token."}, 401)
+            raise AuthError(
+                {
+                    "code": "invalid_keys",
+                    "description": "Unable to get keys to validate auth token.",
+                },
+                401,
+            )
 
         rsa_key = None
         issuer = None
@@ -316,18 +331,38 @@ class AuthenticationHelper:
             audience = unverified_claims.get("aud")
             for key in jwks["keys"]:
                 if key["kid"] == unverified_header["kid"]:
-                    rsa_key = {"kty": key["kty"], "kid": key["kid"], "use": key["use"], "n": key["n"], "e": key["e"]}
+                    rsa_key = {
+                        "kty": key["kty"],
+                        "kid": key["kid"],
+                        "use": key["use"],
+                        "n": key["n"],
+                        "e": key["e"],
+                    }
                     break
         except Exception as exc:
             raise AuthError(
-                {"code": "invalid_header", "description": "Unable to parse authorization token."}, 401
+                {
+                    "code": "invalid_header",
+                    "description": "Unable to parse authorization token.",
+                },
+                401,
             ) from exc
         if not rsa_key:
-            raise AuthError({"code": "invalid_header", "description": "Unable to find appropriate key"}, 401)
+            raise AuthError(
+                {
+                    "code": "invalid_header",
+                    "description": "Unable to find appropriate key",
+                },
+                401,
+            )
 
         if issuer not in self.valid_issuers:
             raise AuthError(
-                {"code": "invalid_header", "description": f"Issuer {issuer} not in {','.join(self.valid_issuers)}"}, 401
+                {
+                    "code": "invalid_header",
+                    "description": f"Issuer {issuer} not in {','.join(self.valid_issuers)}",
+                },
+                401,
             )
 
         if audience not in self.valid_audiences:
@@ -345,10 +380,17 @@ class AuthenticationHelper:
             raise AuthError({"code": "token_expired", "description": "token is expired"}, 401) from jwt_expired_exc
         except JWTClaimsError as jwt_claims_exc:
             raise AuthError(
-                {"code": "invalid_claims", "description": "incorrect claims," "please check the audience and issuer"},
+                {
+                    "code": "invalid_claims",
+                    "description": "incorrect claims," "please check the audience and issuer",
+                },
                 401,
             ) from jwt_claims_exc
         except Exception as exc:
             raise AuthError(
-                {"code": "invalid_header", "description": "Unable to parse authorization token."}, 401
+                {
+                    "code": "invalid_header",
+                    "description": "Unable to parse authorization token.",
+                },
+                401,
             ) from exc

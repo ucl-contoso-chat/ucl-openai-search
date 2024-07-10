@@ -26,7 +26,9 @@ filtered_response = BadRequestError(
         "status": 400,
     },
     response=Response(
-        400, request=Request(method="get", url="https://foo.bar/"), json={"error": {"code": "content_filter"}}
+        400,
+        request=Request(method="get", url="https://foo.bar/"),
+        json={"error": {"code": "content_filter"}},
     ),
 )
 
@@ -37,7 +39,11 @@ contextlength_response = BadRequestError(
         "code": "context_length_exceeded",
         "status": 400,
     },
-    response=Response(400, request=Request(method="get", url="https://foo.bar/"), json={"error": {"code": "429"}}),
+    response=Response(
+        400,
+        request=Request(method="get", url="https://foo.bar/"),
+        json={"error": {"code": "429"}},
+    ),
 )
 
 
@@ -55,7 +61,10 @@ async def test_missing_env_vars():
     with mock.patch.dict(os.environ, clear=True):
         quart_app = app.create_app()
 
-        with pytest.raises(quart.testing.app.LifespanError, match="Error during startup 'AZURE_STORAGE_ACCOUNT'"):
+        with pytest.raises(
+            quart.testing.app.LifespanError,
+            match="Error during startup 'AZURE_STORAGE_ACCOUNT'",
+        ):
             async with quart_app.test_app() as test_app:
                 test_app.test_client()
 
@@ -343,7 +352,9 @@ async def test_chat_handle_exception_contentsafety(client, monkeypatch, snapshot
 async def test_chat_handle_exception_streaming(client, monkeypatch, snapshot, caplog):
     chat_client = client.app.config[app.CONFIG_OPENAI_CLIENT]
     monkeypatch.setattr(
-        chat_client.chat.completions, "create", mock.Mock(side_effect=ZeroDivisionError("something bad happened"))
+        chat_client.chat.completions,
+        "create",
+        mock.Mock(side_effect=ZeroDivisionError("something bad happened")),
     )
 
     response = await client.post(
@@ -558,7 +569,10 @@ async def test_chat_prompt_template(client, snapshot):
         json={
             "messages": [{"content": "What is the capital of France?", "role": "user"}],
             "context": {
-                "overrides": {"retrieval_mode": "text", "prompt_template": "You are a cat."},
+                "overrides": {
+                    "retrieval_mode": "text",
+                    "prompt_template": "You are a cat.",
+                },
             },
         },
     )
@@ -574,7 +588,10 @@ async def test_chat_prompt_template_concat(client, snapshot):
         json={
             "messages": [{"content": "What is the capital of France?", "role": "user"}],
             "context": {
-                "overrides": {"retrieval_mode": "text", "prompt_template": ">>> Meow like a cat."},
+                "overrides": {
+                    "retrieval_mode": "text",
+                    "prompt_template": ">>> Meow like a cat.",
+                },
             },
         },
     )
@@ -630,7 +647,11 @@ async def test_chat_hybrid_semantic_captions(client, snapshot):
         json={
             "messages": [{"content": "What is the capital of France?", "role": "user"}],
             "context": {
-                "overrides": {"retrieval_mode": "hybrid", "semantic_ranker": True, "semantic_captions": True},
+                "overrides": {
+                    "retrieval_mode": "hybrid",
+                    "semantic_ranker": True,
+                    "semantic_captions": True,
+                },
             },
         },
     )
@@ -780,7 +801,10 @@ async def test_chat_with_long_history(client, snapshot, caplog):
                     "content": "Yes, there is a dress code at Contoso Electronics. Look sharp! [employee_handbook-1.pdf]"
                     * 150,
                 },  # 3900 tokens
-                {"role": "user", "content": "What does a product manager do?"},  # 10 tokens
+                {
+                    "role": "user",
+                    "content": "What does a product manager do?",
+                },  # 10 tokens
             ],
             "context": {
                 "overrides": {"retrieval_mode": "text"},
@@ -951,4 +975,7 @@ async def test_format_as_ndjson():
         yield {"b": "Newlines inside \n strings are fine"}
 
     result = [line async for line in app.format_as_ndjson(gen())]
-    assert result == ['{"a": "I ❤️ 🐍"}\n', '{"b": "Newlines inside \\n strings are fine"}\n']
+    assert result == [
+        '{"a": "I ❤️ 🐍"}\n',
+        '{"b": "Newlines inside \\n strings are fine"}\n',
+    ]

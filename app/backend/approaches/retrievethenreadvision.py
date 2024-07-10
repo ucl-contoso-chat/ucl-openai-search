@@ -50,7 +50,7 @@ class RetrieveThenReadVisionApproach(Approach):
         query_language: str,
         query_speller: str,
         vision_endpoint: str,
-        vision_token_provider: Callable[[], Awaitable[str]]
+        vision_token_provider: Callable[[], Awaitable[str]],
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
@@ -82,7 +82,11 @@ class RetrieveThenReadVisionApproach(Approach):
         overrides = context.get("overrides", {})
         auth_claims = context.get("auth_claims", {})
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
-        use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
+        use_vector_search = overrides.get("retrieval_mode") in [
+            "vectors",
+            "hybrid",
+            None,
+        ]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
         use_semantic_captions = True if overrides.get("semantic_captions") else False
         top = overrides.get("top", 3)
@@ -91,8 +95,16 @@ class RetrieveThenReadVisionApproach(Approach):
         filter = self.build_filter(overrides, auth_claims)
 
         vector_fields = overrides.get("vector_fields", ["embedding"])
-        send_text_to_gptvision = overrides.get("gpt4v_input") in ["textAndImages", "texts", None]
-        send_images_to_gptvision = overrides.get("gpt4v_input") in ["textAndImages", "images", None]
+        send_text_to_gptvision = overrides.get("gpt4v_input") in [
+            "textAndImages",
+            "texts",
+            None,
+        ]
+        send_images_to_gptvision = overrides.get("gpt4v_input") in [
+            "textAndImages",
+            "images",
+            None,
+        ]
 
         # If retrieval mode includes vectors, compute an embedding for the query
         vectors = []

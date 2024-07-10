@@ -54,12 +54,23 @@
             ]
           },
           {
-            "name": "Python Test",
+            "name": "Python Test: All",
             "type": "debugpy",
             "request": "launch",
             "module": "pytest",
             "args": [
                 "-v",
+            ],
+          },
+          {
+            "name": "Python Test: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-v",
+                "-s",
+                "${file}"
             ],
           }
     ],

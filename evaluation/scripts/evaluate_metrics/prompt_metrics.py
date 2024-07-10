@@ -13,7 +13,6 @@ logger = logging.getLogger("scripts")
 
 
 class PromptBasedEvaluator:
-
     def __init__(self, model_config, path, name):
         prompty_model_config = {"configuration": model_config}
         self._name = name
@@ -29,7 +28,8 @@ class PromptBasedEvaluator:
                 score = float(match.group())
             else:
                 logging.warning(
-                    "No score found in answer: %s\nMake sure prompty file is correctly formatted.", llm_output
+                    "No score found in answer: %s\nMake sure prompty file is correctly formatted.",
+                    llm_output,
                 )
 
         output = {}
@@ -38,11 +38,12 @@ class PromptBasedEvaluator:
 
 
 class CustomRatingMetric(BaseMetric):
-
     @classmethod
     def evaluator_fn(cls, openai_config, **kwargs):
         return PromptBasedEvaluator(
-            openai_config, path=PROMPT_TEMPLATE_DIR / f"{cls.METRIC_NAME}.prompty", name=cls.METRIC_NAME
+            openai_config,
+            path=PROMPT_TEMPLATE_DIR / f"{cls.METRIC_NAME}.prompty",
+            name=cls.METRIC_NAME,
         )
 
     @classmethod
@@ -51,20 +52,16 @@ class CustomRatingMetric(BaseMetric):
 
 
 class RelevanceMetric(CustomRatingMetric):
-
     METRIC_NAME = "myrelevance"
 
 
 class CoherenceMetric(CustomRatingMetric):
-
     METRIC_NAME = "mycoherence"
 
 
 class GroundednessMetric(CustomRatingMetric):
-
     METRIC_NAME = "mygroundedness"
 
 
 class DontKnownessMetric(CustomRatingMetric):
-
     METRIC_NAME = "dontknowness"

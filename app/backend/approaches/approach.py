@@ -195,7 +195,10 @@ class Approach(ABC):
         return qualified_documents
 
     def get_sources_content(
-        self, results: List[Document], use_semantic_captions: bool, use_image_citation: bool
+        self,
+        results: List[Document],
+        use_semantic_captions: bool,
+        use_image_citation: bool,
     ) -> list[str]:
         if use_semantic_captions:
             return [
@@ -254,7 +257,11 @@ class Approach(ABC):
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                url=endpoint, params=params, headers=headers, json=data, raise_for_status=True
+                url=endpoint,
+                params=params,
+                headers=headers,
+                json=data,
+                raise_for_status=True,
             ) as response:
                 json = await response.json()
                 image_query_vector = json["vector"]

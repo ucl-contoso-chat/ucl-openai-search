@@ -75,7 +75,11 @@ class FileStrategy(Strategy):
 
     async def run(self):
         search_manager = SearchManager(
-            self.search_info, self.search_analyzer_name, self.use_acls, False, self.embeddings
+            self.search_info,
+            self.search_analyzer_name,
+            self.use_acls,
+            False,
+            self.embeddings,
         )
         if self.document_action == DocumentAction.Add:
             files = self.list_file_strategy.list()

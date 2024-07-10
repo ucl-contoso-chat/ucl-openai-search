@@ -174,7 +174,9 @@ async def ask(auth_claims: Dict[str, Any]):
         else:
             approach = cast(Approach, current_app.config[CONFIG_ASK_APPROACH])
         r = await approach.run(
-            request_json["messages"], context=context, session_state=request_json.get("session_state")
+            request_json["messages"],
+            context=context,
+            session_state=request_json.get("session_state"),
         )
         return jsonify(r)
     except Exception as error:
@@ -297,7 +299,10 @@ async def speech():
             + "#"
             + current_app.config[CONFIG_SPEECH_SERVICE_TOKEN].token
         )
-        speech_config = SpeechConfig(auth_token=auth_token, region=current_app.config[CONFIG_SPEECH_SERVICE_LOCATION])
+        speech_config = SpeechConfig(
+            auth_token=auth_token,
+            region=current_app.config[CONFIG_SPEECH_SERVICE_LOCATION],
+        )
         speech_config.speech_synthesis_voice_name = current_app.config[CONFIG_SPEECH_SERVICE_VOICE]
         speech_config.speech_synthesis_output_format = SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
         synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=None)
@@ -307,7 +312,9 @@ async def speech():
         elif result.reason == ResultReason.Canceled:
             cancellation_details = result.cancellation_details
             current_app.logger.error(
-                "Speech synthesis canceled: %s %s", cancellation_details.reason, cancellation_details.error_details
+                "Speech synthesis canceled: %s %s",
+                cancellation_details.reason,
+                cancellation_details.error_details,
             )
             raise Exception("Speech synthesis canceled. Check logs for details.")
         else:
@@ -447,7 +454,9 @@ async def setup_clients():
     )
 
     blob_container_client = ContainerClient(
-        f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net", AZURE_STORAGE_CONTAINER, credential=azure_credential
+        f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net",
+        AZURE_STORAGE_CONTAINER,
+        credential=azure_credential,
     )
 
     # Set up authentication helper
@@ -493,7 +502,9 @@ async def setup_clients():
             search_images=USE_GPT4V,
         )
         search_info = await setup_search_info(
-            search_service=AZURE_SEARCH_SERVICE, index_name=AZURE_SEARCH_INDEX, azure_credential=azure_credential
+            search_service=AZURE_SEARCH_SERVICE,
+            index_name=AZURE_SEARCH_INDEX,
+            azure_credential=azure_credential,
         )
         text_embeddings_service = setup_embeddings_service(
             azure_credential=azure_credential,
@@ -508,7 +519,9 @@ async def setup_clients():
             disable_vectors=os.getenv("USE_VECTORS", "").lower() == "false",
         )
         ingester = UploadUserFileStrategy(
-            search_info=search_info, embeddings=text_embeddings_service, file_processors=file_processors
+            search_info=search_info,
+            embeddings=text_embeddings_service,
+            file_processors=file_processors,
         )
         current_app.config[CONFIG_INGESTER] = ingester
 

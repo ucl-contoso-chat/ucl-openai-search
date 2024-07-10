@@ -131,7 +131,9 @@ def fake_response(http_code):
 class RateLimitMockEmbeddingsClient:
     async def create(self, *args, **kwargs) -> openai.types.CreateEmbeddingResponse:
         raise openai.RateLimitError(
-            message="Rate limited on the OpenAI embeddings API", response=fake_response(409), body=None
+            message="Rate limited on the OpenAI embeddings API",
+            response=fake_response(409),
+            body=None,
         )
 
 

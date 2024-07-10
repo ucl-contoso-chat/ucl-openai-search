@@ -19,7 +19,10 @@ from .mocks import MockAzureCredential
 @pytest.mark.asyncio
 async def test_file_strategy_adls2(monkeypatch, mock_env, mock_data_lake_service_client):
     adlsgen2_list_strategy = ADLSGen2ListFileStrategy(
-        data_lake_storage_account="a", data_lake_filesystem="a", data_lake_path="a", credential=MockAzureCredential()
+        data_lake_storage_account="a",
+        data_lake_filesystem="a",
+        data_lake_path="a",
+        credential=MockAzureCredential(),
     )
     blob_manager = BlobManager(
         endpoint=f"https://{os.environ['AZURE_STORAGE_ACCOUNT']}.blob.core.windows.net",

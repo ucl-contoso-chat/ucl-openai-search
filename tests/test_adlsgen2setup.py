@@ -99,7 +99,11 @@ def mock_put_group(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_adls_gen2_setup(
-    monkeypatch, mock_data_lake_service_client, mock_adlsgen2setup, mock_get_group_success, mock_open
+    monkeypatch,
+    mock_data_lake_service_client,
+    mock_adlsgen2setup,
+    mock_get_group_success,
+    mock_open,
 ):
     command = AdlsGen2Setup(
         data_directory="",
@@ -138,7 +142,12 @@ async def test_adls_gen2_setup(
 
 @pytest.mark.asyncio
 async def test_adls_gen2_create_group(
-    monkeypatch, mock_data_lake_service_client, mock_adlsgen2setup, mock_get_group_missing, mock_put_group, mock_open
+    monkeypatch,
+    mock_data_lake_service_client,
+    mock_adlsgen2setup,
+    mock_get_group_missing,
+    mock_put_group,
+    mock_open,
 ):
     command = AdlsGen2Setup(
         data_directory="",

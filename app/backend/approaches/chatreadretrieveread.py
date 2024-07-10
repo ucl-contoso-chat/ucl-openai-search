@@ -87,9 +87,16 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         overrides: dict[str, Any],
         auth_claims: dict[str, Any],
         should_stream: bool = False,
-    ) -> tuple[dict[str, Any], Coroutine[Any, Any, Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]]]:
+    ) -> tuple[
+        dict[str, Any],
+        Coroutine[Any, Any, Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]],
+    ]:
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
-        use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
+        use_vector_search = overrides.get("retrieval_mode") in [
+            "vectors",
+            "hybrid",
+            None,
+        ]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
         use_semantic_captions = True if overrides.get("semantic_captions") else False
         top = overrides.get("top", 3)
@@ -196,7 +203,10 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     "Prompt to generate search query",
                     [str(message) for message in query_messages],
                     (
-                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
+                        {
+                            "model": self.chatgpt_model,
+                            "deployment": self.chatgpt_deployment,
+                        }
                         if self.chatgpt_deployment
                         else {"model": self.chatgpt_model}
                     ),
@@ -221,7 +231,10 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     "Prompt to generate answer",
                     [str(message) for message in messages],
                     (
-                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
+                        {
+                            "model": self.chatgpt_model,
+                            "deployment": self.chatgpt_deployment,
+                        }
                         if self.chatgpt_deployment
                         else {"model": self.chatgpt_model}
                     ),

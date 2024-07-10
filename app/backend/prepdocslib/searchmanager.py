@@ -158,7 +158,8 @@ class SearchManager:
                         SemanticConfiguration(
                             name="default",
                             prioritized_fields=SemanticPrioritizedFields(
-                                title_field=None, content_fields=[SemanticField(field_name="content")]
+                                title_field=None,
+                                content_fields=[SemanticField(field_name="content")],
                             ),
                         )
                     ]
@@ -189,7 +190,10 @@ class SearchManager:
                 logger.info("Search index %s already exists", self.search_info.index_name)
                 index_definition = await search_index_client.get_index(self.search_info.index_name)
                 if not any(field.name == "storageUrl" for field in index_definition.fields):
-                    logger.info("Adding storageUrl field to index %s", self.search_info.index_name)
+                    logger.info(
+                        "Adding storageUrl field to index %s",
+                        self.search_info.index_name,
+                    )
                     index_definition.fields.append(
                         SimpleField(
                             name="storageUrl",
@@ -201,7 +205,10 @@ class SearchManager:
                     await search_index_client.create_or_update_index(index_definition)
 
     async def update_content(
-        self, sections: List[Section], image_embeddings: Optional[List[List[float]]] = None, url: Optional[str] = None
+        self,
+        sections: List[Section],
+        image_embeddings: Optional[List[List[float]]] = None,
+        url: Optional[str] = None,
     ):
         MAX_BATCH_SIZE = 1000
         section_batches = [sections[i : i + MAX_BATCH_SIZE] for i in range(0, len(sections), MAX_BATCH_SIZE)]
@@ -246,7 +253,9 @@ class SearchManager:
 
     async def remove_content(self, path: Optional[str] = None, only_oid: Optional[str] = None):
         logger.info(
-            "Removing sections from '{%s or '<all>'}' from search index '%s'", path, self.search_info.index_name
+            "Removing sections from '{%s or '<all>'}' from search index '%s'",
+            path,
+            self.search_info.index_name,
         )
         async with self.search_info.create_search_client() as search_client:
             while True:
@@ -258,7 +267,10 @@ class SearchManager:
                     filter = f"sourcefile eq '{path_for_filter}'"
                 max_results = 1000
                 result = await search_client.search(
-                    search_text="", filter=filter, top=max_results, include_total_count=True
+                    search_text="",
+                    filter=filter,
+                    top=max_results,
+                    include_total_count=True,
                 )
                 result_count = await result.get_count()
                 if result_count == 0:

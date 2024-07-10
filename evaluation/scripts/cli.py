@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from pathlib import Path
 from typing import Optional
@@ -5,7 +6,6 @@ from typing import Optional
 import dotenv
 import typer
 from rich.logging import RichHandler
-import asyncio
 
 from . import service_setup
 from .evaluate import run_evaluate_from_config
@@ -18,7 +18,10 @@ from .red_teaming import run_red_teaming
 app = typer.Typer(pretty_exceptions_enable=False)
 
 logging.basicConfig(
-    level=logging.WARNING, format="%(message)s", datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
+    level=logging.WARNING,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)],
 )
 logger = logging.getLogger("scripts")
 # We only set the level to INFO for our logger,
@@ -39,10 +42,16 @@ def str_or_none(raw: str) -> Optional[str]:
 @app.command()
 def evaluate(
     config: Path = typer.Option(
-        exists=True, dir_okay=False, file_okay=True, help="Path to config.json", default="config.json"
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="Path to config.json",
+        default="config.json",
     ),
     numquestions: Optional[int] = typer.Option(
-        help="Number of questions to evaluate (defaults to all if not specified).", default=None, parser=int_or_none
+        help="Number of questions to evaluate (defaults to all if not specified).",
+        default=None,
+        parser=int_or_none,
     ),
     targeturl: Optional[str] = typer.Option(
         help="URL of the target service to evaluate against (defaults to the one in the config).",
@@ -93,9 +102,11 @@ def generate_answers(
         output_file=Path.cwd() / output,
     )
 
+
 @app.command()
 def red_teaming():
     asyncio.run(run_red_teaming())
-    
+
+
 def cli():
     app()
