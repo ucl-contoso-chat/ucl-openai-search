@@ -109,6 +109,7 @@ jobs:
           AZURE_ADLS_GEN2_STORAGE_ACCOUNT: ${{ vars.AZURE_ADLS_GEN2_STORAGE_ACCOUNT }}
           AZURE_ADLS_GEN2_FILESYSTEM_PATH: ${{ vars.AZURE_ADLS_GEN2_FILESYSTEM_PATH }}
           AZURE_ADLS_GEN2_FILESYSTEM: ${{ vars.AZURE_ADLS_GEN2_FILESYSTEM }}
+          AZURE_CREDENTIALS: ${{ vars.AZURE_CREDENTIALS }}
 
         steps:
           #--------------------------Setup--------------------------------
