@@ -1,7 +1,6 @@
 name: Full Model Evaluation
 
 on:
-  workflow_call:
   workflow_dispatch:
     inputs:
       provision:
@@ -110,7 +109,6 @@ jobs:
           AZURE_ADLS_GEN2_STORAGE_ACCOUNT: ${{ vars.AZURE_ADLS_GEN2_STORAGE_ACCOUNT }}
           AZURE_ADLS_GEN2_FILESYSTEM_PATH: ${{ vars.AZURE_ADLS_GEN2_FILESYSTEM_PATH }}
           AZURE_ADLS_GEN2_FILESYSTEM: ${{ vars.AZURE_ADLS_GEN2_FILESYSTEM }}
-          AZURE_CREDENTIALS: ${{ vars.AZURE_CREDENTIALS }}
 
         steps:
           #--------------------------Setup--------------------------------
@@ -127,7 +125,7 @@ jobs:
           - name: Check credentials
             run: |
               echo "AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}"
-              echo "AZURE_CREDENTIALS: ${{ env.AZURE_CREDENTIALS }}"
+              echo "AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}"
 
           - name: Log in with Azure (Federated Credentials)
             if: ${{ env.AZURE_CLIENT_ID != '' }}
