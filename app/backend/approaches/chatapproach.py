@@ -124,7 +124,6 @@ class ChatApproach(Approach, ABC):
         followup_questions_started = False
         followup_content = ""
         async for event_chunk in await chat_coroutine:
-            print(event_chunk, flush=True)
             # "2023-07-01-preview" API version has a bug where first response has empty choices
             event = event_chunk.model_dump()  # Convert pydantic model to dict
             if event["choices"]:

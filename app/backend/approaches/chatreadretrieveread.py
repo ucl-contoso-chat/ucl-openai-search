@@ -1,7 +1,5 @@
-import os
 from typing import Any, Coroutine, List, Literal, Optional, Union, overload
 
-import requests
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
 from openai import AsyncOpenAI, AsyncStream
@@ -15,6 +13,7 @@ from openai_messages_token_helper import build_messages, get_token_limit
 
 from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
+from core.api_clients.huggingfaceapi import HuggingFaceAPIClient
 from core.authentication import AuthenticationHelper
 
 
@@ -41,6 +40,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         query_language: str,
         query_speller: str,
         use_hugging_face: bool,
+        hf_client: HuggingFaceAPIClient
     ):
         self.search_client = search_client
         self.openai_client = openai_client
@@ -56,6 +56,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         self.query_speller = query_speller
         self.chatgpt_token_limit = get_token_limit(chatgpt_model)
         self.use_hugging_face = use_hugging_face
+        self.hf_client = hf_client
 
     @property
     def system_message_chat_conversation(self):
@@ -139,35 +140,13 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         )
 
         if self.use_hugging_face:
-            huggingf_search_prompt = ""
+            hf_search_prompt = ""
 
             for message in query_messages:
-                huggingf_search_prompt += message["role"] + ": "
-                huggingf_search_prompt += message["content"] + "\n"
+                hf_search_prompt += message["role"] + ": "
+                hf_search_prompt += message["content"] + "\n"
 
-            API_URL = os.gentenv("HUGGINGFACE_API_URL")
-            API_KEY = os.getenv("HUGGINGFACE_API_KEY")
-            headers = {"Authorization": "Bearer " + API_KEY}
-
-            def ask_huggingface(payload):
-                response = requests.post(API_URL, headers=headers, json=payload)
-                return response.json()
-
-            chat_completion = ask_huggingface(
-                {
-                    "inputs": huggingf_search_prompt,
-                    "parameters": {
-                        "temperature": 1.3,
-                        "max_length": 400,
-                        "return_full_text": False,
-                        "top_k": 1,
-                        "top_p": 0.8,
-                        "repetition_penalty": 0.6,
-                        "max_new_tokens": 250,
-                    },
-                    "options": {"use_cache": False},
-                }
-            )
+            chat_completion = self.hf_client.ask_api(inputs=hf_search_prompt)
             query_text = self.extract_search_query(chat_completion)
 
         else:
@@ -265,32 +244,18 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             ],
         }
 
-        huggingf_question_prompt = "For the following question, include citations from the sources below.\n"
+        hf_question_prompt = "For the following question, include citations from the sources below.\n"
         for message in messages:
             if message["content"]:
-                huggingf_question_prompt += message["content"] + "\n"
+                hf_question_prompt += message["content"] + "\n"
 
         if self.use_hugging_face:
-            huggingf_question_answer = ask_huggingface(
-                {
-                    "inputs": huggingf_question_prompt,
-                    "options": {"use_cache": False, "wait_for_model": True},
-                    "parameters": {
-                        "temperature": 1.4,
-                        "return_full_text": False,
-                        "top_k": 1,
-                        "top_p": 0.8,
-                        "repetition_penalty": 1,
-                        "max_new_tokens": 150,
-                        # "max_time": 120,
-                        # "num_return_sequences": 5,
-                        # "do_sample": True
-                    },
-                }
-            )
+            hf_question_answer = self.hf_client.ask_api(inputs=hf_question_prompt)
+            print(hf_question_answer, flush=True)
+
             chat_coroutine = {}
             chat_coroutine["message"] = {
-                "content": huggingf_question_answer[0]["generated_text"],
+                "content": hf_question_answer[0]["generated_text"],
                 "role": "assistant",
                 "function_call": None,
                 "tool_calls": None,

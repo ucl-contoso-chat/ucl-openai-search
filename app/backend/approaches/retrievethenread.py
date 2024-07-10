@@ -1,7 +1,5 @@
-import os
 from typing import Any, Optional
 
-import requests
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
 from openai import AsyncOpenAI
@@ -9,6 +7,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from openai_messages_token_helper import build_messages, get_token_limit
 
 from approaches.approach import Approach, ThoughtStep
+from core.api_clients.huggingfaceapi import HuggingFaceAPIClient
 from core.authentication import AuthenticationHelper
 
 
@@ -56,6 +55,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         query_language: str,
         query_speller: str,
         use_hugging_face: bool,
+        hf_client: HuggingFaceAPIClient,
     ):
         self.search_client = search_client
         self.chatgpt_deployment = chatgpt_deployment
@@ -72,6 +72,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         self.query_speller = query_speller
         self.chatgpt_token_limit = get_token_limit(chatgpt_model)
         self.use_hugging_face = use_hugging_face
+        self.hf_client = hf_client
 
     async def run(
         self,
@@ -128,35 +129,13 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         )
 
         if self.use_hugging_face:
-            API_URL = os.getenv("HUGGINGFACE_API_URL")
-            API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
-            headers = {"Authorization": "Bearer " + API_KEY}
-
-            huggingf_question_prompt = ""
+            hf_question_prompt = ""
             for message in updated_messages:
                 if message["content"]:
-                    huggingf_question_prompt += message["content"] + "\n"
+                    hf_question_prompt += message["content"] + "\n"
 
-            def ask_huggingface(payload):
-                response = requests.post(API_URL, headers=headers, json=payload)
-                return response.json()
-
-            chat_completion = ask_huggingface(
-                {
-                    "inputs": huggingf_question_prompt,
-                    "parameters": {
-                        "temperature": 1.6,
-                        "max_length": response_token_limit,
-                        "return_full_text": False,
-                        "top_k": 1,
-                        "top_p": 0.8,
-                        "repetition_penalty": 0.1,
-                        "max_new_tokens": 250,
-                    },
-                    "options": {"use_cache": False},
-                }
-            )
+            chat_completion = self.hf_client.ask_api(inputs=hf_question_prompt)
         else:
             chat_completion = (
                 await self.openai_client.chat.completions.create(

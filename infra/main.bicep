@@ -350,6 +350,8 @@ module backend 'core/host/appservice.bicep' = {
       AZURE_DOCUMENTINTELLIGENCE_SERVICE: documentIntelligence.outputs.name
       USE_LOCAL_PDF_PARSER: useLocalPdfParser
       USE_LOCAL_HTML_PARSER: useLocalHtmlParser
+      HUGGINGFACE_API_KEY: huggingFaceApiKey
+      HUGGINGFACE_API_URL: huggingFaceApiURL
     }
   }
 }
