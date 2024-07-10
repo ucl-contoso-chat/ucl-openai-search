@@ -81,8 +81,10 @@ def generate(
 #     )
 
 @app.command()
-def red_teaming():
-    asyncio.run(run_red_teaming())
+def red_teaming(
+    scorer_path: Path =  typer.Option(exists=True, dir_okay=False, file_okay=True, default="scorer_definitions/key_logger_classifier.yaml"),
+):
+    asyncio.run(run_red_teaming(Path.cwd() / scorer_path))
     
 def cli():
     app()
