@@ -1,6 +1,6 @@
 {
     "testdata_path": "input/qa.jsonl",
-    "results_dir": "example_results/experiment<TIMESTAMP>",
+    "results_dir": "results/experiment<TIMESTAMP>",
     "passing_rate":3,
     "requested_metrics": ["gpt_groundedness", "gpt_relevance", "gpt_coherence", "answer_length", "latency"],
     "target_url": "https://app-backend-xm5gmlddfm3cc.azurewebsites.net/ask",
