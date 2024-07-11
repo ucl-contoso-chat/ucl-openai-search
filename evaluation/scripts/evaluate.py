@@ -1,14 +1,17 @@
 import json
 import logging
 import time
+import matplotlib.pyplot as plt
 import os
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
+from rich.progress import track
 
 from pathlib import Path
 
 import jmespath
 import pandas as pd
 import requests
-from rich.progress import track
 
 from . import service_setup
 from .evaluate_metrics import metrics_by_name
@@ -142,6 +145,7 @@ def run_evaluation(
     results_dir: Path,
     target_url: str,
     passing_rate: int,
+    max_workers: int,
     target_parameters={},
     requested_metrics=[],
     num_questions=None,
@@ -190,10 +194,14 @@ def run_evaluation(
 
         return output
 
-
+    
     questions_with_ratings = []
-    for row in track(testdata, description="Processing..."):
-        questions_with_ratings.append(evaluate_row(row))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(evaluate_row, row): row for row in testdata}
+        for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
+            row_result = future.result()
+            questions_with_ratings.append(row_result)
+
 
     logger.info("Evaluation calls have completed. Calculating overall metrics now...")
     # Make the results directory if it doesn't exist
@@ -207,9 +215,85 @@ def run_evaluation(
     # Calculate aggregate metrics
     df = pd.DataFrame(questions_with_ratings)
     summary = {}
+    metric_list = []
+    pass_rate = []
+    mean_rate = []
+    metric_name=[]
+    max_list=[]
+    min_list=[]
+    mean_list=[]
     for metric in requested_metrics:
-        summary[metric.METRIC_NAME] = metric.get_aggregate_stats(df, passing_rate)
-    print(summary)
+        metric_result=metric.get_aggregate_stats(df, passing_rate)
+        summary[metric.METRIC_NAME] = metric_result
+        if metric=="gpt_groundedness" or metric=="gpt_relevance" or metric=="gpt_coherence" or metric=="gpt_similarity" or metric=="gpt_fluency":
+            metric_list.append(metric)
+            pass_rate.append(metric_result.get('pass_rate'))
+            mean_rate.append(metric_result.get('mean_rating'))
+        if metric== "latency" or metric=="f1_score" or metric=="answer_length":
+            metric_name.append(metric)
+            max = metric_result.get('max')
+            min = metric_result.get('min')
+            mean = metric_result.get('mean')
+            max_list.append(max)
+            min_list.append(min)
+            mean_list.append(mean)
+            
+    
+    
+    # Draw the chart for the results
+    
+    fig, ax1 = plt.subplots()
+    # bar_labels = ['red', 'blue', '_red', 'orange']
+    # bar_colors = ['tab:red', 'tab:blue', 'tab:red', 'tab:orange']
+
+    ax1.bar(metric_list, pass_rate)
+
+    ax1.set_ylabel('passing rate')
+    ax1.set_title('Passing rate of evaluation metrics')
+    plt.savefig('passing_rate.png')
+    plt.close(fig)
+    
+    
+    fig, ax2 = plt.subplots()
+    # bar_labels = ['red', 'blue', '_red', 'orange']
+    # bar_colors = ['tab:red', 'tab:blue', 'tab:red', 'tab:orange']
+
+    ax2.bar(metric_list, mean_rate)
+
+    ax2.set_ylabel('mean score')
+    ax2.set_title('Mean score of evaluation metrics')
+    plt.savefig('mean_score.png') 
+    plt.close(fig)
+    
+
+    penguin_means = {
+        'Max': tuple(max_list),
+        'Min': tuple(min_list),
+        'Mean': tuple(mean_list),
+    }
+
+    x = np.arange(len(metric_name))  # the label locations
+    width = 0.25  # the width of the bars
+    multiplier = 0
+
+    fig, ax3 = plt.subplots(layout='constrained')
+
+    for attribute, measurement in penguin_means.items():
+        offset = width * multiplier
+        rects = ax3.bar(x + offset, measurement, width, label=attribute)
+        ax3.bar_label(rects, padding=3)
+        multiplier += 1
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax3.set_title('Evaluation results')
+    ax3.set_xticks(x + width, tuple(metric_name))
+    ax3.legend(loc='upper left', ncols=3)
+    ax3.set_ylim(0, 250)
+
+    plt.savefig('eval.png')
+    plt.close(fig)
+    
+    
     # summary statistics
     with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summary, indent=4))
@@ -264,6 +348,8 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         results_dir=results_dir,
         target_url=config["target_url"],
         target_parameters=config.get("target_parameters", {}),
+        passing_rate=passing_rate,
+        max_workers=4,
         num_questions=num_questions,
         requested_metrics=config.get(
             "requested_metrics",
@@ -271,7 +357,6 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         ),
         target_response_answer_jmespath=config.get("target_response_answer_jmespath"),
         target_response_context_jmespath=config.get("target_response_context_jmespath"),
-        passing_rate=passing_rate
     )
 
     if evaluation_run_complete:
