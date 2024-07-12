@@ -3,7 +3,7 @@
 *_env
 
 # Previous evaluation results
-evaluation/example_results
+evaluation/results
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
