@@ -49,5 +49,10 @@ async def run_red_teaming(
     ) as red_teaming_orchestrator:
         score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
         red_teaming_orchestrator.print_conversation()
+        save_score(score)
         return score.score_value
     
+def save_score(score):
+    logger.info("Saving Score to File: %s", score)
+    with open("results/score.txt", "w") as f:
+        f.write(f"score: {score} : {score.score_rationale}")
