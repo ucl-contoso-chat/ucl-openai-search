@@ -11,6 +11,7 @@ from . import service_setup
 from .evaluate import run_evaluate_from_config
 from .generate import (
     generate_test_qa_data,
+    generate_test_qa_answer
 )
 from .red_teaming import run_red_teaming
 

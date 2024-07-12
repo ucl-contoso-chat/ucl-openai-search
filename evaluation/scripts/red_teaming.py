@@ -49,5 +49,5 @@ async def run_red_teaming(
     ) as red_teaming_orchestrator:
         score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
         red_teaming_orchestrator.print_conversation()
-        return score
+        return score.score_value
     

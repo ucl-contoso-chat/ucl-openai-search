@@ -142,20 +142,20 @@ def get_openai_client(oai_config: ModelConfiguration):
 
 
 def get_openai_target() -> PromptChatTarget:
-    if os.environ["OPENAI_HOST"] == "": 
+    if os.environ["OPENAI_HOST"] == "azure": 
         logger.info("Using Azure OpenAI Chat Target")
         deployment= os.environ["AZURE_OPENAI_EVAL_DEPLOYMENT"]
         endpoint= os.environ["AZURE_OPENAI_EVAL_ENDPOINT"]
         if api_key := os.environ.get("AZURE_OPENAI_KEY"):
             return AzureOpenAIChatTarget(
                 deployment_name=deployment,
-                endpoint_uri=endpoint,
+                endpoint=endpoint,
                 api_key=api_key,
             )
         else:
             return AzureOpenAIChatTarget(
                 deployment_name=deployment,
-                endpoint_uri=endpoint,
+                endpoint=endpoint,
                 use_aad_auth=True
             )
     else:
