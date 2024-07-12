@@ -97,6 +97,6 @@ class LatencyMetric(BaseMetric):
     def get_aggregate_stats(cls, df, passing_rate):
         return {
             "mean": round(df[cls.METRIC_NAME].mean(), 2),
-            "max": df[cls.METRIC_NAME].max(),
-            "min": df[cls.METRIC_NAME].min(),
+            "max": int(df[cls.METRIC_NAME].max()),
+            "min": int(df[cls.METRIC_NAME].min()),
         }

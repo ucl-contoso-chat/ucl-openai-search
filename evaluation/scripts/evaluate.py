@@ -6,7 +6,7 @@ import os
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from rich.progress import track
-
+import numpy as np
 from pathlib import Path
 
 import jmespath
@@ -79,8 +79,8 @@ def send_question_to_ask(
     # token: str, 
     parameters: dict = {},
     raise_error=False,
-    response_answer_jmespath="choices[0].message.content",
-    response_context_jmespath="choices[0].context.data_points.text",
+    response_answer_jmespath="message.content",
+    response_context_jmespath="context.data_points.text",
 ):
     headers = {
         "Content-Type": "application/json",
@@ -103,9 +103,9 @@ def send_question_to_ask(
                 "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
             )
         try:
-            expression = 'choices[0].message.content'
+            expression = 'message.content'
             answer = jmespath.search(expression, response_dict)
-            data_points = jmespath.search('choices[0].context.data_points.text', response_dict)
+            data_points = jmespath.search('context.data_points.text', response_dict)
             context = "\n\n".join(data_points)
         except Exception:
             raise ValueError(
@@ -225,12 +225,12 @@ def run_evaluation(
     for metric in requested_metrics:
         metric_result=metric.get_aggregate_stats(df, passing_rate)
         summary[metric.METRIC_NAME] = metric_result
-        if metric=="gpt_groundedness" or metric=="gpt_relevance" or metric=="gpt_coherence" or metric=="gpt_similarity" or metric=="gpt_fluency":
-            metric_list.append(metric)
+        if metric.METRIC_NAME=="gpt_groundedness" or metric.METRIC_NAME=="gpt_relevance" or metric.METRIC_NAME=="gpt_coherence" or metric.METRIC_NAME=="gpt_similarity" or metric.METRIC_NAME=="gpt_fluency":
+            metric_list.append(metric.METRIC_NAME)
             pass_rate.append(metric_result.get('pass_rate'))
             mean_rate.append(metric_result.get('mean_rating'))
-        if metric== "latency" or metric=="f1_score" or metric=="answer_length":
-            metric_name.append(metric)
+        if metric.METRIC_NAME== "latency" or metric.METRIC_NAME=="f1_score" or metric.METRIC_NAME=="answer_length":
+            metric_name.append(metric.METRIC_NAME)
             max = metric_result.get('max')
             min = metric_result.get('min')
             mean = metric_result.get('mean')
