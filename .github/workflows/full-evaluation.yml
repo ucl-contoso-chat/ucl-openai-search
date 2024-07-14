@@ -166,7 +166,6 @@ jobs:
           - name: Provision Infrastructure
             if: ${{ inputs.provision == true }}
             run: |
-              azd env set AZURE_SEARCH_SERVICE_LOCATION "eastus"
               azd provision --no-prompt
             env:
               AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
