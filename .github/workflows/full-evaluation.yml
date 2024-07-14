@@ -161,7 +161,7 @@ jobs:
               AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
           - name: Sync Azure environment
-            run: azd refresh -e ${{ env.AZURE_ENV_NAME }}
+            run: azd env refresh -e ${{ env.AZURE_ENV_NAME }}
 
           - name: Provision Infrastructure
             if: ${{ inputs.provision == true }}
