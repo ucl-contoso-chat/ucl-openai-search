@@ -12,12 +12,7 @@ from .code_metrics import (
     HasCitationMetric,
     LatencyMetric,
 )
-from .prompt_metrics import (
-    CoherenceMetric,
-    DontKnownessMetric,
-    GroundednessMetric,
-    RelevanceMetric,
-)
+
 
 metrics = [
     BuiltinCoherenceMetric,
@@ -26,10 +21,6 @@ metrics = [
     BuiltinSimilarityMetric,
     BuiltinFluencyMetric,
     BuiltinF1ScoreMetric,
-    CoherenceMetric,
-    RelevanceMetric,
-    GroundednessMetric,
-    DontKnownessMetric,
     LatencyMetric,
     AnswerLengthMetric,
     HasCitationMetric,

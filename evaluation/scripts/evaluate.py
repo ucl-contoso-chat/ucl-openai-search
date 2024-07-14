@@ -1,9 +1,13 @@
+import concurrent.futures
 import json
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import jmespath
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import requests
 from rich.progress import track
@@ -72,8 +76,8 @@ def send_question_to_ask(
     # token: str,
     parameters: dict = {},
     raise_error=False,
-    response_answer_jmespath="choices[0].message.content",
-    response_context_jmespath="choices[0].context.data_points.text",
+    response_answer_jmespath="message.content",
+    response_context_jmespath="context.data_points.text",
 ):
     headers = {
         "Content-Type": "application/json",
@@ -96,9 +100,9 @@ def send_question_to_ask(
                 "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
             )
         try:
-            expression = "choices[0].message.content"
+            expression = "message.content"
             answer = jmespath.search(expression, response_dict)
-            data_points = jmespath.search("choices[0].context.data_points.text", response_dict)
+            data_points = jmespath.search("context.data_points.text", response_dict)
             context = "\n\n".join(data_points)
         except Exception:
             raise ValueError(
@@ -129,25 +133,13 @@ def load_jsonl(path: Path) -> list[dict]:
         return [json.loads(line) for line in f.readlines()]
 
 
-# def load_jsonl(file_path):
-#     with open(file_path, 'r', encoding='utf-8') as f:
-#         lines = f.readlines()
-#         if not lines:
-#             raise ValueError("Input file is empty")
-#         try:
-#             return [json.loads(line) for line in lines]
-#         except json.JSONDecodeError as e:
-#             print(f"Error decoding JSON on line {lines.index(line)+1}: {line}")
-#             raise e
-
-
 def run_evaluation(
     openai_config: dict,
     testdata_path: Path,
     results_dir: Path,
-    latest_dir: Path,
     target_url: str,
     passing_rate: int,
+    max_workers: int,
     target_parameters={},
     requested_metrics=[],
     num_questions=None,
@@ -159,39 +151,6 @@ def run_evaluation(
     if num_questions:
         logger.info("Limiting evaluation to %s questions", num_questions)
         testdata = testdata[:num_questions]
-
-    # logger.info("Sending a test question to the target to ensure it is running...")
-    # try:
-    #     question = "What information is in your knowledge base?"
-    #     target_data = send_question_to_target(
-    #         question,
-    #         target_url,
-    #         target_parameters,
-    #         raise_error=True,
-    #         response_answer_jmespath=target_response_answer_jmespath,
-    #         response_context_jmespath=target_response_context_jmespath,
-    #     )
-    #     logger.info(
-    #         'Successfully received response from target for question: "%s"\n"answer": "%s"\n"context": "%s"',
-    #         truncate_for_log(question),
-    #         truncate_for_log(target_data["answer"]),
-    #         truncate_for_log(target_data["context"]),
-    #     )
-    # except Exception as e:
-    #     logger.error("Failed to send a test question to the target due to error: \n%s", e)
-    #     return False
-
-    # logger.info("Sending a test chat completion to the GPT deployment to ensure it is running...")
-    # try:
-    #     gpt_response = service_setup.get_openai_client(openai_config).chat.completions.create(
-    #         model=openai_config.model,
-    #         messages=[{"role": "user", "content": "Hello!"}],
-    #         n=1,
-    #     )
-    #     logger.info('Successfully received response from GPT: "%s"', gpt_response.choices[0].message.content)
-    # except Exception as e:
-    #     logger.error("Failed to send a test chat completion to the GPT deployment due to error: \n%s", e)
-    #     return False
 
     logger.info("Starting evaluation...")
     for metric in requested_metrics:
@@ -228,37 +187,106 @@ def run_evaluation(
         return output
 
     questions_with_ratings = []
-    # token= azure_login()
-    for row in track(testdata, description="Processing..."):
-        questions_with_ratings.append(evaluate_row(row))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(evaluate_row, row): row for row in testdata}
+        for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
+            row_result = future.result()
+            questions_with_ratings.append(row_result)
 
     logger.info("Evaluation calls have completed. Calculating overall metrics now...")
     # Make the results directory if it doesn't exist
     results_dir.mkdir(parents=True, exist_ok=True)
-    latest_dir.mkdir(parents=True, exist_ok=True)
     # Save the results
     with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
-        for row in questions_with_ratings:
-            results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-    with open(latest_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
         for row in questions_with_ratings:
             results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
     # Calculate aggregate metrics
     df = pd.DataFrame(questions_with_ratings)
     summary = {}
+    metric_list = []
+    pass_rate = []
+    mean_rate = []
+    metric_name = []
+    max_list = []
+    min_list = []
+    mean_list = []
     for metric in requested_metrics:
-        summary[metric.METRIC_NAME] = metric.get_aggregate_stats(df, passing_rate)
-    print(summary)
+        metric_result = metric.get_aggregate_stats(df, passing_rate)
+        summary[metric.METRIC_NAME] = metric_result
+        if (
+            metric.METRIC_NAME == "gpt_groundedness"
+            or metric.METRIC_NAME == "gpt_relevance"
+            or metric.METRIC_NAME == "gpt_coherence"
+            or metric.METRIC_NAME == "gpt_similarity"
+            or metric.METRIC_NAME == "gpt_fluency"
+        ):
+            metric_list.append(metric.METRIC_NAME)
+            pass_rate.append(metric_result.get("pass_rate"))
+            mean_rate.append(metric_result.get("mean_rating"))
+        if metric.METRIC_NAME == "latency" or metric.METRIC_NAME == "f1_score" or metric.METRIC_NAME == "answer_length":
+            metric_name.append(metric.METRIC_NAME)
+            max = metric_result.get("max")
+            min = metric_result.get("min")
+            mean = metric_result.get("mean")
+            max_list.append(max)
+            min_list.append(min)
+            mean_list.append(mean)
+
+    # Draw the chart for the results
+
+    fig, ax1 = plt.subplots()
+    # bar_labels = ['red', 'blue', '_red', 'orange']
+    # bar_colors = ['tab:red', 'tab:blue', 'tab:red', 'tab:orange']
+
+    ax1.bar(metric_list, pass_rate)
+
+    ax1.set_ylabel("passing rate")
+    ax1.set_title("Passing rate of evaluation metrics")
+    plt.savefig("passing_rate.png")
+    plt.close(fig)
+
+    fig, ax2 = plt.subplots()
+    # bar_labels = ['red', 'blue', '_red', 'orange']
+    # bar_colors = ['tab:red', 'tab:blue', 'tab:red', 'tab:orange']
+
+    ax2.bar(metric_list, mean_rate)
+
+    ax2.set_ylabel("mean score")
+    ax2.set_title("Mean score of evaluation metrics")
+    plt.savefig("mean_score.png")
+    plt.close(fig)
+
+    penguin_means = {
+        "Max": tuple(max_list),
+        "Min": tuple(min_list),
+        "Mean": tuple(mean_list),
+    }
+
+    x = np.arange(len(metric_name))  # the label locations
+    width = 0.25  # the width of the bars
+    multiplier = 0
+
+    fig, ax3 = plt.subplots(layout="constrained")
+
+    for attribute, measurement in penguin_means.items():
+        offset = width * multiplier
+        rects = ax3.bar(x + offset, measurement, width, label=attribute)
+        ax3.bar_label(rects, padding=3)
+        multiplier += 1
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax3.set_title("Evaluation results")
+    ax3.set_xticks(x + width, tuple(metric_name))
+    ax3.legend(loc="upper left", ncols=3)
+    ax3.set_ylim(0, 250)
+
+    plt.savefig("eval.png")
+    plt.close(fig)
+
     # summary statistics
     with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summary, indent=4))
-
-    with open(latest_dir / "summary.json", "w", encoding="utf-8") as summary_file:
-        summary_file.write(json.dumps(summary, indent=4))
-        logger.info("Aggregated results:")
-        logger.info(json.dumps(summary, indent=4))
 
     with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
         parameters = {
@@ -299,8 +327,6 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         config = json.load(f)
         process_config(config)
 
-    latest_dir = working_dir / Path(config["latest_dir"])
-
     results_dir = working_dir / Path(config["results_dir"])
     passing_rate = config["passing_rate"]
 
@@ -308,9 +334,10 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         openai_config=service_setup.get_openai_config(),
         testdata_path=working_dir / config["testdata_path"],
         results_dir=results_dir,
-        latest_dir=latest_dir,
         target_url=config["target_url"],
         target_parameters=config.get("target_parameters", {}),
+        passing_rate=passing_rate,
+        max_workers=4,
         num_questions=num_questions,
         requested_metrics=config.get(
             "requested_metrics",
@@ -324,7 +351,6 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         ),
         target_response_answer_jmespath=config.get("target_response_answer_jmespath"),
         target_response_context_jmespath=config.get("target_response_context_jmespath"),
-        passing_rate=passing_rate,
     )
 
     if evaluation_run_complete:

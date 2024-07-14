@@ -9,10 +9,7 @@ from rich.logging import RichHandler
 
 from . import service_setup
 from .evaluate import run_evaluate_from_config
-from .generate import (
-    generate_test_qa_answer,
-    generate_test_qa_data,
-)
+from .generate import generate_test_qa_answer, generate_test_qa_data
 from .red_teaming import run_red_teaming
 
 app = typer.Typer(pretty_exceptions_enable=False)
@@ -24,8 +21,7 @@ logging.basicConfig(
     handlers=[RichHandler(rich_tracebacks=True)],
 )
 logger = logging.getLogger("scripts")
-# We only set the level to INFO for our logger,
-# to avoid seeing the noisy INFO level logs from the Azure SDKs
+
 logger.setLevel(logging.INFO)
 
 dotenv.load_dotenv(override=True)
@@ -77,20 +73,6 @@ def generate(
     )
 
 
-# @app.command()
-# def generate_dontknows(
-#     input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
-#     output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
-#     numquestions: int = typer.Option(help="Number of questions to generate", default=40),
-# ):
-#     generate_dontknows_qa_data(
-#         openai_config=service_setup.get_openai_config(),
-#         num_questions_total=numquestions,
-#         input_file=Path.cwd() / input,
-#         output_file=Path.cwd() / output,
-#     )
-
-
 @app.command()
 def generate_answers(
     input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
@@ -104,8 +86,20 @@ def generate_answers(
 
 
 @app.command()
-def red_teaming():
-    asyncio.run(run_red_teaming())
+def red_teaming(
+    scorer_path: Path = typer.Option(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        default="scorer_definitions/key_logger_classifier.yaml",
+    ),
+    red_teaming_llm: Optional[str] = typer.Option(default="openai"),
+    prompt_target: Optional[str] = typer.Option(default="openai"),
+):
+    red_team = service_setup.get_openai_target() if red_teaming_llm == "openai" else service_setup.get_azure_ml_target()
+    target = service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_target()
+
+    asyncio.run(run_red_teaming(Path.cwd() / scorer_path, red_team, target))
 
 
 def cli():

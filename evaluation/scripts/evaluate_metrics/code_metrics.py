@@ -20,7 +20,7 @@ class AnswerLengthMetric(BaseMetric):
         return answer_length
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_threshold=4.0):
+    def get_aggregate_stats(cls, df, passing_rate):
         # remove -1 values from the mean calculation
         df = df[df[cls.METRIC_NAME] != -1]
         return {
@@ -44,7 +44,7 @@ class HasCitationMetric(BaseMetric):
         return has_citation
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_threshold=4.0):
+    def get_aggregate_stats(cls, df, passing_rate):
         df = df[df[cls.METRIC_NAME] != -1]
         return {
             "total": int(df[cls.METRIC_NAME].sum()),
@@ -70,7 +70,7 @@ class CitationMatchMetric(BaseMetric):
         return citation_match
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_threshold=4.0):
+    def get_aggregate_stats(cls, df, passing_rate):
         df = df[df[cls.METRIC_NAME] != -1]
         return {
             "total": int(df[cls.METRIC_NAME].sum()),
@@ -90,7 +90,7 @@ class LatencyMetric(BaseMetric):
         return latency
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_threshold=4.0):
+    def get_aggregate_stats(cls, df, passing_rate):
         return {
             "mean": round(df[cls.METRIC_NAME].mean(), 2),
             "max": int(df[cls.METRIC_NAME].max()),

@@ -12,7 +12,7 @@ from .base_metric import BaseMetric
 
 class BuiltinRatingMetric(BaseMetric):
     @classmethod
-    def get_aggregate_stats(cls, df, passing_threshold=4.0):
+    def get_aggregate_stats(cls, df, passing_threshold):
         return cls.get_aggregate_stats_for_numeric_rating(df, cls.METRIC_NAME, passing_threshold)
 
 

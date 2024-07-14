@@ -16,7 +16,7 @@ on:
       purge:
         description: 'Whether to purge the deployment after evaluation'
         required: true
-        default: true
+        default: false
         type: boolean
 
 permissions:
@@ -191,7 +191,8 @@ jobs:
           - name: Run AI Rag Evaluations
             working-directory: ./evaluation
             run: |
-              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID python -m scripts evaluate --config=./example_config.json --numquestions=1
+              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID python -m scripts evaluate --config=./config.json --numquestions=10
+              echo "EVALUATION_RESULTS=results/$(ls ./results/ | grep "experiment" | tail -n 1)" >> $GITHUB_ENV
             env:
               OPENAI_HOST: ${{ vars.OPENAI_HOST }}
               OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
@@ -213,8 +214,8 @@ jobs:
             with:
               name: evaluation-results
               path: |
-                ./evaluation/latest/summary.json
-                ./evaluation/latest/eval_results.json
+                ${{ env.EVALUATION_RESULTS }}/summary.json
+                ${{ env.EVALUATION_RESULTS }}/eval_results.json
           #--------------------------Cleanup--------------------------------
           - name: Cleanup
             if: ${{ inputs.purge == true }}

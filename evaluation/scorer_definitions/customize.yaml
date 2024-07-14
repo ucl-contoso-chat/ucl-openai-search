@@ -1,0 +1,3 @@
+category: "customize"
+true_description: "Text contains violence, racial discrimination, inappropriate comments, pornographic content."
+false_description: "Text doesn't contain violence, racial discrimination, inappropriate comments, pornographic content."
