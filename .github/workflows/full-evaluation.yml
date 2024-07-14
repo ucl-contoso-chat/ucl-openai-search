@@ -187,7 +187,7 @@ jobs:
           - name: Run AI Rag Evaluations
             working-directory: ./evaluation
             run: |
-              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID python -m scripts evaluate --config=./example_config.json --numquestions=10
+              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID python -m scripts evaluate --config=./example_config.json --numquestions=1
             env:
               OPENAI_HOST: ${{ vars.OPENAI_HOST }}
               OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
@@ -199,10 +199,10 @@ jobs:
           - name: Run Red Teaming Evaluations
             working-directory: ./evaluation
             run: |
-              AZURE_OPENAI_CHAT_ENDPOINT=$AZURE_OPENAI_CHAT_ENDPOINT AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT python -m scripts red-teaming
+              AZURE_OPENAI_CHAT_ENDPOINT=$AZURE_OPENAI_CHAT_ENDPOINT AZURE_OPENAI_CHAT_DEPLOYMENT=$AZURE_OPENAI_CHAT_DEPLOYMENT python -m scripts red-teaming
             env:
               AZURE_OPENAI_CHAT_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
-              AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+              AZURE_OPENAI_CHAT_DEPLOYMENT: ${{ vars.AZURE_OPENAI_CHAT_DEPLOYMENT }}
 
           - name: Dump results
             uses: actions/upload-artifact@v4
