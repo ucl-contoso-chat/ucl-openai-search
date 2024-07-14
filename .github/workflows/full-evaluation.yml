@@ -6,17 +6,17 @@ on:
       provision:
         description: 'Whether to provision the deployment'
         required: true
-        default: false
+        default: true
         type: boolean
       deploy:
         description: 'Whether to deploy the application'
         required: true
-        default: false
+        default: true
         type: boolean
       purge:
         description: 'Whether to purge the deployment after evaluation'
         required: true
-        default: false
+        default: true
         type: boolean
 
 permissions:
@@ -108,10 +108,10 @@ jobs:
             uses: actions/checkout@v4
           - name: Install azd
             uses: Azure/setup-azd@v1.0.0
-          # - name: Install Nodejs
-          #   uses: actions/setup-node@v4
-          #   with:
-          #     node-version: 18
+          - name: Install Nodejs
+            uses: actions/setup-node@v4
+            with:
+              node-version: 18
 
           #--------------------------Deploy--------------------------------
           - name: Check credentials
@@ -214,4 +214,4 @@ jobs:
           #--------------------------Cleanup--------------------------------
           - name: Cleanup
             if: ${{ github.event.inputs.purge == true }}
-            run: azd down --no-prompt --purge
+            run: azd down --force --purge
