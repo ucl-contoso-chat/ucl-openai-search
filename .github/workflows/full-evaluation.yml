@@ -160,6 +160,9 @@ jobs:
             env:
               AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
+          - name: Sync Azure environment
+            run: azd refresh -e ${{ env.AZURE_ENV_NAME }}
+
           - name: Provision Infrastructure
             if: ${{ inputs.provision == true }}
             run: azd provision --no-prompt

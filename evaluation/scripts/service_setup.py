@@ -25,13 +25,11 @@ def print_all_env_vars():
         "AZURE_SEARCH_SERVICE",
         "AZURE_SEARCH_INDEX",
         "AZURE_OPENAI_KEY",
-        "TENANT_ID",
-        "CLIENT_ID",
-        "CLIENT_SECRET",
         "AZURE_PRINCIPAL_ID",
         "AZURE_CLIENT_ID",
         "AZURE_TENANT_ID",
         "AZURE_CLIENT_SECRET",
+        "AZURE_SUBSCRIPTION_ID",
     ]
     print("Environment Variables:")
     for var in vars:
