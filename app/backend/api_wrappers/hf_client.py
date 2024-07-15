@@ -12,7 +12,7 @@ class HuggingFaceClient(AsyncInferenceClient):
     def __init__(
         self,
         model: Optional[str] = None,
-        token: str = None,
+        token: Optional[str] = None,
         timeout: Optional[float] = None,
         headers: Optional[Dict[str, str]] = None,
         cookies: Optional[Dict[str, str]] = None,

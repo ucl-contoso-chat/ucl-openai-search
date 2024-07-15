@@ -55,7 +55,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         content_field: str,
         query_language: str,
         query_speller: str,
-        hf_model: Optional[str],
+        hf_model: Optional[str] = None,
     ):
         self.search_client = search_client
         self.chatgpt_deployment = chatgpt_deployment

@@ -534,45 +534,42 @@ async def setup_clients():
         # Wait until token is needed to fetch for the first time
         current_app.config[CONFIG_SPEECH_SERVICE_TOKEN] = None
         current_app.config[CONFIG_CREDENTIAL] = azure_credential
-    else:
-        if OPENAI_HOST.startswith("azure"):
-            api_version = os.getenv("AZURE_OPENAI_API_VERSION") or "2024-03-01-preview"
-            if OPENAI_HOST == "azure_custom":
-                if not AZURE_OPENAI_CUSTOM_URL:
-                    raise ValueError("AZURE_OPENAI_CUSTOM_URL must be set when OPENAI_HOST is azure_custom")
-                endpoint = AZURE_OPENAI_CUSTOM_URL
-            else:
-                if not AZURE_OPENAI_SERVICE:
-                    raise ValueError("AZURE_OPENAI_SERVICE must be set when OPENAI_HOST is azure")
-                endpoint = f"https://{AZURE_OPENAI_SERVICE}.openai.azure.com"
-            if api_key := os.getenv("AZURE_OPENAI_API_KEY"):
-                llm_client = AzureOpenAIClient(api_version=api_version, azure_endpoint=endpoint, api_key=api_key)
-            else:
-                token_provider = get_bearer_token_provider(
-                    azure_credential, "https://cognitiveservices.azure.com/.default"
-                )
-                llm_client = AzureOpenAIClient(
-                    api_version=api_version,
-                    azure_endpoint=endpoint,
-                    azure_ad_token_provider=token_provider,
-                )
-        elif OPENAI_HOST == "local":
-            llm_client = LocalOpenAIClient(
-                base_url=os.environ["OPENAI_BASE_URL"],
-                api_key="no-key-required",
-            )
+    if OPENAI_HOST.startswith("azure"):
+        api_version = os.getenv("AZURE_OPENAI_API_VERSION") or "2024-03-01-preview"
+        if OPENAI_HOST == "azure_custom":
+            if not AZURE_OPENAI_CUSTOM_URL:
+                raise ValueError("AZURE_OPENAI_CUSTOM_URL must be set when OPENAI_HOST is azure_custom")
+            endpoint = AZURE_OPENAI_CUSTOM_URL
         else:
-            llm_client = LocalOpenAIClient(
-                api_key=OPENAI_API_KEY,
-                organization=OPENAI_ORGANIZATION,
+            if not AZURE_OPENAI_SERVICE:
+                raise ValueError("AZURE_OPENAI_SERVICE must be set when OPENAI_HOST is azure")
+            endpoint = f"https://{AZURE_OPENAI_SERVICE}.openai.azure.com"
+        if api_key := os.getenv("AZURE_OPENAI_API_KEY"):
+            llm_client = AzureOpenAIClient(api_version=api_version, azure_endpoint=endpoint, api_key=api_key)
+        else:
+            token_provider = get_bearer_token_provider(azure_credential, "https://cognitiveservices.azure.com/.default")
+            llm_client = AzureOpenAIClient(
+                api_version=api_version,
+                azure_endpoint=endpoint,
+                azure_ad_token_provider=token_provider,
             )
-        emb_client = llm_client
-        if HUGGINGFACE_MODEL:
-            if not HUGGINGFACE_API_KEY:
-                raise ValueError("HUGGINGFACE_API_KEY must be set when HUGGINGFACE_MODEL is set")
-            llm_client = HuggingFaceClient(
-                token=HUGGINGFACE_API_KEY, model=HUGGINGFACE_MODEL if HUGGINGFACE_MODEL else None
-            )
+    elif OPENAI_HOST == "local":
+        llm_client = LocalOpenAIClient(
+            base_url=os.environ["OPENAI_BASE_URL"],
+            api_key="no-key-required",
+        )
+    else:
+        llm_client = LocalOpenAIClient(
+            api_key=OPENAI_API_KEY,
+            organization=OPENAI_ORGANIZATION,
+        )
+    emb_client = llm_client
+    if HUGGINGFACE_MODEL:
+        if not HUGGINGFACE_API_KEY:
+            raise ValueError("HUGGINGFACE_API_KEY must be set when HUGGINGFACE_MODEL is set")
+        llm_client = HuggingFaceClient(
+            token=HUGGINGFACE_API_KEY, model=HUGGINGFACE_MODEL if HUGGINGFACE_MODEL else None
+        )
 
     current_app.config[CONFIG_OPENAI_CLIENT] = llm_client
     current_app.config[CONFIG_SEARCH_CLIENT] = search_client

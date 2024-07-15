@@ -39,7 +39,8 @@ def openai_client():
 def chat_approach(openai_client, mock_confidential_client_success):
     return ChatReadRetrieveReadVisionApproach(
         search_client=None,
-        openai_client=openai_client,
+        llm_client=openai_client,
+        emb_client=openai_client,
         auth_helper=AuthenticationHelper(
             search_index=MockSearchIndex,
             use_authentication=True,

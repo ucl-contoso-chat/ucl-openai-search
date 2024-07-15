@@ -40,7 +40,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         content_field: str,
         query_language: str,
         query_speller: str,
-        hf_model: Optional[str],
+        hf_model: Optional[str] = None,
     ):
         self.search_client = search_client
         self.llm_client = llm_client
