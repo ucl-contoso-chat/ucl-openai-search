@@ -10,7 +10,7 @@ from openai.types.chat import (
 )
 from openai_messages_token_helper import build_messages, get_token_limit
 
-from api_wrappers import HuggingFaceClient, LocalOpenAIClient
+from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
 from core.imageshelper import fetch_image
@@ -39,7 +39,7 @@ class RetrieveThenReadVisionApproach(Approach):
         *,
         search_client: SearchClient,
         blob_container_client: ContainerClient,
-        llm_client: Union[LocalOpenAIClient, HuggingFaceClient],
+        llm_client: Union[AzureOpenAIClient, LocalOpenAIClient, HuggingFaceClient],
         emb_client: AsyncOpenAI,
         auth_helper: AuthenticationHelper,
         gpt4v_deployment: Optional[str],
@@ -155,7 +155,7 @@ class RetrieveThenReadVisionApproach(Approach):
             n=1,
         )
 
-        chat_completion = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
+        final_result = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
 
         data_points = {
             "text": sources_content,
@@ -194,12 +194,16 @@ class RetrieveThenReadVisionApproach(Approach):
             ],
         }
 
-        completion = {}
-        completion["message"] = (
-            chat_completion.choices[0].message
-            if hasattr(chat_completion, "choices")
-            else chat_completion["choices"][0]["message"]
-        )
+        completion: dict = {}
+        if hasattr(final_result, "choices"):
+            completion["message"] = final_result.choices[0].message
+        elif isinstance(final_result, dict) and "choices" in final_result:
+            completion["message"] = final_result["choices"][0]["message"]
+        else:
+            raise TypeError(
+                f"Unexpected chat completion response type: {type(chat_completion)}. It should be dictionary or dataclasses."
+            )
+
         completion["context"] = extra_info
         completion["session_state"] = session_state
         return completion

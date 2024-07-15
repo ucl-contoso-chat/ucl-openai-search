@@ -1,7 +1,11 @@
-from typing import Any, Awaitable, Callable, Coroutine, Optional, Union
+from typing import Any, AsyncIterable, Awaitable, Callable, Coroutine, Optional, Union
 
 from azure.search.documents.aio import SearchClient
 from azure.storage.blob.aio import ContainerClient
+from huggingface_hub.inference._generated.types import (  # type: ignore
+    ChatCompletionOutput,
+    ChatCompletionStreamOutput,
+)
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import (
     ChatCompletion,
@@ -47,7 +51,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         query_speller: str,
         vision_endpoint: str,
         vision_token_provider: Callable[[], Awaitable[str]],
-        hf_model: Optional[str] = None,
+        hf_model: Optional[str],
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
@@ -93,7 +97,19 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         overrides: dict[str, Any],
         auth_claims: dict[str, Any],
         should_stream: bool = False,
-    ) -> tuple[dict[str, Any], Coroutine[Any, Any, Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]]]:
+    ) -> tuple[
+        dict[str, Any],
+        Coroutine[
+            Any,
+            Any,
+            Union[
+                ChatCompletion,
+                AsyncStream[ChatCompletionChunk],
+                ChatCompletionOutput,
+                AsyncIterable[ChatCompletionStreamOutput],
+            ],
+        ],
+    ]:
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
@@ -127,7 +143,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
             max_tokens=self.chatgpt_token_limit - query_response_token_limit,
         )
 
-        chat_completion: ChatCompletion = await self.llm_client.chat_completion(
+        chat_completion: Union[ChatCompletion, ChatCompletionOutput] = await self.llm_client.chat_completion(
             model=query_deployment if query_deployment else query_model,
             messages=self.llm_client.format_message(query_messages),
             temperature=0.0,  # Minimize creativity for search query generation

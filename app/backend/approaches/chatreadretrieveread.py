@@ -1,7 +1,20 @@
-from typing import Any, Coroutine, List, Literal, Optional, Union, overload
+from typing import (
+    Any,
+    AsyncIterable,
+    Coroutine,
+    List,
+    Literal,
+    Optional,
+    Union,
+    overload,
+)
 
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
+from huggingface_hub.inference._generated.types import (  # type: ignore
+    ChatCompletionOutput,
+    ChatCompletionStreamOutput,
+)
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import (
     ChatCompletion,
@@ -92,7 +105,19 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         overrides: dict[str, Any],
         auth_claims: dict[str, Any],
         should_stream: bool = False,
-    ) -> tuple[dict[str, Any], Coroutine[Any, Any, Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]]]:
+    ) -> tuple[
+        dict[str, Any],
+        Coroutine[
+            Any,
+            Any,
+            Union[
+                ChatCompletion,
+                AsyncStream[ChatCompletionChunk],
+                ChatCompletionOutput,
+                AsyncIterable[ChatCompletionStreamOutput],
+            ],
+        ],
+    ]:
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
@@ -139,18 +164,20 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             max_tokens=self.chatgpt_token_limit - query_response_token_limit,
         )
 
-        chat_completion: ChatCompletion = await self.llm_client.chat_completion(
-            messages=self.llm_client.format_message(query_messages),  # type: ignore
-            # Azure OpenAI takes the deployment name as the model name
-            model=(
-                self.hf_model
-                if self.hf_model
-                else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
-            ),
-            temperature=0.0,  # Minimize creativity for search query generation
-            max_tokens=query_response_token_limit,  # Setting too low risks malformed JSON, setting too high may affect performance
-            n=1,
-            tools=tools,
+        chat_completion: Union[ChatCompletion, ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]] = (
+            await self.llm_client.chat_completion(
+                messages=self.llm_client.format_message(query_messages),  # type: ignore
+                # Azure OpenAI takes the deployment name as the model name
+                model=(
+                    self.hf_model
+                    if self.hf_model
+                    else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
+                ),
+                temperature=0.0,  # Minimize creativity for search query generation
+                max_tokens=query_response_token_limit,  # Setting too low risks malformed JSON, setting too high may affect performance
+                n=1,
+                tools=tools,
+            )
         )
 
         query_text = self.get_search_query(chat_completion, original_user_query)
@@ -236,7 +263,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 ),
             ],
         }
-        reviewed_messages = self.llm_client.format_message(messages)
         chat_coroutine = self.llm_client.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
             model=(
@@ -244,7 +270,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 if self.hf_model
                 else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
             ),
-            messages=reviewed_messages,
+            messages=self.llm_client.format_message(messages),
             temperature=overrides.get("temperature", 0.3),
             max_tokens=response_token_limit,
             n=1,

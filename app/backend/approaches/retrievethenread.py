@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
 from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletionMessageParam
+from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
 from openai_messages_token_helper import build_messages, get_token_limit
 
 from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
@@ -141,7 +141,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             n=1,
         )
 
-        chat_completion = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
+        final_result = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
 
         data_points = {"text": sources_content}
         extra_info = {
@@ -174,13 +174,15 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                 ),
             ],
         }
+        completion_message: ChatCompletionMessage
+        if hasattr(final_result, "choices"):
+            completion_message = final_result.choices[0].message
+        elif isinstance(final_result, dict) and "choices" in final_result:
+            completion_message = final_result["choices"][0]["message"]
+        else:
+            raise TypeError(
+                f"Unexpected chat completion response type: {type(final_result)}. It should be dictionary or dataclasses."
+            )
 
-        completion = {}
-        completion["message"] = (
-            chat_completion.choices[0].message
-            if hasattr(chat_completion, "choices")
-            else chat_completion["choices"][0]["message"]
-        )
-        completion["context"] = extra_info
-        completion["session_state"] = session_state
+        completion = {"message": completion_message, "context": extra_info, "session_state": session_state}
         return completion

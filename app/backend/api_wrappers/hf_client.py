@@ -1,9 +1,16 @@
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import AsyncIterable, Dict, List, Optional, Union
 
-from huggingface_hub import (
+from huggingface_hub import (  # type: ignore
     AsyncInferenceClient,
+)
+from huggingface_hub.inference._generated.types import (  # type: ignore
     ChatCompletionOutput,
     ChatCompletionStreamOutput,
+)
+from openai.types.chat import (
+    ChatCompletionMessageParam,
+    ChatCompletionToolParam,
+    ChatCompletionUserMessageParam,
 )
 
 
@@ -21,8 +28,8 @@ class HuggingFaceClient(AsyncInferenceClient):
 
     async def chat_completion(
         self,
-        messages: List[Dict[str, Any]],
-        model: str = None,
+        messages: List[ChatCompletionMessageParam],
+        model: Optional[str] = None,
         stream: bool = False,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[int, float]] = None,
@@ -35,10 +42,10 @@ class HuggingFaceClient(AsyncInferenceClient):
         temperature: Optional[float] = None,
         tool_choice: Optional[Union[str, List[str]]] = None,
         tool_prompt: Optional[str] = None,
-        tools: Optional[List[str]] = None,
+        tools: Optional[List[ChatCompletionToolParam]] = None,
         top_logprobs: Optional[int] = None,
         top_p: Optional[float] = None,
-    ) -> Union[ChatCompletionOutput, Iterable[ChatCompletionStreamOutput]]:
+    ) -> Union[ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]]:
         return await super().chat_completion(
             messages=messages,
             model=model,
@@ -59,11 +66,7 @@ class HuggingFaceClient(AsyncInferenceClient):
             top_p=top_p,
         )
 
-    async def create_embedding(self, input: str, model: str):
-        embedding = await self.feature_extraction(text=input, model=model)
-        return embedding
-
-    def format_message(self, message: str):
+    def format_message(self, message: List[ChatCompletionMessageParam]) -> List[ChatCompletionMessageParam]:
         formatted_messages = []
         if message:
             # Handle the initial 'system' message by embedding it within the first 'user' message
@@ -74,17 +77,17 @@ class HuggingFaceClient(AsyncInferenceClient):
             else:
                 system_content = ""
 
-            # Add the system content to the first user message if it exists
             if system_content and message and message[0]["role"] == "user":
-                message[0]["content"] = system_content + "\n\n" + message[0]["content"]
+                message[0] = ChatCompletionUserMessageParam(
+                    content=system_content + "\n" + message[0]["content"], role="user"
+                )
 
-            # Process the messages to ensure proper alternation of roles
             last_role = None
-            for message in message:
-                if last_role == message["role"]:
+            for msg in message:
+                if last_role == msg["role"]:
                     raise ValueError("Messages must alternate roles between user and assistant.")
-                formatted_messages.append(message)
-                last_role = message["role"]
+                formatted_messages.append(msg)
+                last_role = msg["role"]
 
             # Ensure the first message is from the user
             if formatted_messages[0]["role"] != "user":

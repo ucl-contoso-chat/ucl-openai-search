@@ -1,4 +1,7 @@
+from typing import List
+
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 
 
 class LocalOpenAIClient(AsyncOpenAI):
@@ -10,8 +13,8 @@ class LocalOpenAIClient(AsyncOpenAI):
         self,
         *args,
         **kwargs,
-    ):
+    ) -> ChatCompletion:
         return await self.chat.completions.create(*args, **kwargs)
 
-    def format_message(self, message: str):
+    def format_message(self, message: List[ChatCompletionMessageParam]) -> List[ChatCompletionMessageParam]:
         return message

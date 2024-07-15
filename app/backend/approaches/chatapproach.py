@@ -1,8 +1,11 @@
 import json
 import re
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Dict, Optional, Union, cast
 
+from huggingface_hub.inference._generated.types import (
+    ChatCompletionOutput,  # type: ignore
+)
 from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 
 from approaches.approach import Approach
@@ -57,7 +60,7 @@ class ChatApproach(Approach, ABC):
         else:
             return override_prompt.format(follow_up_questions_prompt=follow_up_questions_prompt)
 
-    def get_search_query(self, chat_completion: ChatCompletion, user_query: str):
+    def get_search_query(self, chat_completion: Union[ChatCompletion, ChatCompletionOutput], user_query: str):
         response_message = chat_completion.choices[0].message
 
         if response_message.tool_calls:
@@ -96,20 +99,28 @@ class ChatApproach(Approach, ABC):
         )
         chat_completion_response: ChatCompletion = await chat_coroutine
 
-        # if statement for accessing delta is due to the OpenAI using dictionary-style access,
-        # while huggingface-hubuses data classes since 0.25.0
-        chat_resp = (
-            chat_completion_response.model_dump()
-            if hasattr(chat_completion_response, "model_dump")
-            else chat_completion_response
-        )  # Convert to dict to make it JSON serializable
-        chat_resp = chat_resp.choices[0] if hasattr(chat_resp, "choices") else chat_resp["choices"][0]
+        if isinstance(chat_completion_response, dict):
+            chat_resp = chat_completion_response
+        else:
+            chat_resp = chat_completion_response.model_dump()
+            chat_resp = cast(Dict[str, Any], chat_resp)
+
+        if isinstance(chat_resp, dict):
+            chat_resp = chat_resp["choices"][0]
+        else:
+            chat_resp = chat_resp.choices[0]
+
+        chat_resp = cast(Dict[str, Any], chat_resp)
         chat_resp["context"] = extra_info
+
         if overrides.get("suggest_followup_questions"):
             content, followup_questions = self.extract_followup_questions(chat_resp["message"]["content"])
             chat_resp["message"]["content"] = content
+            chat_resp["context"] = cast(Dict[str, Any], chat_resp["context"])
             chat_resp["context"]["followup_questions"] = followup_questions
+
         chat_resp["session_state"] = session_state
+
         return chat_resp
 
     async def run_with_streaming(
@@ -134,7 +145,7 @@ class ChatApproach(Approach, ABC):
                 # if statement for accessing delta is due to the OpenAI using dictionary-style access,
                 # while huggingface-hubuses data classes since 0.25.0
                 completion = {
-                    "delta": event.choices[0].delta if hasattr(event, "choices") else event.get("choices")[0]["delta"]
+                    "delta": event.choices[0].delta if hasattr(event, "choices") else event["choices"][0]["delta"]
                 }
                 # if event contains << and not >>, it is start of follow-up question, truncate
                 content = completion["delta"].get("content")
