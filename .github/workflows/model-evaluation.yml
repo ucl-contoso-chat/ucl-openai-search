@@ -1,0 +1,226 @@
+name: Full Model Evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      provision:
+        description: 'Whether to provision the deployment'
+        required: true
+        default: true
+        type: boolean
+      deploy:
+        description: 'Whether to deploy the application'
+        required: true
+        default: true
+        type: boolean
+      purge:
+        description: 'Whether to purge the deployment after evaluation'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+    deploy-and-evaluate:
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            os: ["ubuntu-20.04"]
+            python_version: ["3.11"]
+        env:
+          # azd required
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          # project specific
+          AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}
+          AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION }}
+          AZURE_OPENAI_RESOURCE_GROUP: ${{ vars.AZURE_OPENAI_RESOURCE_GROUP }}
+          AZURE_COMPUTER_VISION_SERVICE: ${{ vars.AZURE_COMPUTER_VISION_SERVICE }}
+          AZURE_COMPUTER_VISION_RESOURCE_GROUP: ${{ vars.AZURE_COMPUTER_VISION_RESOURCE_GROUP }}
+          AZURE_COMPUTER_VISION_LOCATION: ${{ vars.AZURE_COMPUTER_VISION_LOCATION }}
+          AZURE_COMPUTER_VISION_SKU: ${{ vars.AZURE_COMPUTER_VISION_SKU }}
+          AZURE_FORMRECOGNIZER_SERVICE: ${{ vars.AZURE_FORMRECOGNIZER_SERVICE }}
+          AZURE_FORMRECOGNIZER_RESOURCE_GROUP: ${{ vars.AZURE_FORMRECOGNIZER_RESOURCE_GROUP }}
+          AZURE_FORMRECOGNIZER_SKU: ${{ vars.AZURE_FORMRECOGNIZER_SKU }}
+          AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
+          AZURE_SEARCH_SERVICE: ${{ vars.AZURE_SEARCH_SERVICE }}
+          AZURE_SEARCH_SERVICE_RESOURCE_GROUP: ${{ vars.AZURE_SEARCH_SERVICE_RESOURCE_GROUP }}
+          AZURE_SEARCH_SERVICE_LOCATION: ${{ vars.AZURE_SEARCH_SERVICE_LOCATION }}
+          AZURE_SEARCH_SERVICE_SKU: ${{ vars.AZURE_SEARCH_SERVICE_SKU }}
+          AZURE_SEARCH_QUERY_LANGUAGE: ${{ vars.AZURE_SEARCH_QUERY_LANGUAGE }}
+          AZURE_SEARCH_QUERY_SPELLER: ${{ vars.AZURE_SEARCH_QUERY_SPELLER }}
+          AZURE_SEARCH_SEMANTIC_RANKER: ${{ vars.AZURE_SEARCH_SEMANTIC_RANKER }}
+          AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+          AZURE_STORAGE_RESOURCE_GROUP: ${{ vars.AZURE_STORAGE_RESOURCE_GROUP }}
+          AZURE_STORAGE_SKU: ${{ vars.AZURE_STORAGE_SKU }}
+          AZURE_APP_SERVICE_PLAN: ${{ vars.AZURE_APP_SERVICE_PLAN }}
+          AZURE_APP_SERVICE_SKU: ${{ vars.AZURE_APP_SERVICE_SKU }}
+          AZURE_APP_SERVICE: ${{ vars.AZURE_APP_SERVICE }}
+          AZURE_OPENAI_CHATGPT_MODEL: ${{ vars.AZURE_OPENAI_CHATGPT_MODEL }}
+          AZURE_OPENAI_CHATGPT_DEPLOYMENT: ${{ vars.AZURE_OPENAI_CHATGPT_DEPLOYMENT }}
+          AZURE_OPENAI_CHATGPT_DEPLOYMENT_CAPACITY: ${{ vars.AZURE_OPENAI_CHATGPT_DEPLOYMENT_CAPACITY }}
+          AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION: ${{ vars.AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION }}
+          AZURE_OPENAI_EMB_MODEL_NAME: ${{ vars.AZURE_OPENAI_EMB_MODEL_NAME }}
+          AZURE_OPENAI_EMB_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EMB_DEPLOYMENT }}
+          AZURE_OPENAI_EMB_DEPLOYMENT_CAPACITY: ${{ vars.AZURE_OPENAI_EMB_DEPLOYMENT_CAPACITY }}
+          AZURE_OPENAI_EMB_DEPLOYMENT_VERSION: ${{ vars.AZURE_OPENAI_EMB_DEPLOYMENT_VERSION }}
+          AZURE_OPENAI_EMB_DIMENSIONS: ${{ vars.AZURE_OPENAI_EMB_DIMENSIONS }}
+          OPENAI_HOST: ${{ vars.OPENAI_HOST }}
+          OPENAI_API_KEY: ${{ vars.OPENAI_API_KEY }}
+          OPENAI_ORGANIZATION: ${{ vars.OPENAI_ORGANIZATION }}
+          AZURE_USE_APPLICATION_INSIGHTS: ${{ vars.AZURE_USE_APPLICATION_INSIGHTS }}
+          AZURE_APPLICATION_INSIGHTS: ${{ vars.AZURE_APPLICATION_INSIGHTS }}
+          AZURE_APPLICATION_INSIGHTS_DASHBOARD: ${{ vars.AZURE_APPLICATION_INSIGHTS_DASHBOARD }}
+          AZURE_LOG_ANALYTICS: ${{ vars.AZURE_LOG_ANALYTICS }}
+          USE_VECTORS: ${{ vars.USE_VECTORS }}
+          USE_GPT4V: ${{ vars.USE_GPT4V }}
+          AZURE_VISION_ENDPOINT: ${{ vars.AZURE_VISION_ENDPOINT }}
+          VISION_SECRET_NAME: ${{ vars.VISION_SECRET_NAME }}
+          USE_SPEECH_INPUT_BROWSER: ${{ vars.USE_SPEECH_INPUT_BROWSER }}
+          USE_SPEECH_OUTPUT_BROWSER: ${{ vars.USE_SPEECH_OUTPUT_BROWSER }}
+          USE_SPEECH_OUTPUT_AZURE: ${{ vars.USE_SPEECH_OUTPUT_AZURE }}
+          AZURE_SPEECH_SERVICE: ${{ vars.AZURE_SPEECH_SERVICE }}
+          AZURE_SPEECH_SERVICE_RESOURCE_GROUP: ${{ vars.AZURE_SPEECH_RESOURCE_GROUP }}
+          AZURE_SPEECH_SERVICE_LOCATION: ${{ vars.AZURE_SPEECH_SERVICE_LOCATION }}
+          AZURE_SPEECH_SERVICE_SKU: ${{ vars.AZURE_SPEECH_SERVICE_SKU }}
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          AZURE_USE_AUTHENTICATION: ${{ vars.AZURE_USE_AUTHENTICATION }}
+          AZURE_ENFORCE_ACCESS_CONTROL: ${{ vars.AZURE_ENFORCE_ACCESS_CONTROL }}
+          AZURE_ENABLE_GLOBAL_DOCUMENT_ACCESS: ${{ vars.AZURE_ENABLE_GLOBAL_DOCUMENT_ACCESS }}
+          AZURE_ENABLE_UNAUTHENTICATED_ACCESS: ${{ vars.AZURE_ENABLE_UNAUTHENTICATED_ACCESS }}
+          AZURE_AUTH_TENANT_ID: ${{ vars.AZURE_AUTH_TENANT_ID }}
+          AZURE_SERVER_APP_ID: ${{ vars.AZURE_SERVER_APP_ID }}
+          AZURE_CLIENT_APP_ID: ${{ vars.AZURE_CLIENT_APP_ID }}
+          ALLOWED_ORIGIN: ${{ vars.ALLOWED_ORIGIN }}
+          AZURE_ADLS_GEN2_STORAGE_ACCOUNT: ${{ vars.AZURE_ADLS_GEN2_STORAGE_ACCOUNT }}
+          AZURE_ADLS_GEN2_FILESYSTEM_PATH: ${{ vars.AZURE_ADLS_GEN2_FILESYSTEM_PATH }}
+          AZURE_ADLS_GEN2_FILESYSTEM: ${{ vars.AZURE_ADLS_GEN2_FILESYSTEM }}
+
+        steps:
+          #--------------------------Setup--------------------------------
+          - name: Checkout
+            uses: actions/checkout@v4
+          - name: Install azd
+            uses: Azure/setup-azd@v1.0.0
+          - name: Install Nodejs
+            uses: actions/setup-node@v4
+            with:
+              node-version: 18
+
+          #--------------------------Deploy--------------------------------
+          - name: Check credentials
+            run: |
+              echo "AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}"
+              echo "AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}"
+              echo "AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}"
+              echo "AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}"
+          - name: Azure login
+            uses: azure/login@v2
+            with:
+              client-id: ${{ env.AZURE_CLIENT_ID }}
+              tenant-id: ${{ env.AZURE_TENANT_ID }}
+              subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+          - name: Azure CLI script
+            uses: azure/cli@v2
+            with:
+              azcliversion: latest
+              inlineScript: |
+                az account show
+          - name: Log in with Azure (Federated Credentials)
+            if: ${{ env.AZURE_CLIENT_ID != '' }}
+            run: |
+              echo "Logging in with federated credentials"
+              azd auth login `
+                --client-id "$Env:AZURE_CLIENT_ID" `
+                --federated-credential-provider "github" `
+                --tenant-id "$Env:AZURE_TENANT_ID"
+            shell: pwsh
+
+          - name: Log in with Azure (Client Credentials)
+            if: ${{ env.AZURE_CREDENTIALS != '' }}
+            run: |
+              echo "Logging in with client credentials"
+              $info = $Env:AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
+              Write-Host "::add-mask::$($info.clientSecret)"
+              azd auth login `
+                --client-id "$($info.clientId)" `
+                --client-secret "$($info.clientSecret)" `
+                --tenant-id "$($info.tenantId)"
+            shell: pwsh
+            env:
+              AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+
+          # - name: Sync Azure environment
+          #   run: azd env refresh -e ${{ env.AZURE_ENV_NAME }}
+
+          - name: Provision Infrastructure
+            if: ${{ inputs.provision == true }}
+            run: |
+              azd provision --no-prompt
+            env:
+              AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+              AZURE_SERVER_APP_SECRET: ${{ secrets.AZURE_SERVER_APP_SECRET }}
+              AZURE_CLIENT_APP_SECRET: ${{ secrets.AZURE_CLIENT_APP_SECRET }}
+
+          - name: Deploy Application
+            if: ${{ inputs.deploy == true }}
+            run: azd deploy --no-prompt
+
+          #--------------------------Run Evaluation--------------------------------
+          - name: Setup python
+            uses: actions/setup-python@v5
+            with:
+              python-version: ${{ matrix.python_version }}
+              architecture: x64
+          - name: Install dependencies
+            working-directory: ./evaluation
+            run: |
+              python -m pip install --upgrade pip
+              pip install -r scripts/requirements.txt
+              pip install pyrit
+          - name: Run AI Rag Evaluations
+            working-directory: ./evaluation
+            run: |
+              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID python -m scripts evaluate --config=./config.json --numquestions=10
+              echo "EVALUATION_RESULTS=evaluation/results/$(ls ./results/ | grep "experiment" | tail -n 1)" >> $GITHUB_ENV
+            env:
+              OPENAI_HOST: ${{ vars.OPENAI_HOST }}
+              OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
+              AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+              AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}
+              AZURE_SEARCH_SERVICE: ${{ vars.AZURE_SEARCH_SERVICE }}
+              AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
+              AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}
+          - name: Run Red Teaming Evaluations
+            working-directory: ./evaluation
+            run: |
+              AZURE_OPENAI_EVAL_ENDPOINT=$AZURE_OPENAI_EVAL_ENDPOINT AZURE_OPENAI_CHAT_ENDPOINT=$AZURE_OPENAI_CHAT_ENDPOINT AZURE_OPENAI_CHAT_DEPLOYMENT=$AZURE_OPENAI_CHAT_DEPLOYMENT AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT python -m scripts red-teaming
+            env:
+              AZURE_OPENAI_CHAT_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
+              AZURE_OPENAI_EVAL_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
+              AZURE_OPENAI_CHAT_DEPLOYMENT: ${{ vars.AZURE_OPENAI_CHAT_DEPLOYMENT }}
+              AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+
+          - name: Dump results
+            uses: actions/upload-artifact@v4
+            with:
+              name: evaluation-results
+              path: |
+                ${{ env.EVALUATION_RESULTS }}/summary.json
+                ${{ env.EVALUATION_RESULTS }}/eval_results.jsonl
+                ${{ env.EVALUATION_RESULTS }}/config.json
+                ${{ env.EVALUATION_RESULTS }}/evaluate_parameters.json
+                evaluation/eval.png
+                evaluation/mean_score.png
+                evaluation/passing_rate.png
+          #--------------------------Cleanup--------------------------------
+          - name: Cleanup
+            if: ${{ inputs.purge == true }}
+            run: azd down --force --purge
