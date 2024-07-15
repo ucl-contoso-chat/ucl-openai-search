@@ -217,7 +217,12 @@ jobs:
               name: evaluation-results
               path: |
                 ${{ env.EVALUATION_RESULTS }}/summary.json
-                ${{ env.EVALUATION_RESULTS }}/eval_results.json
+                ${{ env.EVALUATION_RESULTS }}/eval_results.jsonl
+                ${{ env.EVALUATION_RESULTS }}/config.json
+                ${{ env.EVALUATION_RESULTS }}/evaluate_parameters.json
+                evaluation/eval.png
+                evaluation/mean_score.png
+                evaluation/passing_rate.png
           #--------------------------Cleanup--------------------------------
           - name: Cleanup
             if: ${{ inputs.purge == true }}
