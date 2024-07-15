@@ -56,7 +56,10 @@ def test_send_question_to_target_missing_all():
 
 
 def test_send_question_to_target_missing_content():
-    response = {"message": {}, "context": {"data_points": {"text": ["Context 1", "Context 2"]}}}
+    response = {
+        "message": {},
+        "context": {"data_points": {"text": ["Context 1", "Context 2"]}},
+    }
     requests.post = lambda url, headers, json: MockResponse(response)
     try:
         send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)

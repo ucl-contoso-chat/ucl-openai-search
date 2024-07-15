@@ -1,13 +1,12 @@
 import logging
 import re
 
-from .base_metric import BaseMetric
+from .base_metric import DEFAULT_PASSING_THRESHOLD, BaseMetric
 
 logger = logging.getLogger("scripts")
 
 
 class AnswerLengthMetric(BaseMetric):
-
     METRIC_NAME = "answer_length"
 
     @classmethod
@@ -21,7 +20,7 @@ class AnswerLengthMetric(BaseMetric):
         return answer_length
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_rate):
+    def get_aggregate_stats(cls, df, passing_threshold=DEFAULT_PASSING_THRESHOLD):
         # remove -1 values from the mean calculation
         df = df[df[cls.METRIC_NAME] != -1]
         return {
@@ -32,7 +31,6 @@ class AnswerLengthMetric(BaseMetric):
 
 
 class HasCitationMetric(BaseMetric):
-
     METRIC_NAME = "has_citation"
 
     @classmethod
@@ -46,7 +44,7 @@ class HasCitationMetric(BaseMetric):
         return has_citation
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_rate):
+    def get_aggregate_stats(cls, df, passing_threshold=DEFAULT_PASSING_THRESHOLD):
         df = df[df[cls.METRIC_NAME] != -1]
         return {
             "total": int(df[cls.METRIC_NAME].sum()),
@@ -55,7 +53,6 @@ class HasCitationMetric(BaseMetric):
 
 
 class CitationMatchMetric(BaseMetric):
-
     METRIC_NAME = "citation_match"
 
     @classmethod
@@ -73,7 +70,7 @@ class CitationMatchMetric(BaseMetric):
         return citation_match
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_rate):
+    def get_aggregate_stats(cls, df, passing_threshold=DEFAULT_PASSING_THRESHOLD):
         df = df[df[cls.METRIC_NAME] != -1]
         return {
             "total": int(df[cls.METRIC_NAME].sum()),
@@ -82,7 +79,6 @@ class CitationMatchMetric(BaseMetric):
 
 
 class LatencyMetric(BaseMetric):
-
     METRIC_NAME = "latency"
 
     @classmethod
@@ -94,7 +90,7 @@ class LatencyMetric(BaseMetric):
         return latency
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_rate):
+    def get_aggregate_stats(cls, df, passing_threshold=DEFAULT_PASSING_THRESHOLD):
         return {
             "mean": round(df[cls.METRIC_NAME].mean(), 2),
             "max": int(df[cls.METRIC_NAME].max()),

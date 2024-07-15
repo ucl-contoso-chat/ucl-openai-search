@@ -1,14 +1,11 @@
 import json
 import logging
-import math
-import random
 from pathlib import Path
 
 from azure.ai.generative.synthetic.qa import QADataGenerator, QAType
 from azure.search.documents import SearchClient
-from openai_messages_token_helper import build_messages, get_token_limit
-from promptflow.core import AzureOpenAIModelConfiguration, ModelConfiguration, OpenAIModelConfiguration
-from promptflow.connections import AzureOpenAIConnection
+from openai_messages_token_helper import get_token_limit
+
 from . import service_setup
 
 logger = logging.getLogger("scripts")
@@ -55,11 +52,12 @@ def generate_test_qa_data(
         for item in qa:
             f.write(json.dumps(item) + "\n")
 
+
 def generate_test_qa_answer(
     openai_config,
     question_path: Path,
     output_file: Path,
-    using_huggingface: bool = False
+    using_huggingface: bool = False,
 ):
     logger.info("Generating answers based on the quesion of %s", question_path)
     with open(question_path, encoding="utf-8") as f:
@@ -73,14 +71,14 @@ def generate_test_qa_answer(
             response = openai_client.chat.completions.create(
                 model=openai_config.model,
                 messages=[
-                        {
-                            "role": "user",
-                            "content": f"{question['question']}",
-                        }
-                    ],
+                    {
+                        "role": "user",
+                        "content": f"{question['question']}",
+                    }
+                ],
                 n=1,
-            max_tokens=get_token_limit(openai_config.model),
-            temperature=0.3,
+                max_tokens=get_token_limit(openai_config.model),
+                temperature=0.3,
             )
             answer = response.choices[0].message.content.split("\n")[0]
             print(answer)

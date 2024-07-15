@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from pathlib import Path
 from typing import Optional
@@ -5,20 +6,19 @@ from typing import Optional
 import dotenv
 import typer
 from rich.logging import RichHandler
-import asyncio
 
 from . import service_setup
 from .evaluate import run_evaluate_from_config
-from .generate import (
-    generate_test_qa_data,
-    generate_test_qa_answer
-)
+from .generate import generate_test_qa_answer, generate_test_qa_data
 from .red_teaming import run_red_teaming
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
 logging.basicConfig(
-    level=logging.WARNING, format="%(message)s", datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
+    level=logging.WARNING,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)],
 )
 logger = logging.getLogger("scripts")
 
@@ -38,10 +38,16 @@ def str_or_none(raw: str) -> Optional[str]:
 @app.command()
 def evaluate(
     config: Path = typer.Option(
-        exists=True, dir_okay=False, file_okay=True, help="Path to config.json", default="config.json"
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="Path to config.json",
+        default="config.json",
     ),
     numquestions: Optional[int] = typer.Option(
-        help="Number of questions to evaluate (defaults to all if not specified).", default=None, parser=int_or_none
+        help="Number of questions to evaluate (defaults to all if not specified).",
+        default=None,
+        parser=int_or_none,
     ),
     targeturl: Optional[str] = typer.Option(
         help="URL of the target service to evaluate against (defaults to the one in the config).",
@@ -65,7 +71,7 @@ def generate(
         num_questions_per_source=persource,
         output_file=Path.cwd() / output,
     )
-    
+
 
 @app.command()
 def generate_answers(
@@ -78,22 +84,23 @@ def generate_answers(
         output_file=Path.cwd() / output,
     )
 
+
 @app.command()
 def red_teaming(
-    scorer_path: Path =  typer.Option(exists=True, dir_okay=False, file_okay=True, default="scorer_definitions/key_logger_classifier.yaml"),
+    scorer_path: Path = typer.Option(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        default="scorer_definitions/key_logger_classifier.yaml",
+    ),
     red_teaming_llm: Optional[str] = typer.Option(default="openai"),
     prompt_target: Optional[str] = typer.Option(default="openai"),
 ):
     red_team = service_setup.get_openai_target() if red_teaming_llm == "openai" else service_setup.get_azure_ml_target()
     target = service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_target()
-    
-    asyncio.run(
-        run_red_teaming(
-            Path.cwd() / scorer_path,
-            red_team,
-            target
-        )
-    )
-    
+
+    asyncio.run(run_red_teaming(Path.cwd() / scorer_path, red_team, target))
+
+
 def cli():
     app()

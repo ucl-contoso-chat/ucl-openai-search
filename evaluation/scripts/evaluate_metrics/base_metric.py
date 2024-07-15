@@ -5,14 +5,15 @@ import pandas as pd
 
 logger = logging.getLogger("scripts")
 
+DEFAULT_PASSING_THRESHOLD = 4.0
+
 
 class BaseMetric(ABC):
-
     METRIC_NAME = "name_of_metric"
 
     @classmethod
     @abstractmethod
-    def get_aggregate_stats(cls, df, passing_rate):
+    def get_aggregate_stats(cls, df, passing_threshold=DEFAULT_PASSING_THRESHOLD):
         """Returns a dictionary of aggregate statistics for the metric"""
         pass
 

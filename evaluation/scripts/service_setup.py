@@ -10,8 +10,13 @@ from promptflow.core import (
     ModelConfiguration,
     OpenAIModelConfiguration,
 )
-from pyrit.prompt_target import AzureOpenAIChatTarget, AzureMLChatTarget, PromptChatTarget, OpenAIChatTarget
-from pyrit.chat_message_normalizer import ChatMessageNormalizer, ChatMessageNop
+from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
+from pyrit.prompt_target import (
+    AzureMLChatTarget,
+    AzureOpenAIChatTarget,
+    OpenAIChatTarget,
+    PromptChatTarget,
+)
 
 logger = logging.getLogger("scripts")
 
@@ -57,7 +62,9 @@ def get_openai_config() -> ModelConfiguration:
         else:
             logger.info("Using Azure OpenAI Service with Azure Developer CLI Credential")
             openai_config = AzureOpenAIModelConfiguration(
-                azure_endpoint=azure_endpoint, azure_deployment=azure_deployment, api_version=api_version
+                azure_endpoint=azure_endpoint,
+                azure_deployment=azure_deployment,
+                api_version=api_version,
             )
             # PromptFlow will call DefaultAzureCredential behind the scenes
         openai_config.model = os.environ["OPENAI_GPT_MODEL"]
@@ -124,7 +131,8 @@ def get_openai_client(oai_config: ModelConfiguration):
         azure_token_provider = None
         if not os.environ.get("AZURE_OPENAI_KEY"):
             azure_token_provider = get_bearer_token_provider(
-                AzureDeveloperCliCredential(), "https://cognitiveservices.azure.com/.default"
+                AzureDeveloperCliCredential(),
+                "https://cognitiveservices.azure.com/.default",
             )
         logger.info(azure_token_provider)
         return openai.AzureOpenAI(
@@ -142,10 +150,10 @@ def get_openai_client(oai_config: ModelConfiguration):
 
 
 def get_openai_target() -> PromptChatTarget:
-    if os.environ["OPENAI_HOST"] == "azure": 
+    if os.environ["OPENAI_HOST"] == "azure":
         logger.info("Using Azure OpenAI Chat Target")
-        deployment= os.environ["AZURE_OPENAI_EVAL_DEPLOYMENT"]
-        endpoint= os.environ["AZURE_OPENAI_EVAL_ENDPOINT"]
+        deployment = os.environ["AZURE_OPENAI_EVAL_DEPLOYMENT"]
+        endpoint = os.environ["AZURE_OPENAI_EVAL_ENDPOINT"]
         if api_key := os.environ.get("AZURE_OPENAI_KEY"):
             return AzureOpenAIChatTarget(
                 deployment_name=deployment,
@@ -153,23 +161,19 @@ def get_openai_target() -> PromptChatTarget:
                 api_key=api_key,
             )
         else:
-            return AzureOpenAIChatTarget(
-                deployment_name=deployment,
-                endpoint=endpoint,
-                use_aad_auth=True
-            )
+            return AzureOpenAIChatTarget(deployment_name=deployment, endpoint=endpoint, use_aad_auth=True)
     else:
         logger.info("Using OpenAI Chat Target")
-        return OpenAIChatTarget(
-            api_key=os.environ["OPENAICOM_KEY"]
-        )
-    
+        return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])
 
-def get_azure_ml_chat_target(chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop) -> AzureMLChatTarget:
-    endpoint=os.environ["AZURE_ML_ENDPOINT"]
-    api_key=os.environ["AZURE_ML_MANAGED_KEY"]
+
+def get_azure_ml_chat_target(
+    chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop,
+) -> AzureMLChatTarget:
+    endpoint = os.environ["AZURE_ML_ENDPOINT"]
+    api_key = os.environ["AZURE_ML_MANAGED_KEY"]
     return AzureMLChatTarget(
-        endpoint_uri=endpoint, 
+        endpoint_uri=endpoint,
         api_key=api_key,
-        chat_message_normalizer=chat_message_normalizer)
-    
+        chat_message_normalizer=chat_message_normalizer,
+    )

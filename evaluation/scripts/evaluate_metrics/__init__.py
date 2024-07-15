@@ -13,7 +13,6 @@ from .code_metrics import (
     LatencyMetric,
 )
 
-
 metrics = [
     BuiltinCoherenceMetric,
     BuiltinRelevanceMetric,

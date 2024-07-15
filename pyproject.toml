@@ -12,7 +12,7 @@ line-length = 120
 
 [tool.pytest.ini_options]
 addopts = "-ra"
-pythonpath = ["app/backend", "scripts"]
+pythonpath = ["app/backend", "scripts", "./"]
 
 [tool.coverage.paths]
 source = ["scripts", "app"]
