@@ -5,7 +5,6 @@ from typing import Any, AsyncGenerator, Optional
 
 from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 
-from api_wrappers import CompatibilityWrapper
 from approaches.approach import Approach
 
 
@@ -96,8 +95,15 @@ class ChatApproach(Approach, ABC):
             messages, overrides, auth_claims, should_stream=False
         )
         chat_completion_response: ChatCompletion = await chat_coroutine
-        chat_resp = chat_completion_response.model_dump()  # Convert to dict to make it JSON serializable
-        chat_resp = chat_resp["choices"][0]
+
+        # if statement for accessing delta is due to the OpenAI using dictionary-style access,
+        # while huggingface-hubuses data classes since 0.25.0
+        chat_resp = (
+            chat_completion_response.model_dump()
+            if hasattr(chat_completion_response, "model_dump")
+            else chat_completion_response
+        )  # Convert to dict to make it JSON serializable
+        chat_resp = chat_resp.choices[0] if hasattr(chat_resp, "choices") else chat_resp["choices"][0]
         chat_resp["context"] = extra_info
         if overrides.get("suggest_followup_questions"):
             content, followup_questions = self.extract_followup_questions(chat_resp["message"]["content"])
@@ -122,9 +128,14 @@ class ChatApproach(Approach, ABC):
         followup_content = ""
         async for event_chunk in await chat_coroutine:
             # "2023-07-01-preview" API version has a bug where first response has empty choices
-            event = CompatibilityWrapper(event_chunk)  # Convert pydantic model to dict
-            if event.choices:
-                completion = {"delta": CompatibilityWrapper(event.choices[0]).delta}
+            # Convert pydantic model to dict if needed
+            event = event_chunk.model_dump() if hasattr(event_chunk, "model_dump") else event_chunk
+            if (hasattr(event, "choices") and event.choices) or event.get("choices"):
+                # if statement for accessing delta is due to the OpenAI using dictionary-style access,
+                # while huggingface-hubuses data classes since 0.25.0
+                completion = {
+                    "delta": event.choices[0].delta if hasattr(event, "choices") else event.get("choices")[0]["delta"]
+                }
                 # if event contains << and not >>, it is start of follow-up question, truncate
                 content = completion["delta"].get("content")
                 content = content or ""  # content may either not exist in delta, or explicitly be None

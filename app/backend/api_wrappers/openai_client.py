@@ -1,16 +1,9 @@
-from typing import Awaitable, Callable
-
 from openai import AsyncOpenAI
 
-from .base_client import BaseAPIClient
 
-
-class LocalOpenAIClient(BaseAPIClient, AsyncOpenAI):
-
-    AsyncAzureADTokenProvider = Callable[[], "str | Awaitable[str]"]
+class LocalOpenAIClient(AsyncOpenAI):
 
     def __init__(self, *args, **kwargs) -> None:
-        BaseAPIClient.__init__(self)
         AsyncOpenAI.__init__(self, *args, **kwargs)
 
     async def chat_completion(

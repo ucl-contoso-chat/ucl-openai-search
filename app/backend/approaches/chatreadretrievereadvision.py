@@ -12,7 +12,7 @@ from openai.types.chat import (
 )
 from openai_messages_token_helper import build_messages, get_token_limit
 
-from api_wrappers import BaseAPIClient
+from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
 from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
@@ -31,7 +31,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         *,
         search_client: SearchClient,
         blob_container_client: ContainerClient,
-        llm_client: BaseAPIClient,
+        llm_client: Union[AzureOpenAIClient, LocalOpenAIClient, HuggingFaceClient],
         emb_client: AsyncOpenAI,
         auth_helper: AuthenticationHelper,
         chatgpt_model: str,
@@ -47,8 +47,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         query_speller: str,
         vision_endpoint: str,
         vision_token_provider: Callable[[], Awaitable[str]],
-        hf_model: str,
-        use_hf: bool,
+        hf_model: Optional[str],
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
@@ -70,7 +69,6 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         self.vision_token_provider = vision_token_provider
         self.chatgpt_token_limit = get_token_limit(gpt4v_model)
         self.hf_model = hf_model
-        self.use_hf = use_hf
 
     @property
     def system_message_chat_conversation(self):
@@ -131,7 +129,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
 
         chat_completion: ChatCompletion = await self.llm_client.chat_completion(
             model=query_deployment if query_deployment else query_model,
-            messages=query_messages,
+            messages=self.llm_client.format_message(query_messages),
             temperature=0.0,  # Minimize creativity for search query generation
             max_tokens=query_response_token_limit,
             n=1,
@@ -243,7 +241,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
 
         chat_coroutine = self.llm_client.chat_completion(
             model=self.gpt4v_deployment if self.gpt4v_deployment else self.gpt4v_model,
-            messages=messages,
+            messages=self.llm_client.format_message(messages),
             temperature=overrides.get("temperature", 0.3),
             max_tokens=response_token_limit,
             n=1,

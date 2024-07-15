@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional, Union
 
 from azure.search.documents.aio import SearchClient
 from azure.storage.blob.aio import ContainerClient
@@ -10,7 +10,7 @@ from openai.types.chat import (
 )
 from openai_messages_token_helper import build_messages, get_token_limit
 
-from api_wrappers import BaseAPIClient
+from api_wrappers import HuggingFaceClient, LocalOpenAIClient
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
 from core.imageshelper import fetch_image
@@ -39,7 +39,7 @@ class RetrieveThenReadVisionApproach(Approach):
         *,
         search_client: SearchClient,
         blob_container_client: ContainerClient,
-        llm_client: BaseAPIClient,
+        llm_client: Union[LocalOpenAIClient, HuggingFaceClient],
         emb_client: AsyncOpenAI,
         auth_helper: AuthenticationHelper,
         gpt4v_deployment: Optional[str],
@@ -53,8 +53,7 @@ class RetrieveThenReadVisionApproach(Approach):
         query_speller: str,
         vision_endpoint: str,
         vision_token_provider: Callable[[], Awaitable[str]],
-        hf_model: str,
-        use_hf: bool,
+        hf_model: Optional[str],
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
@@ -74,7 +73,6 @@ class RetrieveThenReadVisionApproach(Approach):
         self.vision_token_provider = vision_token_provider
         self.gpt4v_token_limit = get_token_limit(gpt4v_model)
         self.hf_model = hf_model
-        self.use_hf = use_hf
 
     async def run(
         self,
@@ -148,15 +146,16 @@ class RetrieveThenReadVisionApproach(Approach):
             new_user_content=user_content,
             max_tokens=self.gpt4v_token_limit - response_token_limit,
         )
-        chat_completion = (
-            await self.llm_client.chat_completion(
-                model=self.gpt4v_deployment if self.gpt4v_deployment else self.gpt4v_model,
-                messages=updated_messages,
-                temperature=overrides.get("temperature", 0.3),
-                max_tokens=response_token_limit,
-                n=1,
-            )
-        ).model_dump()
+
+        chat_completion = await self.llm_client.chat_completion(
+            model=self.gpt4v_deployment if self.gpt4v_deployment else self.gpt4v_model,
+            messages=self.llm_client.format_message(updated_messages),
+            temperature=overrides.get("temperature", 0.3),
+            max_tokens=response_token_limit,
+            n=1,
+        )
+
+        chat_completion = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
 
         data_points = {
             "text": sources_content,
@@ -196,7 +195,11 @@ class RetrieveThenReadVisionApproach(Approach):
         }
 
         completion = {}
-        completion["message"] = chat_completion["choices"][0]["message"]
+        completion["message"] = (
+            chat_completion.choices[0].message
+            if hasattr(chat_completion, "choices")
+            else chat_completion["choices"][0]["message"]
+        )
         completion["context"] = extra_info
         completion["session_state"] = session_state
         return completion

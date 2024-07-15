@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from openai_messages_token_helper import build_messages, get_token_limit
 
-from api_wrappers import BaseAPIClient
+from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
 
@@ -44,7 +44,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         *,
         search_client: SearchClient,
         auth_helper: AuthenticationHelper,
-        llm_client: BaseAPIClient,
+        llm_client: Union[AzureOpenAIClient, LocalOpenAIClient, HuggingFaceClient],
         emb_client: AsyncOpenAI,
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
@@ -55,8 +55,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         content_field: str,
         query_language: str,
         query_speller: str,
-        hf_model: str,
-        use_hf: bool,
+        hf_model: Optional[str],
     ):
         self.search_client = search_client
         self.chatgpt_deployment = chatgpt_deployment
@@ -74,7 +73,6 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         self.query_speller = query_speller
         self.chatgpt_token_limit = get_token_limit(chatgpt_model)
         self.hf_model = hf_model
-        self.use_hf = use_hf
 
     async def run(
         self,
@@ -134,7 +132,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             # Azure OpenAI takes the deployment name as the model name
             model=(
                 self.hf_model
-                if self.use_hf
+                if self.hf_model
                 else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
             ),
             messages=self.llm_client.format_message(updated_messages),
@@ -143,8 +141,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             n=1,
         )
 
-        if not self.use_hf:
-            chat_completion = chat_completion.model_dump()
+        chat_completion = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
 
         data_points = {"text": sources_content}
         extra_info = {
@@ -179,7 +176,11 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         }
 
         completion = {}
-        completion["message"] = chat_completion["choices"][0]["message"]
+        completion["message"] = (
+            chat_completion.choices[0].message
+            if hasattr(chat_completion, "choices")
+            else chat_completion["choices"][0]["message"]
+        )
         completion["context"] = extra_info
         completion["session_state"] = session_state
         return completion

@@ -56,7 +56,6 @@ param speechServiceLocation string = ''
 param speechServiceName string = ''
 param speechServiceSkuName string // Set in main.parameters.json
 param useGPT4V bool = false
-param useHuggingFace bool = false
 param huggingFaceApiKey string = ''
 param huggingFaceModel string = ''
 
@@ -396,7 +395,7 @@ var openAiDeployments = concat(defaultOpenAiDeployments, useGPT4V ? [
     }
   ] : [])
 
-module openAi 'core/ai/cognitiveservices.bicep' = if (isAzureOpenAiHost && deployAzureOpenAi && !useHuggingFace) {
+module openAi 'core/ai/cognitiveservices.bicep' = if (isAzureOpenAiHost && deployAzureOpenAi) {
   name: 'openai'
   scope: openAiResourceGroup
   params: {

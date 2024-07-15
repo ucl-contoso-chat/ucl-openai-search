@@ -6,10 +6,8 @@ from huggingface_hub import (
     ChatCompletionStreamOutput,
 )
 
-from .base_client import BaseAPIClient
 
-
-class HuggingFaceClient(BaseAPIClient):
+class HuggingFaceClient(AsyncInferenceClient):
 
     def __init__(
         self,
@@ -19,7 +17,7 @@ class HuggingFaceClient(BaseAPIClient):
         headers: Optional[Dict[str, str]] = None,
         cookies: Optional[Dict[str, str]] = None,
     ):
-        self.client = AsyncInferenceClient(token=token, model=model, timeout=timeout, headers=headers, cookies=cookies)
+        AsyncInferenceClient.__init__(self, model=model, token=token, timeout=timeout, headers=headers, cookies=cookies)
 
     async def chat_completion(
         self,
@@ -41,7 +39,7 @@ class HuggingFaceClient(BaseAPIClient):
         top_logprobs: Optional[int] = None,
         top_p: Optional[float] = None,
     ) -> Union[ChatCompletionOutput, Iterable[ChatCompletionStreamOutput]]:
-        return await self.client.chat_completion(
+        return await super().chat_completion(
             messages=messages,
             model=model,
             stream=stream,
@@ -62,7 +60,7 @@ class HuggingFaceClient(BaseAPIClient):
         )
 
     async def create_embedding(self, input: str, model: str):
-        embedding = await self.client.feature_extraction(text=input, model=model)
+        embedding = await self.feature_extraction(text=input, model=model)
         return embedding
 
     def format_message(self, message: str):

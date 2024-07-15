@@ -45,7 +45,6 @@ from quart_cors import cors
 
 from api_wrappers import (
     AzureOpenAIClient,
-    BaseAPIClient,
     HuggingFaceClient,
     LocalOpenAIClient,
 )
@@ -433,7 +432,6 @@ async def setup_clients():
     AZURE_SPEECH_SERVICE_LOCATION = os.getenv("AZURE_SPEECH_SERVICE_LOCATION")
     AZURE_SPEECH_VOICE = os.getenv("AZURE_SPEECH_VOICE", "en-US-AndrewMultilingualNeural")
 
-    USE_HUGGINGFACE = os.getenv("USE_HUGGINGFACE", "").lower() == "true"
     HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
     HUGGINGFACE_MODEL = os.getenv("HUGGINGFACE_MODEL")
 
@@ -523,7 +521,7 @@ async def setup_clients():
         current_app.config[CONFIG_INGESTER] = ingester
 
     # Used by the OpenAI SDK
-    llm_client: BaseAPIClient
+    llm_client: Union[LocalOpenAIClient, HuggingFaceClient, AzureOpenAIClient]
 
     if USE_SPEECH_OUTPUT_AZURE:
         if not AZURE_SPEECH_SERVICE_ID or AZURE_SPEECH_SERVICE_ID == "":
@@ -569,9 +567,9 @@ async def setup_clients():
                 organization=OPENAI_ORGANIZATION,
             )
         emb_client = llm_client
-        if USE_HUGGINGFACE:
+        if HUGGINGFACE_MODEL:
             if not HUGGINGFACE_API_KEY:
-                raise ValueError("HUGGINGFACE_API_KEY must be set when USE_HUGGINGFACE is true")
+                raise ValueError("HUGGINGFACE_API_KEY must be set when HUGGINGFACE_MODEL is set")
             llm_client = HuggingFaceClient(
                 token=HUGGINGFACE_API_KEY, model=HUGGINGFACE_MODEL if HUGGINGFACE_MODEL else None
             )
@@ -606,7 +604,6 @@ async def setup_clients():
         query_language=AZURE_SEARCH_QUERY_LANGUAGE,
         query_speller=AZURE_SEARCH_QUERY_SPELLER,
         hf_model=HUGGINGFACE_MODEL,
-        use_hf=USE_HUGGINGFACE,
     )
     current_app.config[CONFIG_CHAT_APPROACH] = ChatReadRetrieveReadApproach(
         search_client=search_client,
@@ -623,7 +620,6 @@ async def setup_clients():
         query_language=AZURE_SEARCH_QUERY_LANGUAGE,
         query_speller=AZURE_SEARCH_QUERY_SPELLER,
         hf_model=HUGGINGFACE_MODEL,
-        use_hf=USE_HUGGINGFACE,
     )
 
     if USE_GPT4V:
@@ -650,7 +646,6 @@ async def setup_clients():
             query_language=AZURE_SEARCH_QUERY_LANGUAGE,
             query_speller=AZURE_SEARCH_QUERY_SPELLER,
             hf_model=HUGGINGFACE_MODEL,
-            use_hf=USE_HUGGINGFACE,
         )
 
         current_app.config[CONFIG_CHAT_VISION_APPROACH] = ChatReadRetrieveReadVisionApproach(
@@ -673,7 +668,6 @@ async def setup_clients():
             query_language=AZURE_SEARCH_QUERY_LANGUAGE,
             query_speller=AZURE_SEARCH_QUERY_SPELLER,
             hf_model=HUGGINGFACE_MODEL,
-            use_hf=USE_HUGGINGFACE,
         )
 
 

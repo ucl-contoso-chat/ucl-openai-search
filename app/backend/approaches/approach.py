@@ -9,6 +9,7 @@ from typing import (
     List,
     Optional,
     TypedDict,
+    Union,
     cast,
 )
 from urllib.parse import urljoin
@@ -24,7 +25,7 @@ from azure.search.documents.models import (
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
-from api_wrappers import BaseAPIClient
+from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
 from core.authentication import AuthenticationHelper
 from text import nonewlines
 
@@ -95,7 +96,7 @@ class Approach(ABC):
     def __init__(
         self,
         search_client: SearchClient,
-        llm_client: BaseAPIClient,
+        llm_client: Union[AzureOpenAIClient, LocalOpenAIClient, HuggingFaceClient],
         emb_client: AsyncOpenAI,
         auth_helper: AuthenticationHelper,
         query_language: Optional[str],
