@@ -7,12 +7,12 @@ from promptflow.evals.evaluators import (
     SimilarityEvaluator,
 )
 
-from .base_metric import BaseMetric
+from .base_metric import DEFAULT_PASSING_THRESHOLD, BaseMetric
 
 
 class BuiltinRatingMetric(BaseMetric):
     @classmethod
-    def get_aggregate_stats(cls, df, passing_threshold):
+    def get_aggregate_stats(cls, df, passing_threshold=DEFAULT_PASSING_THRESHOLD):
         return cls.get_aggregate_stats_for_numeric_rating(df, cls.METRIC_NAME, passing_threshold)
 
 
@@ -64,7 +64,7 @@ class BuiltinF1ScoreMetric(BaseMetric):
         return F1ScoreEvaluator()
 
     @classmethod
-    def get_aggregate_stats(cls, df, passing_threshold=4.0):
+    def get_aggregate_stats(cls, df, passing_threshold=DEFAULT_PASSING_THRESHOLD):
         return {
             "mean": round(df[cls.METRIC_NAME].mean(), 2),
             "max": round(df[cls.METRIC_NAME].max(), 2),

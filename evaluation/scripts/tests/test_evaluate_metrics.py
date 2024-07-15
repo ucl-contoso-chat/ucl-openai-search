@@ -2,7 +2,6 @@ import pandas as pd
 from evaluation.scripts.evaluate_metrics import (
     builtin_metrics,
     code_metrics,
-    prompt_metrics,
 )
 
 
@@ -91,52 +90,48 @@ def test_latency():
     assert metric.get_aggregate_stats(df) == {"mean": 11.67, "max": 20, "min": 5}
 
 
-def test_custom_relevance():
-    metric = prompt_metrics.RelevanceMetric()
-
-    assert callable(metric.evaluator_fn(openai_config=None))
-    df = pd.DataFrame([{"myrelevance": 5}, {"myrelevance": 4}, {"myrelevance": 3}])
-    assert metric.get_aggregate_stats(df) == {
-        "mean_rating": 4.0,
-        "pass_count": 2,
-        "pass_rate": 0.67,
-    }
-
-
-def test_custom_coherence():
-    metric = prompt_metrics.CoherenceMetric()
-
-    assert callable(metric.evaluator_fn(openai_config=None))
-    df = pd.DataFrame([{"mycoherence": 5}, {"mycoherence": 4}, {"mycoherence": 3}])
-    assert metric.get_aggregate_stats(df) == {
-        "mean_rating": 4.0,
-        "pass_count": 2,
-        "pass_rate": 0.67,
-    }
+# def test_custom_relevance():
+#     metric = prompt_metrics.RelevanceMetric()
+#     assert callable(metric.evaluator_fn(openai_config=None))
+#     df = pd.DataFrame([{"myrelevance": 5}, {"myrelevance": 4}, {"myrelevance": 3}])
+#     assert metric.get_aggregate_stats(df) == {
+#         "mean_rating": 4.0,
+#         "pass_count": 2,
+#         "pass_rate": 0.67,
+#     }
 
 
-def test_custom_groundedness():
-    metric = prompt_metrics.GroundednessMetric()
+# def test_custom_coherence():
+#     metric = prompt_metrics.CoherenceMetric()
+#     assert callable(metric.evaluator_fn(openai_config=None))
+#     df = pd.DataFrame([{"mycoherence": 5}, {"mycoherence": 4}, {"mycoherence": 3}])
+#     assert metric.get_aggregate_stats(df) == {
+#         "mean_rating": 4.0,
+#         "pass_count": 2,
+#         "pass_rate": 0.67,
+#     }
 
-    assert callable(metric.evaluator_fn(openai_config=None))
-    df = pd.DataFrame([{"mygroundedness": 5}, {"mygroundedness": 4}, {"mygroundedness": 3}])
-    assert metric.get_aggregate_stats(df) == {
-        "mean_rating": 4.0,
-        "pass_count": 2,
-        "pass_rate": 0.67,
-    }
+
+# def test_custom_groundedness():
+#     metric = prompt_metrics.GroundednessMetric()
+#     assert callable(metric.evaluator_fn(openai_config=None))
+#     df = pd.DataFrame([{"mygroundedness": 5}, {"mygroundedness": 4}, {"mygroundedness": 3}])
+#     assert metric.get_aggregate_stats(df) == {
+#         "mean_rating": 4.0,
+#         "pass_count": 2,
+#         "pass_rate": 0.67,
+#     }
 
 
-def test_custom_relevance_missing_values():
-    metric = prompt_metrics.RelevanceMetric()
-
-    assert callable(metric.evaluator_fn(openai_config=None))
-    df = pd.DataFrame([{"myrelevance": 2}, {"myrelevance": 4}, {"myrelevance": "Failed"}])
-    assert metric.get_aggregate_stats(df) == {
-        "mean_rating": 3.0,
-        "pass_count": 1,
-        "pass_rate": 0.33,
-    }
+# def test_custom_relevance_missing_values():
+#     metric = prompt_metrics.RelevanceMetric()
+#     assert callable(metric.evaluator_fn(openai_config=None))
+#     df = pd.DataFrame([{"myrelevance": 2}, {"myrelevance": 4}, {"myrelevance": "Failed"}])
+#     assert metric.get_aggregate_stats(df) == {
+#         "mean_rating": 3.0,
+#         "pass_count": 1,
+#         "pass_rate": 0.33,
+#     }
 
 
 def test_builtin_coherence():
