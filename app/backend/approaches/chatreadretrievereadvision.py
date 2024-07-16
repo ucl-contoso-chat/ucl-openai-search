@@ -16,7 +16,7 @@ from openai.types.chat import (
 )
 from openai_messages_token_helper import build_messages, get_token_limit
 
-from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
+from api_wrappers import LLMClient
 from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
@@ -35,9 +35,10 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         *,
         search_client: SearchClient,
         blob_container_client: ContainerClient,
-        llm_client: Union[AzureOpenAIClient, LocalOpenAIClient, HuggingFaceClient],
+        llm_client: LLMClient,
         emb_client: AsyncOpenAI,
         auth_helper: AuthenticationHelper,
+        hf_model: Optional[str],  # Not needed for OpenAI
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         gpt4v_deployment: Optional[str],  # Not needed for non-Azure OpenAI
@@ -51,13 +52,13 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         query_speller: str,
         vision_endpoint: str,
         vision_token_provider: Callable[[], Awaitable[str]],
-        hf_model: Optional[str],
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
         self.llm_client = llm_client
         self.emb_client = emb_client
         self.auth_helper = auth_helper
+        self.hf_model = hf_model
         self.chatgpt_model = chatgpt_model
         self.chatgpt_deployment = chatgpt_deployment
         self.gpt4v_deployment = gpt4v_deployment
@@ -72,7 +73,6 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         self.vision_endpoint = vision_endpoint
         self.vision_token_provider = vision_token_provider
         self.chatgpt_token_limit = get_token_limit(gpt4v_model)
-        self.hf_model = hf_model
 
     @property
     def system_message_chat_conversation(self):

@@ -1,5 +1,8 @@
-from api_wrappers.azure_openai_client import AzureOpenAIClient
-from api_wrappers.hf_client import HuggingFaceClient
-from api_wrappers.openai_client import LocalOpenAIClient
+from typing import Union
 
-__all__ = ["HuggingFaceClient", "LocalOpenAIClient", "AzureOpenAIClient"]
+from api_wrappers.hugging_face import HuggingFaceClient
+from api_wrappers.openai import AzureOpenAIClient, LocalOpenAIClient, OpenAIClient
+
+LLMClient = Union[HuggingFaceClient, OpenAIClient]
+
+__all__ = ["HuggingFaceClient", "LocalOpenAIClient", "AzureOpenAIClient", "LLMClient"]

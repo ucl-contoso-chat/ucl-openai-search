@@ -25,6 +25,7 @@ def chat_approach():
         auth_helper=None,
         llm_client=None,
         emb_client=None,
+        hf_model=None,
         chatgpt_model="gpt-35-turbo",
         chatgpt_deployment="chat",
         embedding_deployment="embeddings",
@@ -34,7 +35,6 @@ def chat_approach():
         content_field="",
         query_language="en-us",
         query_speller="lexicon",
-        hf_model=None,
     )
 
 
@@ -172,6 +172,7 @@ async def test_search_results_filtering_by_scores(
         auth_helper=None,
         llm_client=None,
         emb_client=None,
+        hf_model=None,
         chatgpt_model="gpt-35-turbo",
         chatgpt_deployment="chat",
         embedding_deployment="embeddings",

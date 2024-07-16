@@ -1,8 +1,6 @@
 from typing import AsyncIterable, Dict, List, Optional, Union
 
-from huggingface_hub import (  # type: ignore
-    AsyncInferenceClient,
-)
+from huggingface_hub import AsyncInferenceClient  # type: ignore
 from huggingface_hub.inference._generated.types import (  # type: ignore
     ChatCompletionOutput,
     ChatCompletionStreamOutput,
@@ -14,7 +12,7 @@ from openai.types.chat import (
 )
 
 
-class HuggingFaceClient(AsyncInferenceClient):
+class HuggingFaceClient:
 
     def __init__(
         self,
@@ -24,7 +22,9 @@ class HuggingFaceClient(AsyncInferenceClient):
         headers: Optional[Dict[str, str]] = None,
         cookies: Optional[Dict[str, str]] = None,
     ):
-        AsyncInferenceClient.__init__(self, model=model, token=token, timeout=timeout, headers=headers, cookies=cookies)
+        self.client = AsyncInferenceClient.__init__(
+            self, model=model, token=token, timeout=timeout, headers=headers, cookies=cookies
+        )
 
     async def chat_completion(
         self,
@@ -46,7 +46,7 @@ class HuggingFaceClient(AsyncInferenceClient):
         top_logprobs: Optional[int] = None,
         top_p: Optional[float] = None,
     ) -> Union[ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]]:
-        return await super().chat_completion(
+        return await self.client.chat_completion(
             messages=messages,
             model=model,
             stream=stream,

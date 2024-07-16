@@ -46,6 +46,7 @@ from quart_cors import cors
 from api_wrappers import (
     AzureOpenAIClient,
     HuggingFaceClient,
+    LLMClient,
     LocalOpenAIClient,
 )
 from approaches.approach import Approach
@@ -521,7 +522,7 @@ async def setup_clients():
         current_app.config[CONFIG_INGESTER] = ingester
 
     # Used by the OpenAI SDK
-    llm_client: Union[LocalOpenAIClient, HuggingFaceClient, AzureOpenAIClient]
+    llm_client: LLMClient
 
     if USE_SPEECH_OUTPUT_AZURE:
         if not AZURE_SPEECH_SERVICE_ID or AZURE_SPEECH_SERVICE_ID == "":
@@ -563,13 +564,12 @@ async def setup_clients():
             api_key=OPENAI_API_KEY,
             organization=OPENAI_ORGANIZATION,
         )
-    emb_client = llm_client
+    # TODO: Make the embedding client fully compatible with the LLMClient once we're able to generate embeddings using Hugging Face models
+    emb_client = llm_client.client
     if HUGGINGFACE_MODEL:
         if not HUGGINGFACE_API_KEY:
             raise ValueError("HUGGINGFACE_API_KEY must be set when HUGGINGFACE_MODEL is set")
-        llm_client = HuggingFaceClient(
-            token=HUGGINGFACE_API_KEY, model=HUGGINGFACE_MODEL if HUGGINGFACE_MODEL else None
-        )
+        llm_client = HuggingFaceClient(token=HUGGINGFACE_API_KEY, model=HUGGINGFACE_MODEL)
 
     current_app.config[CONFIG_OPENAI_CLIENT] = llm_client
     current_app.config[CONFIG_SEARCH_CLIENT] = search_client
@@ -591,6 +591,7 @@ async def setup_clients():
         llm_client=llm_client,
         emb_client=emb_client,
         auth_helper=auth_helper,
+        hf_model=HUGGINGFACE_MODEL,
         chatgpt_model=OPENAI_CHATGPT_MODEL,
         chatgpt_deployment=AZURE_OPENAI_CHATGPT_DEPLOYMENT,
         embedding_model=OPENAI_EMB_MODEL,
@@ -600,13 +601,13 @@ async def setup_clients():
         content_field=KB_FIELDS_CONTENT,
         query_language=AZURE_SEARCH_QUERY_LANGUAGE,
         query_speller=AZURE_SEARCH_QUERY_SPELLER,
-        hf_model=HUGGINGFACE_MODEL,
     )
     current_app.config[CONFIG_CHAT_APPROACH] = ChatReadRetrieveReadApproach(
         search_client=search_client,
         llm_client=llm_client,
         emb_client=emb_client,
         auth_helper=auth_helper,
+        hf_model=HUGGINGFACE_MODEL,
         chatgpt_model=OPENAI_CHATGPT_MODEL,
         chatgpt_deployment=AZURE_OPENAI_CHATGPT_DEPLOYMENT,
         embedding_model=OPENAI_EMB_MODEL,
@@ -616,7 +617,6 @@ async def setup_clients():
         content_field=KB_FIELDS_CONTENT,
         query_language=AZURE_SEARCH_QUERY_LANGUAGE,
         query_speller=AZURE_SEARCH_QUERY_SPELLER,
-        hf_model=HUGGINGFACE_MODEL,
     )
 
     if USE_GPT4V:
@@ -633,6 +633,7 @@ async def setup_clients():
             auth_helper=auth_helper,
             vision_endpoint=AZURE_VISION_ENDPOINT,
             vision_token_provider=token_provider,
+            hf_model=HUGGINGFACE_MODEL,
             gpt4v_deployment=AZURE_OPENAI_GPT4V_DEPLOYMENT,
             gpt4v_model=AZURE_OPENAI_GPT4V_MODEL,
             embedding_model=OPENAI_EMB_MODEL,
@@ -642,7 +643,6 @@ async def setup_clients():
             content_field=KB_FIELDS_CONTENT,
             query_language=AZURE_SEARCH_QUERY_LANGUAGE,
             query_speller=AZURE_SEARCH_QUERY_SPELLER,
-            hf_model=HUGGINGFACE_MODEL,
         )
 
         current_app.config[CONFIG_CHAT_VISION_APPROACH] = ChatReadRetrieveReadVisionApproach(
@@ -653,6 +653,7 @@ async def setup_clients():
             auth_helper=auth_helper,
             vision_endpoint=AZURE_VISION_ENDPOINT,
             vision_token_provider=token_provider,
+            hf_model=HUGGINGFACE_MODEL,
             chatgpt_model=OPENAI_CHATGPT_MODEL,
             chatgpt_deployment=AZURE_OPENAI_CHATGPT_DEPLOYMENT,
             gpt4v_deployment=AZURE_OPENAI_GPT4V_DEPLOYMENT,
@@ -664,7 +665,6 @@ async def setup_clients():
             content_field=KB_FIELDS_CONTENT,
             query_language=AZURE_SEARCH_QUERY_LANGUAGE,
             query_speller=AZURE_SEARCH_QUERY_SPELLER,
-            hf_model=HUGGINGFACE_MODEL,
         )
 
 

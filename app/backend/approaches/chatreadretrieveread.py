@@ -24,7 +24,7 @@ from openai.types.chat import (
 )
 from openai_messages_token_helper import build_messages, get_token_limit
 
-from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
+from api_wrappers import LLMClient
 from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
@@ -42,8 +42,9 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         *,
         search_client: SearchClient,
         auth_helper: AuthenticationHelper,
-        llm_client: Union[AzureOpenAIClient, LocalOpenAIClient, HuggingFaceClient],
+        llm_client: LLMClient,
         emb_client: AsyncOpenAI,
+        hf_model: Optional[str],  # Not needed for OpenAI
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         embedding_deployment: Optional[str],  # Not needed for non-Azure OpenAI or for retrieval_mode="text"
@@ -53,12 +54,12 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         content_field: str,
         query_language: str,
         query_speller: str,
-        hf_model: Optional[str] = None,
     ):
         self.search_client = search_client
         self.llm_client = llm_client
         self.emb_client = emb_client
         self.auth_helper = auth_helper
+        self.hf_model = hf_model
         self.chatgpt_model = chatgpt_model
         self.chatgpt_deployment = chatgpt_deployment
         self.embedding_deployment = embedding_deployment
@@ -69,7 +70,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         self.query_language = query_language
         self.query_speller = query_speller
         self.chatgpt_token_limit = get_token_limit(chatgpt_model)
-        self.hf_model = hf_model
 
     @property
     def system_message_chat_conversation(self):
