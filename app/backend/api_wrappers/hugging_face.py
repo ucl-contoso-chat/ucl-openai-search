@@ -1,4 +1,3 @@
-import logging
 from typing import AsyncIterable, Dict, Iterable, List, Optional, Union
 
 from huggingface_hub import AsyncInferenceClient  # type: ignore
@@ -19,14 +18,12 @@ class HuggingFaceClient:
     def __init__(
         self,
         model: Optional[str] = None,
-        token: Optional[str] = None,
+        token: Union[str, bool, None] = None,
         timeout: Optional[float] = None,
         headers: Optional[Dict[str, str]] = None,
         cookies: Optional[Dict[str, str]] = None,
     ):
-        self.client = AsyncInferenceClient.__init__(
-            self, model=model, token=token, timeout=timeout, headers=headers, cookies=cookies
-        )
+        self.client = AsyncInferenceClient(model=model, token=token, timeout=timeout, headers=headers, cookies=cookies)
 
     async def chat_completion(
         self,
@@ -95,7 +92,6 @@ class HuggingFaceClient:
             # Ensure the first message is from the user
             if formatted_messages[0]["role"] != "user":
                 raise ValueError("The first message must be from the user.")
-        logging.critical(f"formatted_messages: {formatted_messages}")
         return formatted_messages
 
     def _extract_content_as_string(
