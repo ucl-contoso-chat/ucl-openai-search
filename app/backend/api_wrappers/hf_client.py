@@ -1,4 +1,5 @@
-from typing import AsyncIterable, Dict, List, Optional, Union
+import logging
+from typing import AsyncIterable, Dict, Iterable, List, Optional, Union
 
 from huggingface_hub import (  # type: ignore
     AsyncInferenceClient,
@@ -8,9 +9,10 @@ from huggingface_hub.inference._generated.types import (  # type: ignore
     ChatCompletionStreamOutput,
 )
 from openai.types.chat import (
+    ChatCompletionContentPartImageParam,
+    ChatCompletionContentPartTextParam,
     ChatCompletionMessageParam,
     ChatCompletionToolParam,
-    ChatCompletionUserMessageParam,
 )
 
 
@@ -68,6 +70,8 @@ class HuggingFaceClient(AsyncInferenceClient):
 
     def format_message(self, message: List[ChatCompletionMessageParam]) -> List[ChatCompletionMessageParam]:
         formatted_messages = []
+        logging.critical(f"message: {message}")
+        logging.critical("=====\n\n\n\n========")
         if message:
             # Handle the initial 'system' message by embedding it within the first 'user' message
             first_message = message[0]
@@ -77,11 +81,12 @@ class HuggingFaceClient(AsyncInferenceClient):
             else:
                 system_content = ""
 
-            if system_content and message and message[0]["role"] == "user":
-                message[0] = ChatCompletionUserMessageParam(
-                    content=system_content + "\n" + message[0]["content"], role="user"
-                )
+            system_content = system_content
 
+            if system_content and message and message[0]["role"] == "user":
+                content = system_content + "\n\n" + self._extract_content_as_string(message[0]["content"])
+
+            message[0]["content"] = content
             last_role = None
             for msg in message:
                 if last_role == msg["role"]:
@@ -92,5 +97,19 @@ class HuggingFaceClient(AsyncInferenceClient):
             # Ensure the first message is from the user
             if formatted_messages[0]["role"] != "user":
                 raise ValueError("The first message must be from the user.")
-
+        logging.critical(f"formatted_messages: {formatted_messages}")
         return formatted_messages
+
+    def _extract_content_as_string(
+        self,
+        content: Union[str, Iterable[Union[ChatCompletionContentPartTextParam, ChatCompletionContentPartImageParam]]],
+    ) -> str:
+        if isinstance(content, str):
+            return content
+        elif isinstance(content, dict):
+            if "text" in content and content["type"] == "text":
+                return content["text"]
+            elif "image_url" in content and content["type"] == "image_url":
+                return content["image_url"]["url"]
+
+        return ""

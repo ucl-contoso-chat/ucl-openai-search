@@ -231,9 +231,16 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     "Prompt to generate search query",
                     [str(message) for message in query_messages],
                     (
-                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
-                        if self.chatgpt_deployment
-                        else {"model": self.chatgpt_model}
+                        {
+                            "model": (
+                                self.hf_model
+                                if self.hf_model
+                                else (self.chatgpt_model if not self.chatgpt_deployment else self.chatgpt_model)
+                            ),
+                            "deployment": self.chatgpt_deployment if self.chatgpt_deployment else None,
+                        }
+                        if not self.hf_model and self.chatgpt_deployment
+                        else ({"model": self.hf_model} if self.hf_model else {"model": self.chatgpt_model})
                     ),
                 ),
                 ThoughtStep(
@@ -256,9 +263,16 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     "Prompt to generate answer",
                     [str(message) for message in messages],
                     (
-                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
-                        if self.chatgpt_deployment
-                        else {"model": self.chatgpt_model}
+                        {
+                            "model": (
+                                self.hf_model
+                                if self.hf_model
+                                else (self.chatgpt_model if not self.chatgpt_deployment else self.chatgpt_model)
+                            ),
+                            "deployment": self.chatgpt_deployment if self.chatgpt_deployment else None,
+                        }
+                        if not self.hf_model and self.chatgpt_deployment
+                        else ({"model": self.hf_model} if self.hf_model else {"model": self.chatgpt_model})
                     ),
                 ),
             ],
