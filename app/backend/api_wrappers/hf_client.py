@@ -70,8 +70,6 @@ class HuggingFaceClient(AsyncInferenceClient):
 
     def format_message(self, message: List[ChatCompletionMessageParam]) -> List[ChatCompletionMessageParam]:
         formatted_messages = []
-        logging.critical(f"message: {message}")
-        logging.critical("=====\n\n\n\n========")
         if message:
             # Handle the initial 'system' message by embedding it within the first 'user' message
             first_message = message[0]
