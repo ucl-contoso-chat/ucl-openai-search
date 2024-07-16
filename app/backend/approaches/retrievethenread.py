@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
 from openai_messages_token_helper import build_messages, get_token_limit
 
-from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
+from api_wrappers import LLMClient
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
 
@@ -44,8 +44,9 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         *,
         search_client: SearchClient,
         auth_helper: AuthenticationHelper,
-        llm_client: Union[AzureOpenAIClient, LocalOpenAIClient, HuggingFaceClient],
+        llm_client: LLMClient,
         emb_client: AsyncOpenAI,
+        hf_model: Optional[str] = None,  # Not needed for OpenAI
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         embedding_model: str,
@@ -55,12 +56,12 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         content_field: str,
         query_language: str,
         query_speller: str,
-        hf_model: Optional[str] = None,
     ):
         self.search_client = search_client
         self.chatgpt_deployment = chatgpt_deployment
         self.llm_client = llm_client
         self.emb_client = emb_client
+        self.hf_model = hf_model
         self.auth_helper = auth_helper
         self.chatgpt_model = chatgpt_model
         self.embedding_model = embedding_model
@@ -72,7 +73,6 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         self.query_language = query_language
         self.query_speller = query_speller
         self.chatgpt_token_limit = get_token_limit(chatgpt_model)
-        self.hf_model = hf_model
 
     async def run(
         self,
@@ -175,14 +175,17 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             ],
         }
         completion_message: ChatCompletionMessage
-        if hasattr(final_result, "choices"):
-            completion_message = final_result.choices[0].message
-        elif isinstance(final_result, dict) and "choices" in final_result:
-            completion_message = final_result["choices"][0]["message"]
-        else:
-            raise TypeError(
-                f"Unexpected chat completion response type: {type(final_result)}. It should be dictionary or dataclasses."
-            )
+        try:
+            if hasattr(final_result, "choices"):
+                completion_message = final_result.choices[0].message
+            elif isinstance(final_result, dict) and "choices" in final_result:
+                completion_message = final_result["choices"][0]["message"]
+            else:
+                raise TypeError(
+                    f"Unexpected chat completion response type: {type(final_result)}. It should be a dictionary or dataclass."
+                )
+        except Exception as e:
+            raise ValueError(f"Failed to retrieve message from chat completion response: {e}")
 
         completion = {"message": completion_message, "context": extra_info, "session_state": session_state}
         return completion

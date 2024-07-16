@@ -100,15 +100,10 @@ class ChatApproach(Approach, ABC):
         chat_completion_response: ChatCompletion = await chat_coroutine
 
         if isinstance(chat_completion_response, dict):
-            chat_resp = chat_completion_response
+            chat_resp = chat_completion_response["choices"][0]
         else:
             chat_resp = chat_completion_response.model_dump()
-            chat_resp = cast(Dict[str, Any], chat_resp)
-
-        if isinstance(chat_resp, dict):
-            chat_resp = chat_resp["choices"][0]
-        else:
-            chat_resp = chat_resp.choices[0]
+            chat_resp = cast(Dict[str, Any], chat_resp)["choices"][0]
 
         chat_resp = cast(Dict[str, Any], chat_resp)
         chat_resp["context"] = extra_info
@@ -141,9 +136,8 @@ class ChatApproach(Approach, ABC):
             # "2023-07-01-preview" API version has a bug where first response has empty choices
             # Convert pydantic model to dict if needed
             event = event_chunk.model_dump() if hasattr(event_chunk, "model_dump") else event_chunk
+            # OpenAI uses dict-style access, while huggingface-hub uses dataclasses since 0.25.0
             if (hasattr(event, "choices") and event.choices) or event.get("choices"):
-                # if statement for accessing delta is due to the OpenAI using dictionary-style access,
-                # while huggingface-hubuses data classes since 0.25.0
                 completion = {
                     "delta": event.choices[0].delta if hasattr(event, "choices") else event["choices"][0]["delta"]
                 }

@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Optional, Union
+from typing import Any, Awaitable, Callable, Optional
 
 from azure.search.documents.aio import SearchClient
 from azure.storage.blob.aio import ContainerClient
@@ -10,7 +10,7 @@ from openai.types.chat import (
 )
 from openai_messages_token_helper import build_messages, get_token_limit
 
-from api_wrappers import AzureOpenAIClient, HuggingFaceClient, LocalOpenAIClient
+from api_wrappers import LLMClient
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
 from core.imageshelper import fetch_image
@@ -39,9 +39,10 @@ class RetrieveThenReadVisionApproach(Approach):
         *,
         search_client: SearchClient,
         blob_container_client: ContainerClient,
-        llm_client: Union[AzureOpenAIClient, LocalOpenAIClient, HuggingFaceClient],
+        llm_client: LLMClient,
         emb_client: AsyncOpenAI,
         auth_helper: AuthenticationHelper,
+        hf_model: Optional[str],  # Not needed for OpenAI
         gpt4v_deployment: Optional[str],
         gpt4v_model: str,
         embedding_deployment: Optional[str],  # Not needed for non-Azure OpenAI or for retrieval_mode="text"
@@ -53,13 +54,13 @@ class RetrieveThenReadVisionApproach(Approach):
         query_speller: str,
         vision_endpoint: str,
         vision_token_provider: Callable[[], Awaitable[str]],
-        hf_model: Optional[str] = None,
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
         self.llm_client = llm_client
         self.emb_client = emb_client
         self.auth_helper = auth_helper
+        self.hf_model = hf_model
         self.embedding_model = embedding_model
         self.embedding_deployment = embedding_deployment
         self.embedding_dimensions = embedding_dimensions
@@ -72,7 +73,6 @@ class RetrieveThenReadVisionApproach(Approach):
         self.vision_endpoint = vision_endpoint
         self.vision_token_provider = vision_token_provider
         self.gpt4v_token_limit = get_token_limit(gpt4v_model)
-        self.hf_model = hf_model
 
     async def run(
         self,
@@ -195,14 +195,17 @@ class RetrieveThenReadVisionApproach(Approach):
         }
 
         completion: dict = {}
-        if hasattr(final_result, "choices"):
-            completion["message"] = final_result.choices[0].message
-        elif isinstance(final_result, dict) and "choices" in final_result:
-            completion["message"] = final_result["choices"][0]["message"]
-        else:
-            raise TypeError(
-                f"Unexpected chat completion response type: {type(chat_completion)}. It should be dictionary or dataclasses."
-            )
+        try:
+            if hasattr(final_result, "choices"):
+                completion["message"] = final_result.choices[0].message
+            elif isinstance(final_result, dict) and "choices" in final_result:
+                completion["message"] = final_result["choices"][0]["message"]
+            else:
+                raise TypeError(
+                    f"Unexpected chat completion response type: {type(chat_completion)}. It should be a dictionary or dataclass."
+                )
+        except Exception as e:
+            raise ValueError(f"Failed to retrieve message from chat completion response: {e}")
 
         completion["context"] = extra_info
         completion["session_state"] = session_state
