@@ -3,8 +3,8 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any, AsyncGenerator, Dict, Optional, Union, cast
 
-from huggingface_hub.inference._generated.types import (
-    ChatCompletionOutput,  # type: ignore
+from huggingface_hub.inference._generated.types import (  # type: ignore
+    ChatCompletionOutput,
 )
 from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 
