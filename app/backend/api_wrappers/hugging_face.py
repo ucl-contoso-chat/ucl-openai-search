@@ -1,4 +1,4 @@
-from typing import Any, AsyncIterable, Coroutine, Dict, Iterable, List, Optional, Union
+from typing import AsyncIterable, Dict, Iterable, List, Optional, Union
 
 from huggingface_hub import AsyncInferenceClient  # type: ignore
 from huggingface_hub.inference._generated.types import (  # type: ignore
@@ -66,7 +66,7 @@ class HuggingFaceClient:
             top_p=top_p,
         )
 
-    def create_embeddings(self, *args, **kwargs) -> Coroutine[Any, Any, CreateEmbeddingResponse]:
+    async def create_embeddings(self, *args, **kwargs) -> CreateEmbeddingResponse:
         raise NotImplementedError
 
     def format_message(self, message: List[ChatCompletionMessageParam]) -> List[ChatCompletionMessageParam]:
