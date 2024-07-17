@@ -31,7 +31,8 @@ jobs:
       with:
         deploy-only: ${{ inputs.deploy-only }}
 
-    deploy-and-evaluate:
+    evaluate-models:
+        needs: deploy-azure
         runs-on: ubuntu-latest
         strategy:
           matrix:
