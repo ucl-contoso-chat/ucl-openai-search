@@ -111,6 +111,27 @@ jobs:
 
         steps:
           #--------------------------Setup--------------------------------
+
+          - name: Checkout
+            uses: actions/checkout@v4
+
+          - name: Setup python
+            uses: actions/setup-python@v5
+            with:
+              python-version: ${{ matrix.python_version }}
+              architecture: x64
+    
+          - name: Install azd
+            uses: Azure/setup-azd@v1.0.0
+    
+          - name: Install Nodejs
+            uses: actions/setup-node@v4
+            with:
+              node-version: 18
+
+          #--------------------------Deploy--------------------------------
+
+                        
           - name: Check credentials
             run: |
               echo "AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}"
@@ -118,7 +139,7 @@ jobs:
               echo "AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}"
               echo "AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}"
 
-          #--------------------------Deploy--------------------------------
+
           - name: Azure login
             uses: azure/login@v2
             with:
@@ -133,11 +154,6 @@ jobs:
                 az account show
 
           #--------------------------Run Evaluation--------------------------------
-          - name: Setup python
-            uses: actions/setup-python@v5
-            with:
-              python-version: ${{ matrix.python_version }}
-              architecture: x64
           - name: Install dependencies
             working-directory: ./evaluation
             run: |
