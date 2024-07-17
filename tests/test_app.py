@@ -342,7 +342,6 @@ async def test_chat_handle_exception_contentsafety(client, monkeypatch, snapshot
 @pytest.mark.asyncio
 async def test_chat_handle_exception_streaming(client, monkeypatch, snapshot, caplog):
     chat_client = client.app.config[app.CONFIG_OPENAI_CLIENT]
-    print(type(chat_client))
     monkeypatch.setattr(
         chat_client.client.chat.completions,
         "create",
