@@ -3,12 +3,12 @@ name: Full Model Evaluation
 on:
   workflow_dispatch:
     inputs:
-      provision:
+      provision-and-deploy:
         description: 'Whether to provision the deployment'
         required: true
         default: true
         type: boolean
-      deploy:
+      deploy-only:
         description: 'Whether to deploy the application'
         required: true
         default: true
@@ -24,6 +24,13 @@ permissions:
   contents: read
 
 jobs:
+    deploy-azure:
+      if: ${{ inputs.provision-and-deploy == true || inputs.deploy-only == true }}
+      uses: ./.github/actions/azure-dev.yml
+      secrets: inherit
+      with:
+        deploy-only: ${{ inputs.deploy-only }}
+
     deploy-and-evaluate:
         runs-on: ubuntu-latest
         strategy:
@@ -104,16 +111,6 @@ jobs:
 
         steps:
           #--------------------------Setup--------------------------------
-          - name: Checkout
-            uses: actions/checkout@v4
-          - name: Install azd
-            uses: Azure/setup-azd@v1.0.0
-          - name: Install Nodejs
-            uses: actions/setup-node@v4
-            with:
-              node-version: 18
-
-          #--------------------------Deploy--------------------------------
           - name: Check credentials
             run: |
               echo "AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}"
@@ -121,60 +118,19 @@ jobs:
               echo "AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}"
               echo "AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}"
 
+          #--------------------------Deploy--------------------------------
           - name: Azure login
             uses: azure/login@v2
             with:
               client-id: ${{ env.AZURE_CLIENT_ID }}
               tenant-id: ${{ env.AZURE_TENANT_ID }}
               subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
-
           - name: Azure CLI script
             uses: azure/cli@v2
             with:
               azcliversion: latest
               inlineScript: |
                 az account show
-
-          - name: Log in with Azure (Federated Credentials)
-            if: ${{ env.AZURE_CLIENT_ID != '' }}
-            run: |
-              echo "Logging in with federated credentials"
-              azd auth login `
-                --client-id "$Env:AZURE_CLIENT_ID" `
-                --federated-credential-provider "github" `
-                --tenant-id "$Env:AZURE_TENANT_ID"
-            shell: pwsh
-
-          - name: Log in with Azure (Client Credentials)
-            if: ${{ env.AZURE_CREDENTIALS != '' }}
-            run: |
-              echo "Logging in with client credentials"
-              $info = $Env:AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
-              Write-Host "::add-mask::$($info.clientSecret)"
-
-              azd auth login `
-                --client-id "$($info.clientId)" `
-                --client-secret "$($info.clientSecret)" `
-                --tenant-id "$($info.tenantId)"
-            shell: pwsh
-            env:
-              AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-
-          # - name: Sync Azure environment
-          #   run: azd env refresh -e ${{ env.AZURE_ENV_NAME }}
-
-          - name: Provision Infrastructure
-            if: ${{ inputs.provision == true }}
-            run: |
-              azd provision --no-prompt
-            env:
-              AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
-              AZURE_SERVER_APP_SECRET: ${{ secrets.AZURE_SERVER_APP_SECRET }}
-              AZURE_CLIENT_APP_SECRET: ${{ secrets.AZURE_CLIENT_APP_SECRET }}
-
-          - name: Deploy Application
-            if: ${{ inputs.deploy == true }}
-            run: azd deploy --no-prompt
 
           #--------------------------Run Evaluation--------------------------------
           - name: Setup python
