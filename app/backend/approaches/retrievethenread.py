@@ -81,7 +81,11 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         overrides = context.get("overrides", {})
         auth_claims = context.get("auth_claims", {})
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
-        use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
+        use_vector_search = overrides.get("retrieval_mode") in [
+            "vectors",
+            "hybrid",
+            None,
+        ]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
         use_semantic_captions = True if overrides.get("semantic_captions") else False
         top = overrides.get("top", 3)
@@ -118,7 +122,10 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         updated_messages = build_messages(
             model=self.chatgpt_model,
             system_prompt=overrides.get("prompt_template", self.system_chat_template),
-            few_shots=[{"role": "user", "content": self.question}, {"role": "assistant", "content": self.answer}],
+            few_shots=[
+                {"role": "user", "content": self.question},
+                {"role": "assistant", "content": self.answer},
+            ],
             new_user_content=user_content,
             max_tokens=self.chatgpt_token_limit - response_token_limit,
         )
@@ -158,7 +165,10 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                     "Prompt to generate answer",
                     [str(message) for message in updated_messages],
                     (
-                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
+                        {
+                            "model": self.chatgpt_model,
+                            "deployment": self.chatgpt_deployment,
+                        }
                         if self.chatgpt_deployment
                         else {"model": self.chatgpt_model}
                     ),

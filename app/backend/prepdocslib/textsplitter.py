@@ -229,5 +229,8 @@ class SimpleTextSplitter(TextSplitter):
 
         # its too big, so we need to split it
         for i in range(0, length, self.max_object_length):
-            yield SplitPage(page_num=i // self.max_object_length, text=all_text[i : i + self.max_object_length])
+            yield SplitPage(
+                page_num=i // self.max_object_length,
+                text=all_text[i : i + self.max_object_length],
+            )
         return

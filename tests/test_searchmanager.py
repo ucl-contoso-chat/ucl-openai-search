@@ -369,7 +369,6 @@ async def test_remove_content(monkeypatch, search_info):
 
 @pytest.mark.asyncio
 async def test_remove_content_no_docs(monkeypatch, search_info):
-
     search_results = AsyncSearchResultsIterator([])
 
     async def mock_search(self, *args, **kwargs):
@@ -453,7 +452,6 @@ async def test_remove_content_only_oid(monkeypatch, search_info):
 
 @pytest.mark.asyncio
 async def test_remove_content_no_inf_loop(monkeypatch, search_info):
-
     searched_filters = []
 
     async def mock_search(self, *args, **kwargs):

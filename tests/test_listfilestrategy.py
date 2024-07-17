@@ -41,7 +41,7 @@ def test_file_filename_to_id():
     # test ascii filename
     assert File(empty).filename_to_id() == "file-foo_pdf-666F6F2E706466"
     # test filename containing unicode
-    empty.name = "foo\u00A9.txt"
+    empty.name = "foo\u00a9.txt"
     assert File(empty).filename_to_id() == "file-foo__txt-666F6FC2A92E747874"
     # test filenaming starting with unicode
     empty.name = "ファイル名.pdf"
@@ -134,7 +134,10 @@ def test_locallistfilestrategy_checkmd5():
 @pytest.mark.asyncio
 async def test_read_adls_gen2_files(monkeypatch, mock_data_lake_service_client):
     adlsgen2_list_strategy = ADLSGen2ListFileStrategy(
-        data_lake_storage_account="a", data_lake_filesystem="a", data_lake_path="a", credential=MockAzureCredential()
+        data_lake_storage_account="a",
+        data_lake_filesystem="a",
+        data_lake_path="a",
+        credential=MockAzureCredential(),
     )
 
     files = [file async for file in adlsgen2_list_strategy.list()]

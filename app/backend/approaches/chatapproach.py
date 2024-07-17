@@ -11,7 +11,10 @@ from approaches.approach import Approach
 class ChatApproach(Approach, ABC):
     query_prompt_few_shots: list[ChatCompletionMessageParam] = [
         {"role": "user", "content": "How did crypto do last year?"},
-        {"role": "assistant", "content": "Summarize Cryptocurrency Market Dynamics from last year"},
+        {
+            "role": "assistant",
+            "content": "Summarize Cryptocurrency Market Dynamics from last year",
+        },
         {"role": "user", "content": "What are my health plans?"},
         {"role": "assistant", "content": "Show available health plans"},
     ]
@@ -48,11 +51,13 @@ class ChatApproach(Approach, ABC):
     def get_system_prompt(self, override_prompt: Optional[str], follow_up_questions_prompt: str) -> str:
         if override_prompt is None:
             return self.system_message_chat_conversation.format(
-                injected_prompt="", follow_up_questions_prompt=follow_up_questions_prompt
+                injected_prompt="",
+                follow_up_questions_prompt=follow_up_questions_prompt,
             )
         elif override_prompt.startswith(">>>"):
             return self.system_message_chat_conversation.format(
-                injected_prompt=override_prompt[3:] + "\n", follow_up_questions_prompt=follow_up_questions_prompt
+                injected_prompt=override_prompt[3:] + "\n",
+                follow_up_questions_prompt=follow_up_questions_prompt,
             )
         else:
             return override_prompt.format(follow_up_questions_prompt=follow_up_questions_prompt)
@@ -109,7 +114,11 @@ class ChatApproach(Approach, ABC):
         extra_info, chat_coroutine = await self.run_until_final_call(
             messages, overrides, auth_claims, should_stream=True
         )
-        yield {"delta": {"role": "assistant"}, "context": extra_info, "session_state": session_state}
+        yield {
+            "delta": {"role": "assistant"},
+            "context": extra_info,
+            "session_state": session_state,
+        }
 
         followup_questions_started = False
         followup_content = ""
@@ -134,7 +143,10 @@ class ChatApproach(Approach, ABC):
                     yield completion
         if followup_content:
             _, followup_questions = self.extract_followup_questions(followup_content)
-            yield {"delta": {"role": "assistant"}, "context": {"followup_questions": followup_questions}}
+            yield {
+                "delta": {"role": "assistant"},
+                "context": {"followup_questions": followup_questions},
+            }
 
     async def run(
         self,

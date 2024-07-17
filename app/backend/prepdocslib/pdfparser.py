@@ -39,7 +39,10 @@ class DocumentAnalysisParser(Parser):
     """
 
     def __init__(
-        self, endpoint: str, credential: Union[AsyncTokenCredential, AzureKeyCredential], model_id="prebuilt-layout"
+        self,
+        endpoint: str,
+        credential: Union[AsyncTokenCredential, AzureKeyCredential],
+        model_id="prebuilt-layout",
     ):
         self.model_id = model_id
         self.endpoint = endpoint
@@ -52,7 +55,9 @@ class DocumentAnalysisParser(Parser):
             endpoint=self.endpoint, credential=self.credential
         ) as document_intelligence_client:
             poller = await document_intelligence_client.begin_analyze_document(
-                model_id=self.model_id, analyze_request=content, content_type="application/octet-stream"
+                model_id=self.model_id,
+                analyze_request=content,
+                content_type="application/octet-stream",
             )
             form_recognizer_results = await poller.result()
 
@@ -93,7 +98,10 @@ class DocumentAnalysisParser(Parser):
     def table_to_html(cls, table: DocumentTable):
         table_html = "<table>"
         rows = [
-            sorted([cell for cell in table.cells if cell.row_index == i], key=lambda cell: cell.column_index)
+            sorted(
+                [cell for cell in table.cells if cell.row_index == i],
+                key=lambda cell: cell.column_index,
+            )
             for i in range(table.row_count)
         ]
         for row_cells in rows:

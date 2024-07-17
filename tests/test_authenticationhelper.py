@@ -57,7 +57,9 @@ async def test_get_auth_claims_unauthorized(mock_confidential_client_unauthorize
 
 @pytest.mark.asyncio
 async def test_get_auth_claims_overage_success(
-    mock_confidential_client_overage, mock_list_groups_success, mock_validate_token_success
+    mock_confidential_client_overage,
+    mock_list_groups_success,
+    mock_validate_token_success,
 ):
     helper = create_authentication_helper()
     auth_claims = await helper.get_auth_claims_if_enabled(headers={"Authorization": "Bearer Token"})
@@ -67,7 +69,9 @@ async def test_get_auth_claims_overage_success(
 
 @pytest.mark.asyncio
 async def test_get_auth_claims_overage_unauthorized(
-    mock_confidential_client_overage, mock_list_groups_unauthorized, mock_validate_token_success
+    mock_confidential_client_overage,
+    mock_list_groups_unauthorized,
+    mock_validate_token_success,
 ):
     helper = create_authentication_helper()
     auth_claims = await helper.get_auth_claims_if_enabled(headers={"Authorization": "Bearer Token"})
@@ -132,7 +136,9 @@ def test_build_security_filters(mock_confidential_client_success, mock_validate_
         require_access_control=True, enable_global_documents=True
     )
     auth_helper_all_options = create_authentication_helper(
-        require_access_control=True, enable_global_documents=True, enable_unauthenticated_access=True
+        require_access_control=True,
+        enable_global_documents=True,
+        enable_unauthenticated_access=True,
     )
     assert auth_helper.build_security_filters(overrides={}, auth_claims={}) is None
     assert (
@@ -149,7 +155,8 @@ def test_build_security_filters(mock_confidential_client_success, mock_validate_
     )
     assert (
         auth_helper.build_security_filters(
-            overrides={"use_groups_security_filter": True}, auth_claims={"groups": ["GROUP_Y", "GROUP_Z"]}
+            overrides={"use_groups_security_filter": True},
+            auth_claims={"groups": ["GROUP_Y", "GROUP_Z"]},
         )
         == "groups/any(g:search.in(g, 'GROUP_Y, GROUP_Z'))"
     )
@@ -161,7 +168,10 @@ def test_build_security_filters(mock_confidential_client_success, mock_validate_
     )
     assert (
         auth_helper.build_security_filters(
-            overrides={"use_oid_security_filter": True, "use_groups_security_filter": True},
+            overrides={
+                "use_oid_security_filter": True,
+                "use_groups_security_filter": True,
+            },
             auth_claims={"oid": "OID_X", "groups": ["GROUP_Y", "GROUP_Z"]},
         )
         == "(oids/any(g:search.in(g, 'OID_X')) or groups/any(g:search.in(g, 'GROUP_Y, GROUP_Z')))"
@@ -179,7 +189,8 @@ def test_build_security_filters(mock_confidential_client_success, mock_validate_
     )
     assert (
         auth_helper.build_security_filters(
-            overrides={"use_oid_security_filter": True}, auth_claims={"groups": ["GROUP_Y", "GROUP_Z"]}
+            overrides={"use_oid_security_filter": True},
+            auth_claims={"groups": ["GROUP_Y", "GROUP_Z"]},
         )
         == "oids/any(g:search.in(g, ''))"
     )
@@ -187,14 +198,18 @@ def test_build_security_filters(mock_confidential_client_success, mock_validate_
     assert auth_helper_enable_global_documents.build_security_filters(overrides={}, auth_claims={}) is None
     assert (
         auth_helper_enable_global_documents.build_security_filters(
-            overrides={"use_oid_security_filter": True, "use_groups_security_filter": True},
+            overrides={
+                "use_oid_security_filter": True,
+                "use_groups_security_filter": True,
+            },
             auth_claims={"oid": "OID_X", "groups": ["GROUP_Y", "GROUP_Z"]},
         )
         == "((oids/any(g:search.in(g, 'OID_X')) or groups/any(g:search.in(g, 'GROUP_Y, GROUP_Z'))) or (not oids/any() and not groups/any()))"
     )
     assert (
         auth_helper_enable_global_documents.build_security_filters(
-            overrides={"use_oid_security_filter": True}, auth_claims={"oid": "OID_X", "groups": ["GROUP_Y", "GROUP_Z"]}
+            overrides={"use_oid_security_filter": True},
+            auth_claims={"oid": "OID_X", "groups": ["GROUP_Y", "GROUP_Z"]},
         )
         == "(oids/any(g:search.in(g, 'OID_X')) or (not oids/any() and not groups/any()))"
     )

@@ -44,7 +44,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         query_language: str,
         query_speller: str,
         vision_endpoint: str,
-        vision_token_provider: Callable[[], Awaitable[str]]
+        vision_token_provider: Callable[[], Awaitable[str]],
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
@@ -88,9 +88,16 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         overrides: dict[str, Any],
         auth_claims: dict[str, Any],
         should_stream: bool = False,
-    ) -> tuple[dict[str, Any], Coroutine[Any, Any, Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]]]:
+    ) -> tuple[
+        dict[str, Any],
+        Coroutine[Any, Any, Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]],
+    ]:
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
-        use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
+        use_vector_search = overrides.get("retrieval_mode") in [
+            "vectors",
+            "hybrid",
+            None,
+        ]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
         use_semantic_captions = True if overrides.get("semantic_captions") else False
         top = overrides.get("top", 3)
@@ -99,8 +106,16 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         filter = self.build_filter(overrides, auth_claims)
 
         vector_fields = overrides.get("vector_fields", ["embedding"])
-        send_text_to_gptvision = overrides.get("gpt4v_input") in ["textAndImages", "texts", None]
-        send_images_to_gptvision = overrides.get("gpt4v_input") in ["textAndImages", "images", None]
+        send_text_to_gptvision = overrides.get("gpt4v_input") in [
+            "textAndImages",
+            "texts",
+            None,
+        ]
+        send_images_to_gptvision = overrides.get("gpt4v_input") in [
+            "textAndImages",
+            "images",
+            None,
+        ]
 
         original_user_query = messages[-1]["content"]
         if not isinstance(original_user_query, str):

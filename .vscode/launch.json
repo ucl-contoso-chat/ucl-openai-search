@@ -40,6 +40,38 @@
             "purpose": ["debug-test"],
             "console": "integratedTerminal",
             "justMyCode": false
+          },
+          {
+            "name": "Debug Evaluation",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/evaluation",
+            "module": "scripts",
+            "args": [
+                "evaluate",
+                "--config=./example_config.json",
+                "--numquestions=2"
+            ]
+          },
+          {
+            "name": "Python Test: All",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-v",
+            ],
+          },
+          {
+            "name": "Python Test: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-v",
+                "-s",
+                "${file}"
+            ],
           }
     ],
     "inputs": [

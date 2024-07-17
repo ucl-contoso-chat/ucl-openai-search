@@ -1,3 +1,4 @@
+-r evaluation/scripts/requirements.txt
 -r app/backend/requirements.txt
 ruff
 black

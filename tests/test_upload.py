@@ -22,14 +22,17 @@ from .mocks import MockClient, MockEmbeddingsClient
 @pytest.mark.asyncio
 @pytest.mark.parametrize("directory_exists", [True, False])
 async def test_upload_file(auth_client, monkeypatch, mock_data_lake_service_client, directory_exists):
-
     async def mock_get_directory_properties(self, *args, **kwargs):
         if directory_exists:
             return None
         else:
             raise azure.core.exceptions.ResourceNotFoundError()
 
-    monkeypatch.setattr(DataLakeDirectoryClient, "get_directory_properties", mock_get_directory_properties)
+    monkeypatch.setattr(
+        DataLakeDirectoryClient,
+        "get_directory_properties",
+        mock_get_directory_properties,
+    )
 
     directory_created = [False]
 
@@ -46,7 +49,9 @@ async def test_upload_file(auth_client, monkeypatch, mock_data_lake_service_clie
 
     def mock_directory_get_file_client(self, *args, **kwargs):
         return azure.storage.filedatalake.aio.DataLakeFileClient(
-            account_url="https://test.blob.core.windows.net/", file_system_name="user-content", file_path=args[0]
+            account_url="https://test.blob.core.windows.net/",
+            file_system_name="user-content",
+            file_path=args[0],
         )
 
     monkeypatch.setattr(DataLakeDirectoryClient, "get_file_client", mock_directory_get_file_client)
@@ -101,7 +106,11 @@ async def test_upload_file(auth_client, monkeypatch, mock_data_lake_service_clie
     assert documents_uploaded[0]["id"] == "file-a_txt-612E7478747B276F696473273A205B274F49445F58275D7D-page-0"
     assert documents_uploaded[0]["sourcepage"] == "a.txt"
     assert documents_uploaded[0]["sourcefile"] == "a.txt"
-    assert documents_uploaded[0]["embedding"] == [0.0023064255, -0.009327292, -0.0028842222]
+    assert documents_uploaded[0]["embedding"] == [
+        0.0023064255,
+        -0.009327292,
+        -0.0028842222,
+    ]
     assert documents_uploaded[0]["category"] is None
     assert documents_uploaded[0]["oids"] == ["OID_X"]
     assert directory_created[0] == (not directory_exists)
@@ -142,7 +151,6 @@ async def test_list_uploaded_nopaths(auth_client, monkeypatch, mock_data_lake_se
 
 @pytest.mark.asyncio
 async def test_delete_uploaded(auth_client, monkeypatch, mock_data_lake_service_client):
-
     async def mock_delete_file(self):
         return None
 
@@ -150,7 +158,9 @@ async def test_delete_uploaded(auth_client, monkeypatch, mock_data_lake_service_
 
     def mock_directory_get_file_client(self, *args, **kwargs):
         return azure.storage.filedatalake.aio.DataLakeFileClient(
-            account_url="https://test.blob.core.windows.net/", file_system_name="user-content", file_path=args[0]
+            account_url="https://test.blob.core.windows.net/",
+            file_system_name="user-content",
+            file_path=args[0],
         )
 
     monkeypatch.setattr(DataLakeDirectoryClient, "get_file_client", mock_directory_get_file_client)
@@ -224,7 +234,9 @@ async def test_delete_uploaded(auth_client, monkeypatch, mock_data_lake_service_
     monkeypatch.setattr(SearchClient, "delete_documents", mock_delete_documents)
 
     response = await auth_client.post(
-        "/delete_uploaded", headers={"Authorization": "Bearer test"}, json={"filename": "a's doc.txt"}
+        "/delete_uploaded",
+        headers={"Authorization": "Bearer test"},
+        json={"filename": "a's doc.txt"},
     )
     assert response.status_code == 200
     assert len(searched_filters) == 2, "It should have searched twice (with no results on second try)"

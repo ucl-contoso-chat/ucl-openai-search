@@ -51,7 +51,12 @@ class OpenAIEmbeddings(ABC):
         "text-embedding-3-large": True,
     }
 
-    def __init__(self, open_ai_model_name: str, open_ai_dimensions: int, disable_batch: bool = False):
+    def __init__(
+        self,
+        open_ai_model_name: str,
+        open_ai_dimensions: int,
+        disable_batch: bool = False,
+    ):
         self.open_ai_model_name = open_ai_model_name
         self.open_ai_dimensions = open_ai_dimensions
         self.disable_batch = disable_batch
@@ -110,7 +115,9 @@ class OpenAIEmbeddings(ABC):
             ):
                 with attempt:
                     emb_response = await client.embeddings.create(
-                        model=self.open_ai_model_name, input=batch.texts, **dimensions_args
+                        model=self.open_ai_model_name,
+                        input=batch.texts,
+                        **dimensions_args,
                     )
                     embeddings.extend([data.embedding for data in emb_response.data])
                     logger.info(
@@ -133,12 +140,14 @@ class OpenAIEmbeddings(ABC):
                 emb_response = await client.embeddings.create(
                     model=self.open_ai_model_name, input=text, **dimensions_args
                 )
-                logger.info("Computed embedding for text section. Character count: %d", len(text))
+                logger.info(
+                    "Computed embedding for text section. Character count: %d",
+                    len(text),
+                )
 
         return emb_response.data[0].embedding
 
     async def create_embeddings(self, texts: List[str]) -> List[List[float]]:
-
         dimensions_args: ExtraArgs = (
             {"dimensions": self.open_ai_dimensions}
             if OpenAIEmbeddings.SUPPORTED_DIMENSIONS_MODEL.get(self.open_ai_model_name)

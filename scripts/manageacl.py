@@ -97,10 +97,19 @@ class ManageAcl:
                 new_acls = [acl_value for acl_value in document[self.acl_type] if acl_value != self.acl]
                 documents_to_merge.append({"id": document["id"], self.acl_type: new_acls})
             else:
-                logger.info("Search document %s does not have %s acl %s", document["id"], self.acl_type, self.acl)
+                logger.info(
+                    "Search document %s does not have %s acl %s",
+                    document["id"],
+                    self.acl_type,
+                    self.acl,
+                )
 
         if len(documents_to_merge) > 0:
-            logger.info("Removing acl %s from %d search documents", self.acl, len(documents_to_merge))
+            logger.info(
+                "Removing acl %s from %d search documents",
+                self.acl,
+                len(documents_to_merge),
+            )
             await search_client.merge_documents(documents=documents_to_merge)
         else:
             logger.info("Not updating any search documents")
@@ -111,10 +120,18 @@ class ManageAcl:
             if len(document[self.acl_type]) > 0:
                 documents_to_merge.append({"id": document["id"], self.acl_type: []})
             else:
-                logger.info("Search document %s already has no %s acls", document["id"], self.acl_type)
+                logger.info(
+                    "Search document %s already has no %s acls",
+                    document["id"],
+                    self.acl_type,
+                )
 
         if len(documents_to_merge) > 0:
-            logger.info("Removing all %s acls from %d search documents", self.acl_type, len(documents_to_merge))
+            logger.info(
+                "Removing all %s acls from %d search documents",
+                self.acl_type,
+                len(documents_to_merge),
+            )
             await search_client.merge_documents(documents=documents_to_merge)
         else:
             logger.info("Not updating any search documents")
@@ -127,10 +144,19 @@ class ManageAcl:
                 new_acls.append(self.acl)
                 documents_to_merge.append({"id": document["id"], self.acl_type: new_acls})
             else:
-                logger.info("Search document %s already has %s acl %s", document["id"], self.acl_type, self.acl)
+                logger.info(
+                    "Search document %s already has %s acl %s",
+                    document["id"],
+                    self.acl_type,
+                    self.acl,
+                )
 
         if len(documents_to_merge) > 0:
-            logger.info("Adding acl %s to %d search documents", self.acl, len(documents_to_merge))
+            logger.info(
+                "Adding acl %s to %d search documents",
+                self.acl,
+                len(documents_to_merge),
+            )
             await search_client.merge_documents(documents=documents_to_merge)
         else:
             logger.info("Not updating any search documents")
@@ -141,7 +167,11 @@ class ManageAcl:
         found_documents = []
         async for document in documents:
             found_documents.append(document)
-        logger.info("Found %d search documents with storageUrl %s", len(found_documents), self.url)
+        logger.info(
+            "Found %d search documents with storageUrl %s",
+            len(found_documents),
+            self.url,
+        )
         return found_documents
 
     async def enable_acls(self, endpoint: str):
@@ -244,17 +274,40 @@ if __name__ == "__main__":
         required=False,
         help="Optional. Use this Azure AI Search account key instead of the current user identity to login (use az login to set current user for Azure)",
     )
-    parser.add_argument("--acl-type", required=False, choices=["oids", "groups"], help="Optional. Type of ACL")
+    parser.add_argument(
+        "--acl-type",
+        required=False,
+        choices=["oids", "groups"],
+        help="Optional. Type of ACL",
+    )
     parser.add_argument(
         "--acl-action",
         required=False,
-        choices=["remove", "add", "view", "remove_all", "enable_acls", "update_storage_urls"],
+        choices=[
+            "remove",
+            "add",
+            "view",
+            "remove_all",
+            "enable_acls",
+            "update_storage_urls",
+        ],
         help="Optional. Whether to remove or add the ACL to the document, or enable acls on the index",
     )
-    parser.add_argument("--acl", required=False, default=None, help="Optional. Value of ACL to add or remove.")
-    parser.add_argument("--url", required=False, help="Optional. Storage URL of document to update ACLs for")
     parser.add_argument(
-        "--tenant-id", required=False, help="Optional. Use this to define the Azure directory where to authenticate)"
+        "--acl",
+        required=False,
+        default=None,
+        help="Optional. Value of ACL to add or remove.",
+    )
+    parser.add_argument(
+        "--url",
+        required=False,
+        help="Optional. Storage URL of document to update ACLs for",
+    )
+    parser.add_argument(
+        "--tenant-id",
+        required=False,
+        help="Optional. Use this to define the Azure directory where to authenticate)",
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     args = parser.parse_args()

@@ -1,0 +1,74 @@
+name: Model Evaluation
+
+on:
+  # push:
+  #   branches:
+  #     - main
+  # pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+    model-evaluation:
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            os: ["ubuntu-20.04"]
+            python_version: ["3.11"]
+        env:
+          OPENAI_HOST: ${{ vars.OPENAI_HOST }}
+          OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
+          AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+          AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}
+          AZURE_SEARCH_SERVICE: ${{ vars.AZURE_SEARCH_SERVICE }}
+          AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
+          AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}
+          AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
+
+        steps:
+          - uses: actions/checkout@v4
+          - name: Setup python
+            uses: actions/setup-python@v5
+            with:
+              python-version: ${{ matrix.python_version }}
+              architecture: x64
+          - name: Install dependencies
+            working-directory: ./evaluation
+            run: |
+              python -m pip install --upgrade pip
+              pip install -r scripts/requirements.txt
+              pip install pyrit
+          - name: Run AI Rag Evaluations
+            working-directory: ./evaluation
+            run: |
+              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID python -m scripts evaluate --config=./config.json --numquestions=10
+              echo "EVALUATION_RESULTS=evaluation/results/$(ls ./results/ | grep "experiment" | tail -n 1)" >> $GITHUB_ENV
+            env:
+              OPENAI_HOST: ${{ vars.OPENAI_HOST }}
+              OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
+              AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+              AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}
+              AZURE_SEARCH_SERVICE: ${{ vars.AZURE_SEARCH_SERVICE }}
+              AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
+              AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}
+          - name: Run Red Teaming Evaluations
+            working-directory: ./evaluation
+            run: |
+              AZURE_OPENAI_EVAL_ENDPOINT=$AZURE_OPENAI_EVAL_ENDPOINT AZURE_OPENAI_CHAT_ENDPOINT=$AZURE_OPENAI_CHAT_ENDPOINT AZURE_OPENAI_CHAT_DEPLOYMENT=$AZURE_OPENAI_CHAT_DEPLOYMENT AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT python -m scripts red-teaming
+            env:
+              AZURE_OPENAI_CHAT_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
+              AZURE_OPENAI_EVAL_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
+              AZURE_OPENAI_CHAT_DEPLOYMENT: ${{ vars.AZURE_OPENAI_CHAT_DEPLOYMENT }}
+              AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
+          - name: Dump results
+            uses: actions/upload-artifact@v4
+            with:
+              name: evaluation-results
+              path: |
+                ${{ env.EVALUATION_RESULTS }}/summary.json
+                ${{ env.EVALUATION_RESULTS }}/eval_results.jsonl
+                ${{ env.EVALUATION_RESULTS }}/config.json
+                ${{ env.EVALUATION_RESULTS }}/evaluate_parameters.json
+                evaluation/eval.png
+                evaluation/mean_score.png
+                evaluation/passing_rate.png

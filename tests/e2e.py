@@ -193,7 +193,6 @@ def test_chat_customization(page: Page, live_server_url: str):
 
 
 def test_chat_customization_gpt4v(page: Page, live_server_url: str):
-
     # Set up a mock route to the /chat endpoint
     def handle_chat(route: Route):
         overrides = route.request.post_data_json["context"]["overrides"]
@@ -385,7 +384,6 @@ def test_ask(sized_page: Page, live_server_url: str):
 
 
 def test_upload_hidden(page: Page, live_server_url: str):
-
     def handle_auth_setup(route: Route):
         with open("tests/snapshots/test_authenticationhelper/test_auth_setup/result.json") as f:
             auth_setup = json.load(f)
@@ -417,7 +415,6 @@ def test_upload_hidden(page: Page, live_server_url: str):
 
 
 def test_upload_disabled(page: Page, live_server_url: str):
-
     def handle_auth_setup(route: Route):
         with open("tests/snapshots/test_authenticationhelper/test_auth_setup/result.json") as f:
             auth_setup = json.load(f)

@@ -83,7 +83,10 @@ async def test_remove_acl(monkeypatch, capsys):
         credentials=MockAzureCredential(),
     )
     await command.run()
-    assert merged_documents == [{"id": 2, "oids": ["OID_ACL_TO_KEEP"]}, {"id": 1, "oids": ["OID_ACL_TO_KEEP"]}]
+    assert merged_documents == [
+        {"id": 2, "oids": ["OID_ACL_TO_KEEP"]},
+        {"id": 1, "oids": ["OID_ACL_TO_KEEP"]},
+    ]
 
 
 @pytest.mark.asyncio
@@ -178,7 +181,12 @@ async def test_update_storage_urls(monkeypatch, caplog):
         assert kwargs.get("select") == ["id", "storageUrl", "oids", "sourcefile"]
         return AsyncSearchResultsIterator(
             [
-                {"id": 1, "oids": ["OID_EXISTS"], "storageUrl": "", "sourcefile": "a.txt"},
+                {
+                    "id": 1,
+                    "oids": ["OID_EXISTS"],
+                    "storageUrl": "",
+                    "sourcefile": "a.txt",
+                },
                 {"id": 2, "oids": [], "storageUrl": "", "sourcefile": "ab.txt"},
             ]
         )
