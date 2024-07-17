@@ -565,7 +565,7 @@ async def setup_clients():
             organization=OPENAI_ORGANIZATION,
         )
     # TODO: Make the embedding client fully compatible with the LLMClient once we're able to generate embeddings using Hugging Face models
-    emb_client = llm_client.client
+    emb_client = llm_client
     if HUGGINGFACE_MODEL:
         if not HUGGINGFACE_API_KEY:
             raise ValueError("HUGGINGFACE_API_KEY must be set when HUGGINGFACE_MODEL is set")

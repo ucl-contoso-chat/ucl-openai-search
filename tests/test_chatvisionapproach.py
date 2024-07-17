@@ -16,7 +16,7 @@ from .mocks import MOCK_EMBEDDING_DIMENSIONS, MOCK_EMBEDDING_MODEL_NAME
 class MockOpenAIClient:
     def __init__(self):
         self.client = self
-        self.embeddings = self
+        self.create_embeddings = self
 
     async def create(self, *args, **kwargs):
         pass

@@ -2,7 +2,6 @@ from typing import Any, Awaitable, Callable, Optional
 
 from azure.search.documents.aio import SearchClient
 from azure.storage.blob.aio import ContainerClient
-from openai import AsyncOpenAI
 from openai.types.chat import (
     ChatCompletionContentPartImageParam,
     ChatCompletionContentPartParam,
@@ -40,7 +39,7 @@ class RetrieveThenReadVisionApproach(Approach):
         search_client: SearchClient,
         blob_container_client: ContainerClient,
         llm_client: LLMClient,
-        emb_client: AsyncOpenAI,
+        emb_client: LLMClient,
         auth_helper: AuthenticationHelper,
         hf_model: Optional[str],  # Not needed for OpenAI
         gpt4v_deployment: Optional[str],

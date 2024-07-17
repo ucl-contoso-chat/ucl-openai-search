@@ -2,7 +2,6 @@ from typing import Any, Optional
 
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
-from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
 from openai_messages_token_helper import build_messages, get_token_limit
 
@@ -45,7 +44,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         search_client: SearchClient,
         auth_helper: AuthenticationHelper,
         llm_client: LLMClient,
-        emb_client: AsyncOpenAI,
+        emb_client: LLMClient,
         hf_model: Optional[str],  # Not needed for OpenAI
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
@@ -167,9 +166,13 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                     "Prompt to generate answer",
                     [str(message) for message in updated_messages],
                     (
-                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
-                        if self.chatgpt_deployment
-                        else {"model": self.chatgpt_model}
+                        {"model": self.hf_model}
+                        if self.hf_model
+                        else (
+                            {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
+                            if self.chatgpt_deployment
+                            else {"model": self.chatgpt_model}
+                        )
                     ),
                 ),
             ],

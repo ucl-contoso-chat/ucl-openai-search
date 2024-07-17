@@ -21,7 +21,6 @@ from azure.search.documents.models import (
     VectorizedQuery,
     VectorQuery,
 )
-from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from api_wrappers import LLMClient
@@ -96,7 +95,7 @@ class Approach(ABC):
         self,
         search_client: SearchClient,
         llm_client: LLMClient,
-        emb_client: AsyncOpenAI,
+        emb_client: LLMClient,
         auth_helper: AuthenticationHelper,
         query_language: Optional[str],
         query_speller: Optional[str],
@@ -238,7 +237,7 @@ class Approach(ABC):
         dimensions_args: ExtraArgs = (
             {"dimensions": self.embedding_dimensions} if SUPPORTED_DIMENSIONS_MODEL[self.embedding_model] else {}
         )
-        embedding = await self.emb_client.embeddings.create(
+        embedding = await self.emb_client.create_embeddings(
             # Azure OpenAI takes the deployment name as the model name
             model=self.embedding_deployment if self.embedding_deployment else self.embedding_model,
             input=q,

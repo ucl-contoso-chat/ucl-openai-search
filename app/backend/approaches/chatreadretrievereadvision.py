@@ -6,7 +6,7 @@ from huggingface_hub.inference._generated.types import (  # type: ignore
     ChatCompletionOutput,
     ChatCompletionStreamOutput,
 )
-from openai import AsyncOpenAI, AsyncStream
+from openai import AsyncStream
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
@@ -36,7 +36,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         search_client: SearchClient,
         blob_container_client: ContainerClient,
         llm_client: LLMClient,
-        emb_client: AsyncOpenAI,
+        emb_client: LLMClient,
         auth_helper: AuthenticationHelper,
         hf_model: Optional[str],  # Not needed for OpenAI
         chatgpt_model: str,
