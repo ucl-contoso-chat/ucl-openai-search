@@ -46,7 +46,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         auth_helper: AuthenticationHelper,
         llm_client: LLMClient,
         emb_client: AsyncOpenAI,
-        hf_model: Optional[str] = None,  # Not needed for OpenAI
+        hf_model: Optional[str],  # Not needed for OpenAI
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         embedding_model: str,

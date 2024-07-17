@@ -76,7 +76,7 @@ class HuggingFaceClient:
             else:
                 system_content = ""
 
-            system_content = system_content
+            # system_content = system_content
 
             if system_content and message and message[0]["role"] == "user":
                 content = system_content + "\n\n" + self._extract_content_as_string(message[0]["content"])
