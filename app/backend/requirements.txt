@@ -50,7 +50,7 @@ azure-monitor-opentelemetry==1.6.0
     # via -r requirements.in
 azure-monitor-opentelemetry-exporter==1.0.0b27
     # via azure-monitor-opentelemetry
-azure-search-documents==11.6.0b1
+azure-search-documents==11.6.0b4
     # via -r requirements.in
 azure-storage-blob==12.20.0
     # via
@@ -197,7 +197,7 @@ multidict==6.0.5
     # via
     #   aiohttp
     #   yarl
-numpy==2.0.0
+numpy==1.26.4
     # via -r requirements.in
 oauthlib==3.2.2
     # via requests-oauthlib
