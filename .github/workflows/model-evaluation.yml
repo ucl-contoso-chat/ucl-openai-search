@@ -26,7 +26,7 @@ permissions:
 jobs:
     deploy-azure:
       if: ${{ inputs.provision-and-deploy == true || inputs.deploy-only == true }}
-      uses: ./.github/workflows/azure-dev.yml
+      uses: .github/workflows/azure-dev.yml
       secrets: inherit
       with:
         deploy-only: ${{ inputs.deploy-only }}
