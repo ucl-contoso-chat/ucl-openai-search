@@ -11,7 +11,7 @@ on:
       deploy-only:
         description: 'Whether to deploy the application'
         required: true
-        default: true
+        default: false
         type: boolean
       purge:
         description: 'Whether to purge the deployment after evaluation'
