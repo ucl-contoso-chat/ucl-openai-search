@@ -132,15 +132,12 @@ jobs:
               node-version: 18
 
           #--------------------------Deploy--------------------------------
-
-                        
           - name: Check credentials
             run: |
               echo "AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}"
               echo "AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}"
               echo "AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}"
               echo "AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}"
-
 
           - name: Azure login
             uses: azure/login@v2
