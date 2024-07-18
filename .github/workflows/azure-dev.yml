@@ -8,6 +8,11 @@ on:
         required: true
         default: false
         type: boolean
+      to-fail:
+        description: 'mock a failure'
+        required: false
+        default: false
+        type: boolean
       
   workflow_dispatch:
   push:
@@ -102,6 +107,11 @@ jobs:
       AZURE_ADLS_GEN2_FILESYSTEM: ${{ vars.AZURE_ADLS_GEN2_FILESYSTEM }}
 
     steps:
+
+      - name: Mock fail
+        if: ${{ inputs.to-fail == true }}
+        run: exit 1
+
       - name: Checkout
         uses: actions/checkout@v4
 
