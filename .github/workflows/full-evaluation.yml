@@ -38,7 +38,7 @@ jobs:
         to-fail: ${{ inputs.fail-dev }}
 
     evaluate-models:
-        if: ${{ inputs.provision-and-deploy == false && inputs.deploy-only == false && '!cancelled()' }}
+        if: ${{ (inputs.provision-and-deploy == false && inputs.deploy-only == false && (success() || failure())) || success() }}
         needs: deploy-azure
         runs-on: ubuntu-latest
         strategy:
