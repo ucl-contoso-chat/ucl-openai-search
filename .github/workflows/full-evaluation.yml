@@ -23,7 +23,7 @@ permissions:
 
 jobs:
     deploy-azure:
-      uses: .github/workflows/azure-dev.yml
+      uses: ./.github/workflows/azure-dev.yml
       secrets: inherit
       with:
         deployment: ${{ inputs.deployment }}
