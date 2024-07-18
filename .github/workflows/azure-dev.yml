@@ -3,11 +3,10 @@ name: Deploy
 on:
   workflow_call:
     inputs:
-      deploy-only:
-        description: 'only run azd deploy with no provisioning'
+      deployment:
+        description: 'Whether to provision and/or deploy the infrastructure'
         required: true
-        default: false
-        type: boolean
+        type: string
       
   workflow_dispatch:
   push:
@@ -137,7 +136,7 @@ jobs:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Provision Infrastructure
-        if: ${{ inputs.deploy-only == false }}
+        if: ${{ inputs.deployment == 'provision-and-deploy' }}
         run: azd provision --no-prompt
         env:
           AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
@@ -145,5 +144,6 @@ jobs:
           AZURE_CLIENT_APP_SECRET: ${{ secrets.AZURE_CLIENT_APP_SECRET }}
 
       - name: Deploy Application
+        if: ${{ inputs.deployment == 'provision-and-deploy' || inputs.deployment == 'deploy-only' }}
         run: azd deploy --no-prompt
 

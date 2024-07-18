@@ -3,16 +3,14 @@ name: Full Model Evaluation
 on:
   workflow_dispatch:
     inputs:
-      provision-and-deploy:
-        description: 'Whether to provision the deployment'
+      deployment:
+        description: 'Whether to provision and/or deploy the infrastructure'
         required: true
-        default: true
-        type: boolean
-      deploy-only:
-        description: 'Whether to deploy the application'
-        required: true
-        default: true
-        type: boolean
+        type: choice
+        options:
+          - 'provision-and-deploy'
+          - 'deploy-only'
+          - 'none'
       purge:
         description: 'Whether to purge the deployment after evaluation'
         required: true
@@ -25,19 +23,16 @@ permissions:
 
 jobs:
     deploy-azure:
-      if: ${{ inputs.provision-and-deploy == true || inputs.deploy-only == true }}
-      uses: ./.github/workflows/azure-dev.yml
+      uses: .github/workflows/azure-dev.yml
       secrets: inherit
       with:
-        deploy-only: ${{ inputs.deploy-only }}
+        deployment: ${{ inputs.deployment }}
 
     evaluate-models:
-        if: ${{ (inputs.provision-and-deploy == false && inputs.deploy-only == false && always()) || success() }}
         needs: deploy-azure
         runs-on: ubuntu-latest
         strategy:
           matrix:
-            os: ["ubuntu-20.04"]
             python_version: ["3.11"]
         env:
           # azd required
@@ -125,22 +120,8 @@ jobs:
     
           - name: Install azd
             uses: Azure/setup-azd@v1.0.0
-    
-          - name: Install Nodejs
-            uses: actions/setup-node@v4
-            with:
-              node-version: 18
 
-          #--------------------------Deploy--------------------------------
-
-                        
-          - name: Check credentials
-            run: |
-              echo "AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}"
-              echo "AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}"
-              echo "AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}"
-              echo "AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}"
-
+          #--------------------------Azure Login--------------------------------
 
           - name: Azure login
             uses: azure/login@v2
@@ -148,13 +129,6 @@ jobs:
               client-id: ${{ env.AZURE_CLIENT_ID }}
               tenant-id: ${{ env.AZURE_TENANT_ID }}
               subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
-            
-          - name: Azure CLI script
-            uses: azure/cli@v2
-            with:
-              azcliversion: latest
-              inlineScript: |
-                az account show
 
           #--------------------------Run Evaluation--------------------------------
           - name: Install dependencies
@@ -166,20 +140,18 @@ jobs:
           - name: Run AI Rag Evaluations
             working-directory: ./evaluation
             run: |
-              OPENAI_HOST=$OPENAI_HOST OPENAI_GPT_MODEL=$OPENAI_GPT_MODEL AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT AZURE_OPENAI_SERVICE=$AZURE_OPENAI_SERVICE AZURE_SEARCH_SERVICE=$AZURE_SEARCH_SERVICE AZURE_SEARCH_INDEX=$AZURE_SEARCH_INDEX AZURE_PRINCIPAL_ID=$AZURE_PRINCIPAL_ID python -m scripts evaluate --config=./config.json --numquestions=10
+              python -m scripts evaluate --config=./config.json --numquestions=10
               echo "EVALUATION_RESULTS=evaluation/results/$(ls ./results/ | grep "experiment" | tail -n 1)" >> $GITHUB_ENV
             env:
               OPENAI_HOST: ${{ vars.OPENAI_HOST }}
               OPENAI_GPT_MODEL: ${{ vars.OPENAI_GPT_MODEL }}
               AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
-              AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}
-              AZURE_SEARCH_SERVICE: ${{ vars.AZURE_SEARCH_SERVICE }}
               AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX }}
               AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID }}
           - name: Run Red Teaming Evaluations
             working-directory: ./evaluation
             run: |
-              AZURE_OPENAI_EVAL_ENDPOINT=$AZURE_OPENAI_EVAL_ENDPOINT AZURE_OPENAI_CHAT_ENDPOINT=$AZURE_OPENAI_CHAT_ENDPOINT AZURE_OPENAI_CHAT_DEPLOYMENT=$AZURE_OPENAI_CHAT_DEPLOYMENT AZURE_OPENAI_EVAL_DEPLOYMENT=$AZURE_OPENAI_EVAL_DEPLOYMENT python -m scripts red-teaming
+              python -m scripts red-teaming
             env:
               AZURE_OPENAI_CHAT_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
               AZURE_OPENAI_EVAL_ENDPOINT: ${{ vars.AZURE_OPENAI_CHAT_ENDPOINT }}
