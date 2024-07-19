@@ -5,6 +5,9 @@
 # Previous evaluation results
 evaluation/results
 
+# Input dataset
+evaluation/input/qa.jsonl
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -152,6 +155,3 @@ static/
 data/**/*.md5
 
 .DS_Store
-
-evaluation/example_results/experiment*
-evaluation/latest/
