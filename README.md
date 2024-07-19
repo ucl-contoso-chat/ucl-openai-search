@@ -162,6 +162,19 @@ If you've changed the infrastructure files (`infra` folder or `azure.yaml`), the
 
 ```azd up```
 
+When using the same local workspace to re-provision in a new environment, you might notice that the
+application- although functional- lacks the specialised information normally provided through the
+uploaded documents.
+This is likely because the AI Search service is empty, a symptom of the optimisation introduced
+[here](https://github.com/Azure-Samples/azure-search-openai-demo/pull/835), which enabled skipping
+the upload of files that have been processed locally before.
+You can disable this feature by setting the `FORCE_DOC_UPLOAD` environment variable before
+provisioning, thus ensuring that the files are uploaded to the new index:
+
+```shell
+azd env set FORCE_DOC_UPLOAD true
+```
+
 ## Sharing environments
 
 To give someone else access to a completely deployed and existing environment,
