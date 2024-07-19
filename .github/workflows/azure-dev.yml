@@ -2,12 +2,7 @@ name: Deploy
 
 on:
   workflow_call:
-    inputs:
-      deployment:
-        description: 'Whether to provision and/or deploy the infrastructure'
-        required: true
-        type: string
-      
+
   workflow_dispatch:
   push:
     # Run when commits are pushed to mainline branch (main or master)
@@ -136,7 +131,6 @@ jobs:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Provision Infrastructure
-        if: ${{ inputs.deployment == 'provision-and-deploy' }}
         run: azd provision --no-prompt
         env:
           AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
@@ -144,6 +138,10 @@ jobs:
           AZURE_CLIENT_APP_SECRET: ${{ secrets.AZURE_CLIENT_APP_SECRET }}
 
       - name: Deploy Application
-        if: ${{ inputs.deployment == 'provision-and-deploy' || inputs.deployment == 'deploy-only' }}
         run: azd deploy --no-prompt
 
+      - name: Set Environment Variables
+        run: |
+          set -a
+          source .azure/${{ env.AZURE_ENV_NAME }}/.env
+          cat .azure/${{ env.AZURE_ENV_NAME }}/.env >> $GITHUB_ENV
