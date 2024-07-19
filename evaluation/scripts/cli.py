@@ -96,8 +96,8 @@ def red_teaming(
     red_teaming_llm: Optional[str] = typer.Option(default="openai"),
     prompt_target: Optional[str] = typer.Option(default="openai"),
 ):
-    red_team = service_setup.get_openai_target() if red_teaming_llm == "openai" else service_setup.get_azure_ml_target()
-    target = service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_target()
+    red_team = service_setup.get_openai_target() if red_teaming_llm == "openai" else service_setup.get_azure_ml_chat_target()
+    target = service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_chat_target()
 
     asyncio.run(run_red_teaming(Path.cwd() / scorer_path, red_team, target))
 
