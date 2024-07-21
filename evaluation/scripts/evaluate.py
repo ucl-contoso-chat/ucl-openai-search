@@ -1,5 +1,6 @@
 import concurrent.futures
 import json
+import os
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -10,7 +11,7 @@ import numpy as np
 import pandas as pd
 import requests
 from rich.progress import track
-from . import service_setup
+from scripts import service_setup
 from scripts.evaluate_metrics import metrics_by_name
 
 logger = logging.getLogger("scripts")
@@ -311,7 +312,7 @@ def run_evaluate_from_config(working_dir, config_path, num_questions, target_url
         openai_config=service_setup.get_openai_config(),
         testdata_path=working_dir / config["testdata_path"],
         results_dir=results_dir,
-        target_url=config["target_url"],
+        target_url=os.environ.get("BACKEND_URI")+"/ask",
         target_parameters=config.get("target_parameters", {}),
         passing_rate=passing_rate,
         max_workers=4,

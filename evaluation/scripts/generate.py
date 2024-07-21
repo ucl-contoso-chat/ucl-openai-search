@@ -6,7 +6,7 @@ from azure.ai.generative.synthetic.qa import QADataGenerator, QAType
 from azure.search.documents import SearchClient
 from openai_messages_token_helper import get_token_limit
 
-from . import service_setup
+from scripts import service_setup
 
 logger = logging.getLogger("scripts")
 

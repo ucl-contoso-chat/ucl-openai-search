@@ -6,7 +6,7 @@
 evaluation/results
 
 # Input dataset
-evaluation/input/qa.jsonl
+evaluation/input
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
