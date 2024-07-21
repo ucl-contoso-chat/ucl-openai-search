@@ -7,6 +7,7 @@ This directory contains scripts and tools based on [Azure-Samples/ai-rag-chat-ev
 ### Load from an existing environment
 
 If you already have an existing deployment and have set the environment variables locally, you can retrieve them directly from your local .env file by running `./load_env.sh` or`./load_env.ps1`
+
 ### Set up the environment manually
 
 If you don't have the environment variables set locally,  you can create an `.env` file by copying `.env.sample`,  find the corresponding information on the Azure portal and fill in the values in `.env`. The scripts default to keyless access (via `AzureDefaultCredential`), but you can optionally use a key by setting `AZURE_OPENAI_KEY` in `.env`.
@@ -15,24 +16,27 @@ It is recommand to use the OpenAI GPT model as the evaluator. If you have an ope
 
 (#Ref [ai-rag-chat-evaluator/README.md](https://github.com/Azure-Samples/ai-rag-chat-evaluator/blob/main/README.md))
 
-
 ### PyRIT Target Set-up
 
 PyRIT is a risk identification tool for generative AI. To be able to access the target model that you intend to test. You can either choose the OpenAI model on Azure or other ML models on Azure as the target. 
-
 If you want to test the OpenAI model on Azure, the required environment variables  are:
 
-   ```
+   ```plaintext
    AZURE_OPENAI_CHAT_DEPLOYMENT="<deployment-name>"
    AZURE_OPENAI_CHAT_ENDPOINT="<deployment-endpoint>"
    ```
+   
 If you want to test the other ML models on Azure, the required environment varibles  are:
-   ```
+
+   ```plaintext
    AZURE_ML_ENDPOINT="<deployment-endpoint>"
    AZURE_ML_MANAGED_KEY="<access-key>"
    ```
+   
 Either of the two methods in the environment setup has already set up environment variables for both target choices.
+
 ## Generating ground truth data
+
 In order to run the evaluator, there must be a set of questions and "ground truth" answers, which is the ideal answer for a particular question. 
 
 This repo includes a script for generating questions and answers from documents stored in Azure AI Search. The values for the Azure AI Search instance should already be set in your environment variables with the environment setup steps above.
