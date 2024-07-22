@@ -42,12 +42,28 @@ In order to run the evaluator, there must be a set of questions and "ground trut
 This repo includes a script for generating questions and answers from documents stored in Azure AI Search. The values for the Azure AI Search instance should already be set in your environment variables with the environment setup steps above.
 
 Run the generator script:
-`python -m scripts generate --output=input/qa.jsonl --numquestions=200 --persource=5`
+````
+python -m scripts generate --output=input/qa.jsonl --numquestions=200 --persource=5
+````
+
 That script will generate 200 questions and answers, and store them in `example_input/qa.jsonl`.
 Optional:
 
 By default this script assumes your index citation field is named sourcepage, if your search index contains a different citation field name use the citationfieldname option to specify the correct name
-`python -m scripts generate --output=input/qa.jsonl --numquestions=200 --persource=5 --citationfieldname=filepath`
+
+````
+python -m scripts generate --output=input/qa.jsonl --numquestions=200 --persource=5 --citationfieldname=filepath
+````
+
+### Generate answer from the question
+
+After you generate the questions, you could use the command below to use the llm to gererate the answer from it, which can be used in the Azure AI Studio webUI evaluation as the raw data.
+
+```
+python -m scripts generate-answers --input=input/qa.jsonl --output=output/qa_ans.jsonl
+```
+
+
 
 ## Running an Evaluation
 
