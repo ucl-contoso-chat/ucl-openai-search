@@ -7,10 +7,10 @@ import dotenv
 import typer
 from rich.logging import RichHandler
 
-from scripts import service_setup
-from scripts.evaluate import run_evaluate_from_config
-from scripts.generate import generate_test_qa_answer, generate_test_qa_data
-from scripts.red_teaming import run_red_teaming
+from . import service_setup
+from .evaluate import run_evaluate_from_config
+from .generate import generate_test_qa_answer, generate_test_qa_data
+from .red_teaming import run_red_teaming
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -89,17 +89,21 @@ def generate_answers(
 def red_teaming(
     scorer_path: Path = typer.Option(
         exists=True,
-        dir_okay=False,
-        file_okay=True,
-        default="scorer_definitions/key_logger_classifier.yaml",
+        dir_okay=True,
+        file_okay=False,
+        default="scorer_definitions",
     ),
-    red_teaming_llm: Optional[str] = typer.Option(default="openai"),
-    prompt_target: Optional[str] = typer.Option(default="openai"),
+    output: Path = typer.Option(exists=False, dir_okay=True, file_okay=False, default="results"),
+    prompt_target: Optional[str] = typer.Option(default="openai")
 ):
-    red_team = service_setup.get_openai_target() if red_teaming_llm == "openai" else service_setup.get_azure_ml_chat_target()
-    target = service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_chat_target()
-
-    asyncio.run(run_red_teaming(Path.cwd() / scorer_path, red_team, target))
+    red_team = service_setup.get_openai_target()
+    target = service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_target()
+    asyncio.run(run_red_teaming(
+        scorer_path=Path.cwd() / scorer_path, 
+        red_teaming_llm=red_team, 
+        prompt_target=target,
+        output=Path.cwd() / output,)
+    )
 
 
 def cli():
