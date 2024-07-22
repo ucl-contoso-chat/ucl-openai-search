@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 
-logger = logging.getLogger("scripts")
+logger = logging.getLogger("evaluation")
 
 DEFAULT_PASSING_THRESHOLD = 4.0
 

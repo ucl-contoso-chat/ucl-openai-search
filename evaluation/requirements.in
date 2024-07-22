@@ -1,11 +1,9 @@
 azure-ai-generative[evaluate]
 azure-identity
 azure-search-documents
-jmespath
 matplotlib
 numpy
 openai
-openai-messages-token-helper
 pandas
 promptflow-core
 promptflow-evals

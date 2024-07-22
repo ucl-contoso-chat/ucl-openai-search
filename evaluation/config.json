@@ -1,8 +1,9 @@
 {
     "testdata_path": "input/qa.jsonl",
     "results_dir": "results",
-    "passing_rate":3,
+    "passing_rate": 3,
     "requested_metrics": ["gpt_groundedness", "gpt_relevance", "gpt_coherence", "answer_length", "latency"],
+    "max_workers": 1,
     "target_parameters": {
         "overrides": {
             "top": 3,

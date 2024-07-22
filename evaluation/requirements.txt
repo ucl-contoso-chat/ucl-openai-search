@@ -414,7 +414,6 @@ jinja2==3.1.4
     #   nbconvert
 jmespath==1.0.1
     # via
-    #   -r requirements.in
     #   azureml-core
     #   knack
 joblib==1.4.2
@@ -604,11 +603,8 @@ openai==1.35.14
     # via
     #   -r requirements.in
     #   azureml-metrics
-    #   openai-messages-token-helper
     #   promptflow-tracing
     #   pyrit
-openai-messages-token-helper==0.1.5
-    # via -r requirements.in
 opencensus==0.11.4
     # via
     #   opencensus-ext-azure
@@ -687,7 +683,6 @@ pexpect==4.9.0
 pillow==10.4.0
     # via
     #   matplotlib
-    #   openai-messages-token-helper
     #   promptflow-devkit
 pkginfo==1.11.1
     # via azureml-core
@@ -958,9 +953,7 @@ terminado==0.18.1
 threadpoolctl==3.5.0
     # via scikit-learn
 tiktoken==0.7.0
-    # via
-    #   openai-messages-token-helper
-    #   promptflow-tracing
+    # via promptflow-tracing
 tinycss2==1.3.0
     # via nbconvert
 tokenizers==0.19.1

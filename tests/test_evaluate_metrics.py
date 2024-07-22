@@ -1,8 +1,6 @@
 import pandas as pd
-from evaluation.scripts.evaluate_metrics import (
-    builtin_metrics,
-    code_metrics,
-)
+
+from evaluation.evaluate_metrics import builtin_metrics, code_metrics
 
 
 def test_answer_length():
@@ -88,7 +86,6 @@ def test_latency():
     assert metric_function(data={"latency": 20}) == {}
     df = pd.DataFrame([{"latency": 20}, {"latency": 10}, {"latency": 5}])
     assert metric.get_aggregate_stats(df) == {"mean": 11.67, "max": 20, "min": 5}
-
 
 
 def test_builtin_coherence():

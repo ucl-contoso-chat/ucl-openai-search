@@ -7,10 +7,13 @@ import dotenv
 import typer
 from rich.logging import RichHandler
 
-from . import service_setup
-from .evaluate import run_evaluate_from_config
-from .generate import generate_test_qa_answer, generate_test_qa_data
-from .red_teaming import run_red_teaming
+from evaluation import service_setup
+from evaluation.evaluate import run_evaluation_from_config
+from evaluation.generate import generate_test_qa_data
+from evaluation.red_teaming import run_red_teaming
+from evaluation.utils import load_config
+
+EVALUATION_DIR = Path(__file__).parent
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -20,7 +23,7 @@ logging.basicConfig(
     datefmt="[%X]",
     handlers=[RichHandler(rich_tracebacks=True)],
 )
-logger = logging.getLogger("scripts")
+logger = logging.getLogger("evaluation")
 
 logger.setLevel(logging.INFO)
 
@@ -41,8 +44,8 @@ def evaluate(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Path to config.json",
-        default="config.json",
+        help="Path to the configuration JSON file.",
+        default=EVALUATION_DIR / "config.json",
     ),
     numquestions: Optional[int] = typer.Option(
         help="Number of questions to evaluate (defaults to all if not specified).",
@@ -55,12 +58,17 @@ def evaluate(
         parser=str_or_none,
     ),
 ):
-    run_evaluate_from_config(Path.cwd(), config, numquestions, targeturl)
+    run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl)
 
 
 @app.command()
 def generate(
-    output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
+    output: Path = typer.Option(
+        exists=False,
+        dir_okay=False,
+        file_okay=True,
+        help="Path for the output file that will be generated.",
+    ),
     numquestions: int = typer.Option(help="Number of questions to generate", default=200),
     persource: int = typer.Option(help="Number of questions to generate per source", default=5),
 ):
@@ -69,40 +77,40 @@ def generate(
         search_client=service_setup.get_search_client(),
         num_questions_total=numquestions,
         num_questions_per_source=persource,
-        output_file=Path.cwd() / output,
-    )
-
-
-@app.command()
-def generate_answers(
-    input: Path = typer.Option(exists=True, dir_okay=False, file_okay=True),
-    output: Path = typer.Option(exists=False, dir_okay=False, file_okay=True),
-):
-    generate_test_qa_answer(
-        openai_config=service_setup.get_openai_config(),
-        question_path=Path.cwd() / input,
-        output_file=Path.cwd() / output,
+        output_file=EVALUATION_DIR / output,
     )
 
 
 @app.command()
 def red_teaming(
-    scorer_path: Path = typer.Option(
+    config: Path = typer.Option(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="Path to the configuration JSON file.",
+        default=EVALUATION_DIR / "config.json",
+    ),
+    scorer_dir: Path = typer.Option(
         exists=True,
         dir_okay=True,
         file_okay=False,
-        default="scorer_definitions",
+        help="Path to the directory where the scorer YAML files are stored.",
+        default=EVALUATION_DIR / "scorer_definitions",
     ),
-    output: Path = typer.Option(exists=False, dir_okay=True, file_okay=False, default="results"),
-    prompt_target: Optional[str] = typer.Option(default="openai")
+    prompt_target: Optional[str] = typer.Option(default="openai"),
 ):
     red_team = service_setup.get_openai_target()
-    target = service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_target()
-    asyncio.run(run_red_teaming(
-        scorer_path=Path.cwd() / scorer_path, 
-        red_teaming_llm=red_team, 
-        prompt_target=target,
-        output=Path.cwd() / output,)
+    target = (
+        service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_chat_target()
+    )
+    asyncio.run(
+        run_red_teaming(
+            working_dir=EVALUATION_DIR,
+            scorer_dir=scorer_dir,
+            config=load_config(config),
+            red_teaming_llm=red_team,
+            prompt_target=target,
+        )
     )
 
 

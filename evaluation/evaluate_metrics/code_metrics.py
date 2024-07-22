@@ -3,7 +3,7 @@ import re
 
 from .base_metric import DEFAULT_PASSING_THRESHOLD, BaseMetric
 
-logger = logging.getLogger("scripts")
+logger = logging.getLogger("evaluation")
 
 
 class AnswerLengthMetric(BaseMetric):

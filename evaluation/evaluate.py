@@ -1,83 +1,30 @@
 import concurrent.futures
 import json
-import os
 import logging
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-import jmespath
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
 from rich.progress import track
-from scripts import service_setup
-from scripts.evaluate_metrics import metrics_by_name
 
-logger = logging.getLogger("scripts")
+from evaluation import service_setup
+from evaluation.evaluate_metrics import metrics_by_name
+from evaluation.utils import load_jsonl
 
+EVALUATION_RESULTS_DIR = "gpt_evaluation"
 
-def send_question_to_target(
-    question: str,
-    url: str,
-    parameters: dict = {},
-    raise_error=False,
-    response_answer_jmespath="message.content",
-    response_context_jmespath="context.data_points.text",
-):
-    headers = {"Content-Type": "application/json"}
-    body = {
-        "messages": [{"content": question, "role": "user"}],
-        "context": parameters,
-    }
-    try:
-        r = requests.post(url, headers=headers, json=body)
-        r.encoding = "utf-8"
-
-        latency = r.elapsed.total_seconds()
-
-        try:
-            response_dict = r.json()
-        except json.JSONDecodeError:
-            raise ValueError(
-                f"Response from target {url} is not valid JSON:\n\n{r.text} \n"
-                "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
-            )
-
-        try:
-            answer = jmespath.search(response_answer_jmespath, response_dict)
-            data_points = jmespath.search(response_context_jmespath, response_dict)
-            context = "\n\n".join(data_points)
-        except Exception:
-            raise ValueError(
-                "Response does not adhere to the expected schema. "
-                f"The answer should be accessible via the JMESPath expression '{response_answer_jmespath}' "
-                f"and the context should be accessible via the JMESPath expression '{response_context_jmespath}'. "
-                "Either adjust the app response or adjust send_question_to_target() in evaluate.py "
-                f"to match the actual schema.\nResponse: {response_dict}"
-            )
-
-        response_obj = {"answer": answer, "context": context, "latency": latency}
-        return response_obj
-    except Exception as e:
-        if raise_error:
-            raise e
-        return {
-            "answer": str(e),
-            "context": str(e),
-            "latency": -1,
-        }
+logger = logging.getLogger("evaluation")
 
 
-def send_question_to_ask(
-    question: str,
-    url: str,
-    parameters: dict = {},
-    raise_error=False
-):
+def send_question_to_ask(question: str, url: str, parameters: dict = {}, raise_error=False) -> dict:
+    """Send a question to the ask endpoint and return the response."""
     headers = {
         "Content-Type": "application/json",
-        # "Authorization": f"Bearer {token}"
     }
     body = {
         "messages": [{"content": question, "role": "user"}],
@@ -96,8 +43,8 @@ def send_question_to_ask(
                 "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
             )
         try:
-            answer = response_dict['message']['content']
-            data_points = response_dict['context']['data_points']['text']
+            answer = response_dict["message"]["content"]
+            data_points = response_dict["context"]["data_points"]["text"]
             context = "\n\n".join(data_points)
         except Exception:
             raise ValueError(
@@ -117,13 +64,32 @@ def send_question_to_ask(
         }
 
 
-def truncate_for_log(s: str, max_length=50):
-    return s if len(s) < max_length else s[:max_length] + "..."
-
-
-def load_jsonl(path: Path) -> list[dict]:
-    with open(path, encoding="utf-8") as f:
-        return [json.loads(line) for line in f.readlines()]
+def evaluate_row(
+    row,
+    target_url: str,
+    openai_config: dict,
+    requested_metrics: list,
+    target_parameters: dict = {},
+) -> dict:
+    """Evaluate a single row of test data."""
+    output = {}
+    output["question"] = row["question"]
+    output["truth"] = row["truth"]
+    target_response = send_question_to_ask(
+        question=row["question"],
+        url=target_url,
+        parameters=target_parameters,
+    )
+    output.update(target_response)
+    for metric in requested_metrics:
+        result = metric.evaluator_fn(openai_config=openai_config)(
+            question=row["question"],
+            answer=output["answer"],
+            context=output["context"],
+            ground_truth=row["truth"],
+        )
+        output.update(result)
+    return output
 
 
 def run_evaluation(
@@ -133,10 +99,11 @@ def run_evaluation(
     target_url: str,
     passing_rate: int,
     max_workers: int,
-    target_parameters={},
-    requested_metrics=[],
-    num_questions=None,
+    target_parameters: dict,
+    requested_metrics: list,
+    num_questions: int = None,
 ):
+    """Run evaluation on the provided test data."""
     logger.info("Running evaluation using data from %s", testdata_path)
     testdata = load_jsonl(testdata_path)
     if num_questions:
@@ -152,21 +119,24 @@ def run_evaluation(
     requested_metrics = [
         metrics_by_name[metric_name] for metric_name in requested_metrics if metric_name in metrics_by_name
     ]
-    
+
     questions_with_ratings = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters): row for row in testdata}
+        futures = {
+            executor.submit(evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters): row
+            for row in testdata
+        }
         for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
             row_result = future.result()
             questions_with_ratings.append(row_result)
 
     logger.info("Evaluation calls have completed. Calculating overall metrics now...")
-    # Make the results directory if it doesn't exist
     results_dir.mkdir(parents=True, exist_ok=True)
-    # Save the results
+
     with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
         for row in questions_with_ratings:
             results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+
     with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
         parameters = {
             "evaluation_gpt_model": openai_config.model,
@@ -177,26 +147,56 @@ def run_evaluation(
             "num_questions": num_questions,
         }
         parameters_file.write(json.dumps(parameters, indent=4))
-    summarize_result_and_plot(questions_with_ratings, requested_metrics, results_dir, passing_rate)
+
+    summarize_results_and_plot(questions_with_ratings, requested_metrics, results_dir, passing_rate)
     return True
 
 
-def summarize_result_and_plot(
-    questions_with_ratings:[],
-    requested_metrics:[],
-    results_dir: Path,
-    passing_rate: int
+def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
+    """Run evaluation using the provided configuration file."""
+    timestamp = int(time.time())
+    results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    evaluation_run_complete = run_evaluation(
+        openai_config=service_setup.get_openai_config(),
+        testdata_path=working_dir / config["testdata_path"],
+        results_dir=results_dir,
+        target_url=os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url,
+        target_parameters=config.get("target_parameters", {}),
+        passing_rate=config.get("passing_rate", 3),
+        max_workers=config.get("max_workers", 4),
+        num_questions=num_questions,
+        requested_metrics=config.get(
+            "requested_metrics",
+            [
+                "gpt_groundedness",
+                "gpt_relevance",
+                "gpt_coherence",
+                "answer_length",
+                "latency",
+            ],
+        ),
+    )
+
+    if evaluation_run_complete:
+        results_config_path = results_dir / "config.json"
+        logger.info("Saving original config file back to %s", results_config_path)
+        with open(results_config_path, "w", encoding="utf-8") as output_config:
+            output_config.write(json.dumps(config, indent=4))
+    else:
+        logger.error("Evaluation was terminated early due to an error ⬆")
+
+
+def summarize_results_and_plot(
+    questions_with_ratings: list, requested_metrics: list, results_dir: Path, passing_rate: int
 ):
-    # Calculate aggregate metrics
+    """Summarize the evaluation results and plot them."""
     df = pd.DataFrame(questions_with_ratings)
     summary = {}
-    metric_list = []
-    pass_rate = []
-    mean_rate = []
-    metric_name = []
-    max_list = []
-    min_list = []
-    mean_list = []
+    metric_list, metric_name = [], []
+    pass_rate, mean_rate = [], []
+    min_list, mean_list, max_list = [], [], []
     for metric in requested_metrics:
         metric_result = metric.get_aggregate_stats(df, passing_rate)
         summary[metric.METRIC_NAME] = metric_result
@@ -218,8 +218,8 @@ def summarize_result_and_plot(
             max_list.append(max)
             min_list.append(min)
             mean_list.append(mean)
-    
-    # summary statistics
+
+    # Summary statistics
     with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summary, indent=4))
     logger.info("Evaluation results saved in %s", results_dir)
@@ -230,7 +230,7 @@ def summarize_result_and_plot(
 
     ax1.set_ylabel("passing rate")
     ax1.set_title("Passing rate of evaluation metrics")
-    plt.savefig(results_dir /"passing_rate.png")
+    plt.savefig(results_dir / "passing_rate.png")
     plt.close(fig)
 
     fig, ax2 = plt.subplots()
@@ -238,7 +238,7 @@ def summarize_result_and_plot(
 
     ax2.set_ylabel("mean score")
     ax2.set_title("Mean score of evaluation metrics")
-    plt.savefig(results_dir /"mean_score.png")
+    plt.savefig(results_dir / "mean_score.png")
     plt.close(fig)
 
     means = {
@@ -264,76 +264,5 @@ def summarize_result_and_plot(
     ax3.legend(loc="upper left", ncols=3)
     ax3.set_ylim(0, 250)
 
-    plt.savefig(results_dir /"eval.png")
+    plt.savefig(results_dir / "eval.png")
     plt.close(fig)
-
-    return True
-
-
-def evaluate_row(row, 
-                 target_url:str,
-                 openai_config: dict,
-                 requested_metrics:[],
-                 target_parameters={}, 
-                 ):
-    output = {}
-    output["question"] = row["question"]
-    output["truth"] = row["truth"]
-    target_response = send_question_to_ask(
-        question=row["question"],
-        url=target_url,
-        # token=token,
-        parameters=target_parameters,
-    )
-    output.update(target_response)
-    for metric in requested_metrics:
-        result = metric.evaluator_fn(openai_config=openai_config)(
-            question=row["question"],
-            answer=output["answer"],
-            context=output["context"],
-            ground_truth=row["truth"],
-        )
-        output.update(result)
-    return output
-
-
-
-def run_evaluate_from_config(working_dir, config_path, num_questions, target_url):
-    config_path = working_dir / Path(config_path)
-    logger.info("Running evaluation from config %s", config_path)
-    with open(config_path, encoding="utf-8") as f:
-        config = json.load(f)
-    timestamp = int(time.time())
-    results_dir = working_dir / Path(config["results_dir"]) / f"experiment-{timestamp}"
-    results_dir.mkdir(parents=True, exist_ok=True)
-    passing_rate = config["passing_rate"]
-
-    evaluation_run_complete = run_evaluation(
-        openai_config=service_setup.get_openai_config(),
-        testdata_path=working_dir / config["testdata_path"],
-        results_dir=results_dir,
-        target_url=os.environ.get("BACKEND_URI")+"/ask",
-        target_parameters=config.get("target_parameters", {}),
-        passing_rate=passing_rate,
-        max_workers=4,
-        num_questions=num_questions,
-        requested_metrics=config.get(
-            "requested_metrics",
-            [
-                "gpt_groundedness",
-                "gpt_relevance",
-                "gpt_coherence",
-                "answer_length",
-                "latency",
-            ],
-        ),
-    )
-
-    if evaluation_run_complete:
-        results_config_path = results_dir / "config.json"
-        logger.info("Saving original config file back to to %s", results_config_path)
-        with open(config_path, encoding="utf-8") as input_config:
-            with open(results_config_path, "w", encoding="utf-8") as output_config:
-                output_config.write(input_config.read())
-    else:
-        logger.error("Evaluation was terminated early due to an error ⬆")

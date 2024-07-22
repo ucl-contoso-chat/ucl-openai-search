@@ -18,16 +18,34 @@ from pyrit.prompt_target import (
     PromptChatTarget,
 )
 
-logger = logging.getLogger("scripts")
+logger = logging.getLogger("evaluation")
 
-def print_all_env_vars():
-    vars = ['OPENAI_HOST', 'OPENAI_GPT_MODEL', 'AZURE_OPENAI_EVAL_DEPLOYMENT', 'AZURE_OPENAI_SERVICE', 'OPENAICOM_KEY', 'OPENAICOM_ORGANIZATION', 'AZURE_SEARCH_SERVICE', 'AZURE_SEARCH_INDEX', 'AZURE_OPENAI_KEY', 'TENANT_ID', 'CLIENT_ID', 'CLIENT_SECRET', 'AZURE_PRINCIPAL_ID']
-    print('Environment Variables:')
+
+def _log_env_vars():
+    """Log required environment variables for debugging."""
+    vars = [
+        "OPENAI_HOST",
+        "OPENAI_GPT_MODEL",
+        "AZURE_OPENAI_EVAL_DEPLOYMENT",
+        "AZURE_OPENAI_SERVICE",
+        "OPENAICOM_KEY",
+        "OPENAICOM_ORGANIZATION",
+        "AZURE_SEARCH_SERVICE",
+        "AZURE_SEARCH_INDEX",
+        "AZURE_OPENAI_KEY",
+        "TENANT_ID",
+        "CLIENT_ID",
+        "CLIENT_SECRET",
+        "AZURE_PRINCIPAL_ID",
+    ]
+    logger.debug("Environment Variables:")
     for var in vars:
-        print(f"{var}: {os.environ.get(var)}")
+        logger.debug(f"{var}: {os.environ.get(var)}")
+
 
 def get_openai_config() -> ModelConfiguration:
-    print_all_env_vars()
+    """Get OpenAI configuration."""
+    _log_env_vars()
     if os.environ.get("OPENAI_HOST") == "azure":
         azure_endpoint = f"https://{os.environ['AZURE_OPENAI_SERVICE']}.openai.azure.com"
         azure_deployment = os.environ.get("AZURE_OPENAI_EVAL_DEPLOYMENT")
@@ -61,6 +79,7 @@ def get_openai_config() -> ModelConfiguration:
 
 def get_openai_config_dict() -> dict:
     """Return a dictionary with OpenAI configuration based on environment variables.
+
     This is only used by azure-ai-generative SDK right now, and should be deprecated once
     the generate functionality is available in promptflow SDK.
     """
@@ -91,7 +110,9 @@ def get_openai_config_dict() -> dict:
         }
     return openai_config
 
-def get_search_client():
+
+def get_search_client() -> SearchClient:
+    """Get Azure AI Search client."""
     if api_key := os.environ.get("AZURE_SEARCH_KEY"):
         logger.info("Using Azure Search Service with API Key from AZURE_SEARCH_KEY")
         azure_credential = AzureKeyCredential(api_key)
@@ -106,7 +127,8 @@ def get_search_client():
     )
 
 
-def get_openai_client(oai_config: ModelConfiguration):
+def get_openai_client(oai_config: ModelConfiguration) -> openai.OpenAI:
+    """Get OpenAI client based on configuration."""
     if isinstance(oai_config, AzureOpenAIModelConfiguration):
         azure_token_provider = None
         if not os.environ.get("AZURE_OPENAI_KEY"):
@@ -130,6 +152,7 @@ def get_openai_client(oai_config: ModelConfiguration):
 
 
 def get_openai_target() -> PromptChatTarget:
+    """Get specified OpenAI chat target."""
     if os.environ["OPENAI_HOST"] == "azure":
         logger.info("Using Azure OpenAI Chat Target")
         deployment = os.environ["AZURE_OPENAI_EVAL_DEPLOYMENT"]
@@ -150,6 +173,7 @@ def get_openai_target() -> PromptChatTarget:
 def get_azure_ml_chat_target(
     chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop,
 ) -> AzureMLChatTarget:
+    """Get specified Azure ML chat target."""
     endpoint = os.environ["AZURE_ML_ENDPOINT"]
     api_key = os.environ["AZURE_ML_MANAGED_KEY"]
     return AzureMLChatTarget(
