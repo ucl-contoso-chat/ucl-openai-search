@@ -4,6 +4,7 @@ import os
 import glob
 import json
 import time
+import yaml
 
 from dotenv import load_dotenv
 from pyrit.common import default_values
@@ -37,13 +38,20 @@ async def run_red_teaming(
     
     for scorer_yaml in scorers:
         logger.info("Runing red teaming on scorer YAML: %s", scorer_yaml)
+        try:
+            logger.info("Validating scorer YAML structure")
+            validate_scorer_yaml(scorer_yaml)
+        except ValueError as e:
+            logger.error(f"Invalid scorer YAML: {e}")
+            continue
+        
         scorer = SelfAskTrueFalseScorer(chat_target=red_teaming_llm, true_false_question_path=Path(scorer_yaml))
         attack_strategy = AttackStrategy(
             strategy=text_generation_strategy_path,
             conversation_objective=conversation_objective,
         )
         
-        
+
         with RedTeamingOrchestrator(
             attack_strategy=attack_strategy,
             red_teaming_chat=red_teaming_llm,
@@ -62,8 +70,10 @@ async def run_red_teaming(
 
 def save_score(result, output: Path):
     logger.info("Saving Score to File: %s", output)
+    if not output.exists():
+        output.mkdir(parents=True)
     timestamp = int(time.time())
-    output_dir = output / f"score{timestamp}.json"
+    output_dir = output / f"score_{timestamp}.json"
     output = []
     for score in result:
         output.append(
@@ -78,3 +88,19 @@ def save_score(result, output: Path):
         json.dump(output, f)
 
 
+def validate_scorer_yaml(scorer_yaml):
+    # Load the YAML file
+    with open(scorer_yaml, 'r') as file:
+        data = yaml.safe_load(file)
+        
+    # Check for required fields
+    if data is None:
+        raise ValueError(f"The file {scorer_yaml} is empty.")
+    if 'category' not in data:
+        raise ValueError(f"The file {scorer_yaml} is missing the 'category' field.")
+    if 'true_description' not in data:
+        raise ValueError(f"The file {scorer_yaml} is missing the 'true_description' field.")
+    if 'false_description' not in data:
+        raise ValueError(f"The file {scorer_yaml} is missing the 'false_description' field.")
+    
+    return True
