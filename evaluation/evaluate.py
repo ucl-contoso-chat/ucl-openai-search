@@ -21,7 +21,7 @@ EVALUATION_RESULTS_DIR = "gpt_evaluation"
 logger = logging.getLogger("evaluation")
 
 
-def send_question_to_ask(question: str, url: str, parameters: dict = {}, raise_error=False) -> dict:
+def send_question_to_target(question: str, url: str, parameters: dict = {}, raise_error=False) -> dict:
     """Send a question to the ask endpoint and return the response."""
     headers = {
         "Content-Type": "application/json",
@@ -48,8 +48,9 @@ def send_question_to_ask(question: str, url: str, parameters: dict = {}, raise_e
             context = "\n\n".join(data_points)
         except Exception:
             raise ValueError(
-                "Response does not adhere to the expected schema."
-                "Either adjust the app response or adjust send_question_to_ask() to match the actual schema.\nResponse: {response_dict}"
+                "Response does not adhere to the expected schema. \n"
+                "Either adjust the app response or adjust send_question_to_target() to match the actual schema.\n"
+                f"Response: {response_dict}"
             )
 
         response_obj = {"answer": answer, "context": context, "latency": latency}
@@ -75,7 +76,7 @@ def evaluate_row(
     output = {}
     output["question"] = row["question"]
     output["truth"] = row["truth"]
-    target_response = send_question_to_ask(
+    target_response = send_question_to_target(
         question=row["question"],
         url=target_url,
         parameters=target_parameters,

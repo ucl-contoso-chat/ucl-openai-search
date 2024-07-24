@@ -23,19 +23,13 @@ def test_send_question_to_target_missing_error_store():
     requests.post = lambda url, headers, json: MockResponse(response)
     result = send_question_to_target("Question", "http://example.com")
     assert result["answer"] == (
-        "Response does not adhere to the expected schema. "
-        "The answer should be accessible via the JMESPath expression 'message.content' "
-        "and the context should be accessible via the JMESPath expression 'context.data_points.text'. "
-        "Either adjust the app response or adjust send_question_to_target() "
-        "in evaluate.py to match the actual schema.\n"
+        "Response does not adhere to the expected schema. \n"
+        "Either adjust the app response or adjust send_question_to_target() to match the actual schema.\n"
         "Response: {}"
     )
     assert result["context"] == (
-        "Response does not adhere to the expected schema. "
-        "The answer should be accessible via the JMESPath expression 'message.content' "
-        "and the context should be accessible via the JMESPath expression 'context.data_points.text'. "
-        "Either adjust the app response or adjust send_question_to_target() "
-        "in evaluate.py to match the actual schema.\n"
+        "Response does not adhere to the expected schema. \n"
+        "Either adjust the app response or adjust send_question_to_target() to match the actual schema.\n"
         "Response: {}"
     )
 
@@ -47,11 +41,8 @@ def test_send_question_to_target_missing_all():
         send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)
     except Exception as e:
         assert str(e) == (
-            "Response does not adhere to the expected schema. "
-            "The answer should be accessible via the JMESPath expression 'message.content' "
-            "and the context should be accessible via the JMESPath expression 'context.data_points.text'. "
-            "Either adjust the app response or adjust send_question_to_target() "
-            "in evaluate.py to match the actual schema.\n"
+            "Response does not adhere to the expected schema. \n"
+            "Either adjust the app response or adjust send_question_to_target() to match the actual schema.\n"
             "Response: {}"
         )
 
@@ -66,11 +57,8 @@ def test_send_question_to_target_missing_content():
         send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)
     except Exception as e:
         assert str(e) == (
-            "Response does not adhere to the expected schema. "
-            "The answer should be accessible via the JMESPath expression 'message.content' "
-            "and the context should be accessible via the JMESPath expression 'context.data_points.text'. "
-            "Either adjust the app response or adjust send_question_to_target() "
-            "in evaluate.py to match the actual schema.\n"
+            "Response does not adhere to the expected schema. \n"
+            "Either adjust the app response or adjust send_question_to_target() to match the actual schema.\n"
             "Response: {'message': {}, 'context': {'data_points': {'text': ['Context 1', 'Context 2']}}}"
         )
 
@@ -83,11 +71,8 @@ def test_send_question_to_target_missing_context():
         send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)
     except Exception as e:
         assert str(e) == (
-            "Response does not adhere to the expected schema. "
-            "The answer should be accessible via the JMESPath expression 'message.content' "
-            "and the context should be accessible via the JMESPath expression 'context.data_points.text'. "
-            "Either adjust the app response or adjust send_question_to_target() "
-            "in evaluate.py to match the actual schema.\n"
+            "Response does not adhere to the expected schema. \n"
+            "Either adjust the app response or adjust send_question_to_target() to match the actual schema.\n"
             "Response: {'message': {'content': 'This is the answer'}}"
         )
 
