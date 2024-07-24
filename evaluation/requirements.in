@@ -1,4 +1,4 @@
-azure-ai-generative[evaluate]
+azure-ai-generative[evaluate]==1.0.0b3
 azure-identity
 azure-search-documents
 matplotlib
