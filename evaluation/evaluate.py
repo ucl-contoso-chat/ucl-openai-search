@@ -31,6 +31,7 @@ def send_question_to_target(question: str, url: str, parameters: dict = {}, rais
         "context": parameters,
     }
     try:
+        print(url)
         r = requests.post(url, headers=headers, json=body)
         r.encoding = "utf-8"
         latency = r.elapsed.total_seconds()
@@ -140,7 +141,7 @@ def run_evaluation(
 
     with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
         parameters = {
-            "evaluation_gpt_model": openai_config.get("model", "unknown_model"),
+            "evaluation_gpt_model": openai_config.model,
             "evaluation_timestamp": int(time.time()),
             "testdata_path": str(testdata_path),
             "target_url": target_url,

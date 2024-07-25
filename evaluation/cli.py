@@ -97,12 +97,15 @@ def red_teaming(
         help="Path to the directory where the scorer YAML files are stored.",
         default=EVALUATION_DIR / "scorer_definitions",
     ),
-    prompt_target: Optional[str] = typer.Option(default="openai"),
+    prompt_target: Optional[str] = typer.Option(default="application"),
 ):
     red_team = service_setup.get_openai_target()
-    target = (
-        service_setup.get_openai_target() if prompt_target == "openai" else service_setup.get_azure_ml_chat_target()
-    )
+    if prompt_target == "application":
+        target = service_setup.get_app_target()
+    elif prompt_target == "azureopenai":
+        target = service_setup.get_openai_target()
+    elif prompt_target == "azureml":
+        target = service_setup.get_azure_ml_chat_target()
     asyncio.run(
         run_red_teaming(
             working_dir=EVALUATION_DIR,

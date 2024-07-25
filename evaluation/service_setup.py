@@ -18,6 +18,8 @@ from pyrit.prompt_target import (
     PromptChatTarget,
 )
 
+from evaluation.app_chat_target import AppChatTarget
+
 logger = logging.getLogger("evaluation")
 
 
@@ -168,6 +170,13 @@ def get_openai_target() -> PromptChatTarget:
     else:
         logger.info("Using OpenAI Chat Target")
         return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])
+
+
+def get_app_target() -> PromptChatTarget:
+    """Get specified OpenAI chat target."""
+    endpoint = os.environ.get("BACKEND_URI", "").rstrip("/") + "/ask"
+    logger.info("Using Application Chat Target")
+    return AppChatTarget(endpoint_uri=endpoint)
 
 
 def get_azure_ml_chat_target(
