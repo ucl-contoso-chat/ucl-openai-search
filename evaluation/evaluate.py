@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
-from rich.progress import track
 from promptflow.core import AzureOpenAIModelConfiguration
+from rich.progress import track
 
 from evaluation import service_setup
 from evaluation.evaluate_metrics import metrics_by_name
@@ -31,17 +31,15 @@ def send_question_to_target(question: str, url: str, parameters: dict = {}, rais
         "messages": [{"content": question, "role": "user"}],
         "context": parameters,
     }
-    
+
     try:
         r = requests.post(url, headers=headers, json=body)
         r.encoding = "utf-8"
         latency = r.elapsed.total_seconds()
-                
-        if r.status_code // 100 != 2:
-            raise ConnectionError(
-                f"Request to target {url} failed with status code {r.status_code}: {r.reason} \n"
-            )
-        
+
+        if not r.ok:
+            raise ConnectionError(f"Request to target {url} failed with status code {r.status_code}: {r.reason} \n")
+
         try:
             response_dict = r.json()
         except json.JSONDecodeError:
