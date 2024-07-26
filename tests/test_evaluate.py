@@ -2,6 +2,7 @@ import tempfile
 from datetime import timedelta
 from pathlib import Path
 from unittest import mock
+from promptflow.core import AzureOpenAIModelConfiguration
 
 import requests
 
@@ -12,8 +13,15 @@ from evaluation.evaluate_metrics import metrics_by_name
 def test_evaluate_row():
     row = {"question": "What is the capital of France?", "truth": "Paris"}
 
+    response = {
+        "message": {"content": "This is the answer"},
+        "context": {"data_points": {"text": ["Context 1", "Context 2"]}},
+    }
+    
+    requests.post = lambda url, headers, json: MockResponse(response)
     target_url = "http://mock-target-url.com"
-    openai_config = {}
+    openai_config = AzureOpenAIModelConfiguration("azure")
+    openai_config.model = "mock_model"
     result = evaluate_row(
         row=row,
         target_url=target_url,
@@ -28,7 +36,6 @@ def test_evaluate_row():
     assert "context" in result
     assert "latency" in result
     assert result["mock_metric_score"] == 1.0
-
 
 def test_send_question_to_target_valid():
     # Test case 1: Valid response
@@ -46,7 +53,7 @@ def test_send_question_to_target_valid():
 def test_send_question_to_target_missing_error_store():
     response = {}
     requests.post = lambda url, headers, json: MockResponse(response)
-    result = send_question_to_target("Question", "http://example.com")
+    result = send_question_to_target("Question", "http://example.com", raise_error=False)
     assert result["answer"] == (
         "Response does not adhere to the expected schema. \n"
         "Either adjust the app response or adjust send_question_to_target() to match the actual schema.\n"
@@ -101,6 +108,14 @@ def test_send_question_to_target_missing_context():
             "Response: {'message': {'content': 'This is the answer'}}"
         )
 
+def test_send_question_to_target_request_failed():
+    # Test case 6: Request failed, response status code is 500
+    requests.post = lambda url, headers, json: MockResponse(None, status_code=500)
+    try:
+        send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)
+    except Exception as e:
+        assert isinstance(e, ConnectionError)
+    
 
 def test_run_evaluation():
     with tempfile.TemporaryDirectory() as tempdir:
@@ -131,7 +146,8 @@ def test_run_evaluation():
                             },
                         )
 
-                        openai_config = {}
+                        openai_config = AzureOpenAIModelConfiguration("azure")
+                        openai_config.model = "mock_model"
                         target_url = "http://mock-target-url.com"
                         passing_rate = 3
                         max_workers = 2
@@ -151,10 +167,11 @@ def test_run_evaluation():
 
                         assert success
 
-
 class MockResponse:
-    def __init__(self, json_data):
+    def __init__(self, json_data, status_code=200, reason="Fail Test"):
         self.json_data = json_data
+        self.status_code = status_code
+        self.reason = reason
         self.elapsed = timedelta(seconds=1)
 
     def json(self):
