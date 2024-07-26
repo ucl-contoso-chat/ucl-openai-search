@@ -1,13 +1,7 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 import logging
-import os
-from pathlib import Path
 
-from dotenv import load_dotenv
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
-from pyrit.common import default_values, net_utility
+from pyrit.common import net_utility
 from pyrit.memory import MemoryInterface
 from pyrit.models import (
     ChatMessage,
@@ -16,18 +10,10 @@ from pyrit.models import (
 )
 from pyrit.prompt_target import PromptChatTarget
 
-from evaluation.utils import load_config
-
-load_dotenv()
-
-EVALUATION_DIR = Path(__file__).parent
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("evaluation")
 
 
 class AppChatTarget(PromptChatTarget):
-
-    BACKEND_URI: str = os.environ.get("BACKEND_URI", "").rstrip("/") + "/ask"
 
     def __init__(
         self,
@@ -35,14 +21,16 @@ class AppChatTarget(PromptChatTarget):
         endpoint_uri: str = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         memory: MemoryInterface = None,
+        target_parameters: dict,
     ) -> None:
-
+        """Initializes an instance of the AppChatTarget class."""
         PromptChatTarget.__init__(self, memory=memory)
 
-        self.endpoint_uri: str = default_values.get_required_value(
-            env_var_name=self.BACKEND_URI, passed_value=endpoint_uri
-        )
+        self.endpoint_uri: str = endpoint_uri
+
         self.chat_message_normalizer = chat_message_normalizer
+
+        self.target_parameters = target_parameters
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
@@ -55,9 +43,7 @@ class AppChatTarget(PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        resp_text = await self._complete_chat_async(
-            messages=messages,
-        )
+        resp_text = await self._complete_chat_async(messages=messages, target_parameters=self.target_parameters)
 
         if not resp_text:
             raise ValueError("The chat returned an empty response.")
@@ -65,30 +51,23 @@ class AppChatTarget(PromptChatTarget):
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
         return construct_response_from_request(request=request, response_text_pieces=[resp_text])
 
-    async def _complete_chat_async(
-        self,
-        messages: list[ChatMessage],
-    ) -> str:
-
+    async def _complete_chat_async(self, messages: list[ChatMessage], target_parameters: dict) -> str:
+        """Completes a chat interaction by generating a response to the given input prompt."""
         headers = self._get_headers()
-        payload = self._construct_http_body(messages)
+        payload = self._construct_http_body(messages, target_parameters)
 
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
+        response_json = response.json()
+        if "message" not in response_json or "content" not in response_json["message"]:
+            raise ValueError("The response does not contain the expected 'message' or 'content' fields")
+        return response_json["message"]["content"]
 
-        return response.json()["message"]["content"]
-
-    def _construct_http_body(
-        self,
-        messages: list[ChatMessage],
-    ) -> dict:
+    def _construct_http_body(self, messages: list[ChatMessage], target_parameters: dict) -> dict:
         """Constructs the HTTP request body for the application online endpoint."""
-        config: Path = EVALUATION_DIR / "config.json"
-        app_config = load_config(config)
         squashed_messages = self.chat_message_normalizer.normalize(messages)
         messages_dict = [message.model_dump() for message in squashed_messages]
-        target_parameters = app_config.get("target_parameters", {})
         data = {
             "messages": [{"role": msg.get("role"), "content": msg.get("content")} for msg in messages_dict],
             "context": target_parameters,
@@ -96,7 +75,7 @@ class AppChatTarget(PromptChatTarget):
         return data
 
     def _get_headers(self) -> dict:
-
+        """Construct the header for the request."""
         headers: dict = {
             "Content-Type": "application/json",
         }
@@ -104,6 +83,7 @@ class AppChatTarget(PromptChatTarget):
         return headers
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        """Validate the request."""
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
+from promptflow.core import ModelConfiguration
 from rich.progress import track
 
 from evaluation import service_setup
@@ -31,7 +32,6 @@ def send_question_to_target(question: str, url: str, parameters: dict = {}, rais
         "context": parameters,
     }
     try:
-        print(url)
         r = requests.post(url, headers=headers, json=body)
         r.encoding = "utf-8"
         latency = r.elapsed.total_seconds()
@@ -95,7 +95,7 @@ def evaluate_row(
 
 
 def run_evaluation(
-    openai_config: dict,
+    openai_config: ModelConfiguration,
     testdata_path: Path,
     results_dir: Path,
     target_url: str,
@@ -142,7 +142,6 @@ def run_evaluation(
     with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
         parameters = {
             "evaluation_gpt_model": openai_config.model,
-            "evaluation_timestamp": int(time.time()),
             "testdata_path": str(testdata_path),
             "target_url": target_url,
             "target_parameters": target_parameters,

@@ -62,7 +62,6 @@ async def run_red_teaming(
             verbose=True,
         ) as red_teaming_orchestrator:
             score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
-            # red_teaming_orchestrator.print_conversation()
             results.append(score)
 
     save_score(results, working_dir / Path(config["results_dir"]) / RED_TEAMING_RESULTS_DIR)
