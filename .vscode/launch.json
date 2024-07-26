@@ -42,15 +42,25 @@
             "justMyCode": false
           },
           {
-            "name": "Debug Evaluation",
+            "name": "Debug RAG Evaluation",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "${workspaceFolder}/evaluation",
-            "module": "scripts",
+            "cwd": "${workspaceFolder}",
+            "module": "evaluation",
             "args": [
                 "evaluate",
-                "--config=./config.json",
+                "--config=evaluation/config.json",
                 "--numquestions=2"
+            ]
+          },
+          {
+            "name": "Debug Red-teaming Evaluation",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "module": "evaluation",
+            "args": [
+                "red-teaming"
             ]
           },
           {
