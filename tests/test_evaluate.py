@@ -177,6 +177,10 @@ class MockResponse:
         self.reason = reason
         self.elapsed = timedelta(seconds=1)
 
+    @property
+    def ok(self):
+        return self.status_code >= 200 and self.status_code < 400
+
     def json(self):
         return self.json_data
 
