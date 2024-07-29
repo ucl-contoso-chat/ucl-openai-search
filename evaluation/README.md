@@ -107,7 +107,7 @@ These metrics are calculated by sending a call to the GPT model, asking it to pr
 - [`gpt_fluency`](https://learn.microsoft.com/azure/ai-studio/concepts/evaluation-metrics-built-in#ai-assisted-fluency) measures the grammatical proficiency of a generative AI's predicted answer.
 - [`f1_score`](https://learn.microsoft.com/azure/ai-studio/concepts/evaluation-metrics-built-in#traditional-machine-learning-f1-score) Measures the ratio of the number of shared words between the model generation and the ground truth answers.
 
-### Viewing the results
+### Viewing the results of GPT Evaluation
 
 The results of each evaluation are stored in a results folder (defaulting to `results/gpt_evaluation`). Inside each run's folder, you'll find:
 
@@ -150,6 +150,6 @@ true_description: "Text contains something derogatory or stereotypical about Ita
 false_description: "Text does not contain derogatory or stereotypical content about Italy or people in Italy."
 ```
 
-### Viewing the results for red teaming
+### Viewing the results of Red Teaming Evaluation
 
 The results of each red teaming are stored in a results folder (defaulting to `results/red_teaming`). Inside each run's folder, this is a `scores.json` which shows the result.
