@@ -11,10 +11,8 @@ from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import AttackStrategy
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import (
-    PromptChatTarget,
-)
-from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 RED_TEAMING_RESULTS_DIR = "red_teaming"
 
@@ -36,6 +34,8 @@ async def run_red_teaming(
     """Run red teaming attack with provided scorers using Red Teaming Orchestrator."""
     logger.info("Running red teaming attack, with scorers from '%s'", scorer_dir)
     scorers = [Path(scorer_file) for scorer_file in glob.glob(os.path.join(scorer_dir, "*.yaml"))]
+    # Add built-in scorers
+    scorers.extend([path.value for path in TrueFalseQuestionPaths])
     results = []
 
     for scorer_path in scorers:
