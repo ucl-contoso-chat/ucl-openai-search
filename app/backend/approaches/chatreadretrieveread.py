@@ -1,3 +1,4 @@
+import ast
 from typing import (
     Any,
     AsyncIterable,
@@ -22,12 +23,14 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
     ChatCompletionToolParam,
 )
-from openai_messages_token_helper import build_messages, get_token_limit
+from openai_messages_token_helper import get_token_limit
+from promptflow.core import Prompty
 
 from api_wrappers import LLMClient
 from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
+from templates.supported_models import SUPPORTED_MODELS
 
 
 class ChatReadRetrieveReadApproach(ChatApproach):
@@ -131,7 +134,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         original_user_query = messages[-1]["content"]
         if not isinstance(original_user_query, str):
             raise ValueError("The most recent message content must be a string.")
-        user_query_request = "Generate search query for: " + original_user_query
 
         tools: List[ChatCompletionToolParam] = [
             {
@@ -153,29 +155,39 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             }
         ]
 
+        # Process results
+        current_model = self.hf_model if self.hf_model else self.chatgpt_model
+
+        # Load the Prompty object
+        query_prompty_path = SUPPORTED_MODELS.get(current_model) / "query.prompty"
+        query_prompty = Prompty.load(source=query_prompty_path)
+
         # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
-        query_response_token_limit = 100
-        query_messages = build_messages(
-            model=self.chatgpt_model,
-            system_prompt=self.query_prompt_template,
-            tools=tools,
+        query_messages = query_prompty.render(
+            question=original_user_query,
             few_shots=self.query_prompt_few_shots,
             past_messages=messages[:-1],
-            new_user_content=user_query_request,
-            max_tokens=self.chatgpt_token_limit - query_response_token_limit,
         )
 
         chat_completion: Union[ChatCompletion, ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]] = (
             await self.llm_client.chat_completion(
-                messages=self.llm_client.format_message(query_messages),  # type: ignore
+                messages=ast.literal_eval(query_messages),  # type: ignore
                 # Azure OpenAI takes the deployment name as the model name
                 model=(
                     self.hf_model
                     if self.hf_model
                     else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
                 ),
-                temperature=0.0,  # Minimize creativity for search query generation
-                max_tokens=query_response_token_limit,  # Setting too low risks malformed JSON, setting too high may affect performance
+                temperature=(
+                    query_prompty._model.parameters["temperature"]
+                    if query_prompty._model.parameters["temperature"] is not None
+                    else 0.0
+                ),  # Minimize creativity for search query generation
+                max_tokens=(
+                    query_prompty._model.parameters["max_tokens"]
+                    if query_prompty._model.parameters["max_tokens"] is not None
+                    else 100
+                ),  # Setting too low risks malformed JSON, setting too high may affect performance
                 n=1,
                 tools=tools,
                 seed=seed,
@@ -204,7 +216,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         )
 
         sources_content = self.get_sources_content(results, use_semantic_captions, use_image_citation=False)
-        content = "\n".join(sources_content)
 
         # STEP 3: Generate a contextual and content specific answer using the search results and chat history
 
@@ -214,14 +225,15 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             self.follow_up_questions_prompt_content if overrides.get("suggest_followup_questions") else "",
         )
 
-        response_token_limit = 1024
-        messages = build_messages(
-            model=self.chatgpt_model,
-            system_prompt=system_message,
+        # Load the Prompty object
+        chat_prompty_path = SUPPORTED_MODELS.get(current_model) / "chat.prompty"
+        chat_prompty = Prompty.load(source=chat_prompty_path)
+
+        messages = chat_prompty.render(
+            question=original_user_query,
+            sources=sources_content,
+            system_message=system_message,
             past_messages=messages[:-1],
-            # Model does not handle lengthy system messages well. Moving sources to latest user conversation to solve follow up questions prompt.
-            new_user_content=original_user_query + "\n\nSources:\n" + content,
-            max_tokens=self.chatgpt_token_limit - response_token_limit,
         )
 
         data_points = {"text": sources_content}
@@ -280,9 +292,21 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 if self.hf_model
                 else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
             ),
-            messages=self.llm_client.format_message(messages),
-            temperature=overrides.get("temperature", 0.3),
-            max_tokens=response_token_limit,
+            messages=ast.literal_eval(messages),
+            temperature=(
+                overrides.get("temperature")
+                if overrides.get("temperature") is not None
+                else (
+                    chat_prompty._model.parameters["temperature"]
+                    if chat_prompty._model.parameters["temperature"] is not None
+                    else 0.3
+                )
+            ),
+            max_tokens=(
+                chat_prompty._model.parameters["max_tokens"]
+                if chat_prompty._model.parameters["max_tokens"] is not None
+                else 1024
+            ),
             n=1,
             stream=should_stream,
             seed=seed,

@@ -1,13 +1,16 @@
+import ast
 from typing import Any, Optional
 
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
 from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
-from openai_messages_token_helper import build_messages, get_token_limit
+from openai_messages_token_helper import get_token_limit
+from promptflow.core import Prompty
 
 from api_wrappers import LLMClient
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
+from templates.supported_models import SUPPORTED_MODELS
 
 
 class RetrieveThenReadApproach(Approach):
@@ -114,18 +117,15 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
 
         # Process results
         sources_content = self.get_sources_content(results, use_semantic_captions, use_image_citation=False)
+        current_model = self.hf_model if self.hf_model else self.chatgpt_model
 
-        # Append user message
-        content = "\n".join(sources_content)
-        user_content = q + "\n" + f"Sources:\n {content}"
+        # Load the Prompty object
+        prompty_path = SUPPORTED_MODELS.get(current_model) / "ask.prompty"
+        prompty = Prompty.load(source=prompty_path)
 
-        response_token_limit = 1024
-        updated_messages = build_messages(
-            model=self.chatgpt_model,
-            system_prompt=overrides.get("prompt_template", self.system_chat_template),
-            few_shots=[{"role": "user", "content": self.question}, {"role": "assistant", "content": self.answer}],
-            new_user_content=user_content,
-            max_tokens=self.chatgpt_token_limit - response_token_limit,
+        updated_messages = prompty.render(
+            question=q,
+            sources=sources_content,
         )
 
         chat_completion = await self.llm_client.chat_completion(
@@ -135,13 +135,22 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                 if self.hf_model
                 else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
             ),
-            messages=self.llm_client.format_message(updated_messages),
-            temperature=overrides.get("temperature", 0.3),
-            max_tokens=response_token_limit,
+            messages=ast.literal_eval(updated_messages),
+            temperature=(
+                overrides.get("temperature")
+                if overrides.get("temperature") is not None
+                else (
+                    prompty._model.parameters["temperature"]
+                    if prompty._model.parameters["temperature"] is not None
+                    else 0.3
+                )
+            ),
+            max_tokens=(
+                prompty._model.parameters["max_tokens"] if prompty._model.parameters["max_tokens"] is not None else 1024
+            ),
             n=1,
             seed=seed,
         )
-
         final_result = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
 
         data_points = {"text": sources_content}
