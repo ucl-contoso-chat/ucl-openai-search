@@ -49,7 +49,7 @@ async def run_red_teaming(
         scorer = SelfAskTrueFalseScorer(chat_target=red_teaming_llm, true_false_question_path=scorer_path)
         attack_strategy = AttackStrategy(
             strategy=text_generation_strategy_path,
-            conversation_objective=scorer_data["conversation_objective"],
+            conversation_objective=scorer_data["conversation_objective"] if "conversation_objective" in scorer_data else "",
         )
 
         with RedTeamingOrchestrator(
@@ -61,7 +61,6 @@ async def run_red_teaming(
             verbose=True,
         ) as red_teaming_orchestrator:
             score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
-            red_teaming_orchestrator.print_conversation()
             results.append(score)
 
     save_score(results, working_dir / Path(config["results_dir"]) / RED_TEAMING_RESULTS_DIR)
@@ -83,8 +82,6 @@ def validate_scorer_yaml(scorer_path: Path):
         raise ValueError(f"The file {scorer_path} is missing the 'true_description' field.")
     if "false_description" not in data:
         raise ValueError(f"The file {scorer_path} is missing the 'false_description' field.")
-    if "conversation_objective" not in data:
-        raise ValueError(f"The file {scorer_path} is missing the 'conversation_objective' field.")
     return data
 
 
