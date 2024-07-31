@@ -1,0 +1,195 @@
+<!DOCTYPE document SYSTEM "rml.dtd">
+<document filename="eval_report.pdf">
+
+    <template pageSize="a4" leftMargin="20mm" rightMargin="20mm" topMargin="20mm" bottomMargin="10mm" showBoundary="0">
+        <pageTemplate id="main">
+            <frame id="first" x1="36" y1="36" width="500" height="740"/>
+        </pageTemplate>
+    </template>
+
+    <stylesheet>
+    </stylesheet>
+
+    <!-- The story starts below this comment -->
+
+    {{script}}
+        from datetime import datetime
+        from typing import List, Dict, Any
+
+        total_questions = len(conversations)
+        now = datetime.now()
+    {{endscript}}
+
+    <story>
+        <h1> Evaluation Report </h1>
+
+        <h5><i>Generated on {{str(now)}}</i></h5>
+
+
+        <!-- <para>
+            This is the "story". This is the part of the RML document where
+            your text is placed.
+        </para>
+        <para>
+            It should be enclosed in "para" and "/para" tags to turn it into
+            paragraphs.
+        </para> -->
+        <h2>GPT Rating Data Summary</h2>
+        <blockTable rowHeights="1.25cm,1.25cm,1.25cm,1.25cm" colWidths="4cm,4cm,4cm,4cm" >
+            <tr>
+                <td>
+                    <para></para>
+                </td>
+                <td>
+                    <para><b>Pass Count</b></para>
+                </td>
+                <td>
+                    <para><b>Pass Rate</b></para>
+                </td>
+                <td>
+                    <para><b>Mean Rating</b></para>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <para><b>GPT Groundness</b></para>
+                </td>
+                <td>
+                    <para>{{summary.gpt_groundedness.pass_count}} (/ total of {{total_questions}})</para>
+                </td>
+                <td>
+                    <para>{{"{:.2f}".format(summary.gpt_groundedness.pass_rate*100)}}%</para>
+                </td>
+                <td>
+                    <para>{{summary.gpt_groundedness.mean_rating}} / 5.0</para>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <para><b>GPT Relevance</b></para>
+                </td>
+                <td>
+                    <para>{{summary.gpt_relevance.pass_count}} (/ total of {{total_questions}})</para>
+                </td>
+                <td>
+                    <para>{{"{:.2f}".format(summary.gpt_relevance.pass_rate*100)}}%</para>
+                </td>
+                <td>
+                    <para>{{summary.gpt_relevance.mean_rating}} / 5.0</para>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <para><b>GPT Coherence</b></para>
+                </td>
+                <td>
+                    <para>{{summary.gpt_coherence.pass_count}} (/ total of {{total_questions}})</para>
+                </td>
+                <td>
+                    <para>{{"{:.2f}".format(summary.gpt_coherence.pass_rate*100)}}%</para>
+                </td>
+                <td>
+                    <para>{{summary.gpt_coherence.mean_rating}} / 5.0</para>
+                </td>
+            </tr>
+        </blockTable>
+
+
+        <h2>Statistical Data Summary</h2>
+        <blockTable rowHeights="1.25cm,1.25cm,1.25cm" colWidths="4cm,4cm,4cm,4cm" >
+            <tr>
+                <td></td>
+                <td>
+                    <para><b>Mean</b></para>
+                </td>
+                <td>
+                    <para><b>Max</b></para>
+                </td>
+                <td>
+                    <para><b>Min</b></para>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <para><b>Answer Length</b></para>
+                </td>
+                <td>
+                    <para>{{summary.answer_length.mean}}</para>
+                </td>
+                <td>
+                    <para>{{summary.answer_length.max}}</para>
+                </td>
+                <td>
+                    <para>{{summary.answer_length.min}}</para>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <para><b>Latency</b></para>
+                </td>
+                <td>
+                    <para>{{summary.latency.mean}} seconds</para>
+                </td>
+                <td>
+                    <para>{{summary.latency.max}} seconds</para>
+                </td>
+                <td>
+                    <para>{{summary.latency.min}} seconds</para>
+                </td>
+            </tr>
+        </blockTable>
+
+    <h2>Diagrams</h2>
+
+    <illustration width="480" height="300">
+        <image file="{{diagrams.eval_results_path}}" preserveAspectRatio="1" x="60" y="0" width="360" height="270" />
+    </illustration>
+
+    <illustration width="480" height="600">
+        <image file="{{diagrams.mean_score_path}}" preserveAspectRatio="1" x="60" y="300" width="360" height="270" />
+        <image file="{{diagrams.passing_rate_path}}" preserveAspectRatio="1" x="60" y="0" width="360" height="270" />
+    </illustration>
+
+    <para spaceAfter="5.0cm"></para>
+
+    <h2>Conversation Log</h2>
+    {{for i, conversation in enumerate(conversations)}}
+        <h3> Question {{i+1}}  </h3>
+        <para spaceAfter="0.5cm">
+            <b><i>Question: </i></b>
+            {{conversation.question}}
+        </para>
+        <para spaceAfter="0.5cm">
+            <b><i>Ground Truth: </i></b>
+            {{conversation.truth}}
+        </para>
+        <para spaceAfter="0.5cm">
+            <b><i>Answer: </i></b>
+            {{conversation.answer}}
+        </para>
+        <para>
+            Latency: <i><b>{{"{:.2f}".format(conversation.latency)}}</b> seconds</i>
+        </para>
+        <para>
+            GPT Groundness Rating:<i><b>{{conversation.gpt_groundedness}}</b> / 5.0</i>
+        </para>
+        <para>
+            GPT Relevance Rating: <i><b>{{conversation.gpt_coherence}}</b> / 5.0</i>
+        </para>
+        <para>
+            GPT Coherence Rating: <i><b>{{conversation.gpt_coherence}}</b> / 5.0</i>
+        </para>
+        <para>
+            Answer Length (words): <i><b>{{conversation.answer_length}}</b></i>
+        </para>
+    {{endfor}}
+
+    <h2>Contexts</h2>
+    {{for title, context in contexts.items()}}
+        <h5> {{title}}: </h5>
+        <para>
+            {{context}}
+        </para>
+    {{endfor}}
+    </story>
+</document>

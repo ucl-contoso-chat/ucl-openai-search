@@ -12,3 +12,5 @@ python-dotenv
 requests
 rich
 typer
+preppy
+z3c.rml

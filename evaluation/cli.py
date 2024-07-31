@@ -57,8 +57,14 @@ def evaluate(
         default=None,
         parser=str_or_none,
     ),
+    report_output: Optional[Path] = typer.Option(
+        help="Path to the PDF report output file (defaults to not generating a report).",
+        default=None,
+        dir_okay=False,
+        file_okay=True,
+    ),
 ):
-    run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl)
+    run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl, report_output)
 
 
 @app.command()

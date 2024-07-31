@@ -15,6 +15,7 @@ from rich.progress import track
 
 from evaluation import service_setup
 from evaluation.evaluate_metrics import metrics_by_name
+from evaluation.report_generator import generate_eval_report
 from evaluation.utils import load_jsonl
 
 EVALUATION_RESULTS_DIR = "gpt_evaluation"
@@ -140,8 +141,7 @@ def run_evaluation(
     results_dir.mkdir(parents=True, exist_ok=True)
 
     with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
-        for row in questions_with_ratings:
-            results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+        results_file.write(json.dumps(questions_with_ratings, indent=4))
 
     with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
         parameters = {
@@ -158,7 +158,9 @@ def run_evaluation(
     return True
 
 
-def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
+def run_evaluation_from_config(
+    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, report_output: Path = None
+):
     """Run evaluation using the provided configuration file."""
     timestamp = int(time.time())
     results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
@@ -192,6 +194,10 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
             output_config.write(json.dumps(config, indent=4))
     else:
         logger.error("Evaluation was terminated early due to an error ⬆")
+
+    if report_output is not None and report_output != "":
+        generate_eval_report(output_path=report_output)
+        logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
 
 def summarize_results_and_plot(
