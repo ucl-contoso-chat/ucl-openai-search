@@ -18,7 +18,7 @@ class AppChatTarget(PromptChatTarget):
     def __init__(
         self,
         *,
-        endpoint_uri: str = None,
+        endpoint_uri: str,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         memory: MemoryInterface = None,
         target_parameters: dict,
