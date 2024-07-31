@@ -49,9 +49,7 @@ async def run_red_teaming(
         scorer = SelfAskTrueFalseScorer(chat_target=red_teaming_llm, true_false_question_path=scorer_path)
         attack_strategy = AttackStrategy(
             strategy=text_generation_strategy_path,
-            conversation_objective=(
-                scorer_data["conversation_objective"] if "conversation_objective" in scorer_data else ""
-            ),
+            conversation_objective=scorer_data.get("conversation_objective", ""),
         )
 
         with RedTeamingOrchestrator(
