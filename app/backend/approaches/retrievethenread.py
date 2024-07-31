@@ -126,6 +126,13 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             question=q,
             sources=sources_content,
         )
+        # If the temperature is overridden via the API request, use that value.
+        # Otherwise, use the default value from the model configuration.
+        # If model configuration does not have a temperature, use the default value of 0.3.
+        if overrides["temperature"] is not None:
+            prompty._model.parameters["temperature"] = overrides["temperature"]
+        else:
+            prompty._model.parameters.setdefault("temperature", 0.3)
 
         chat_completion = await self.llm_client.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
@@ -135,15 +142,6 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                 else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
             ),
             messages=ast.literal_eval(updated_messages),
-            temperature=(
-                overrides.get("temperature")
-                if overrides.get("temperature") is not None
-                else (
-                    prompty._model.parameters["temperature"]
-                    if prompty._model.parameters["temperature"] is not None
-                    else 0.3
-                )
-            ),
             **prompty._model.parameters,
             n=1,
             seed=seed,

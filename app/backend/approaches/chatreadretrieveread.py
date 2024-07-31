@@ -3,7 +3,6 @@ from typing import (
     Any,
     AsyncIterable,
     Coroutine,
-    List,
     Literal,
     Optional,
     Union,
@@ -21,7 +20,6 @@ from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
     ChatCompletionMessageParam,
-    ChatCompletionToolParam,
 )
 from openai_messages_token_helper import get_token_limit
 from promptflow.core import Prompty
@@ -135,26 +133,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         if not isinstance(original_user_query, str):
             raise ValueError("The most recent message content must be a string.")
 
-        tools: List[ChatCompletionToolParam] = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "search_sources",
-                    "description": "Retrieve sources from the Azure AI Search index",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "search_query": {
-                                "type": "string",
-                                "description": "Query string to retrieve documents from azure search eg: 'Health care plan'",
-                            }
-                        },
-                        "required": ["search_query"],
-                    },
-                },
-            }
-        ]
-
         # Process results
         current_model = self.hf_model if self.hf_model else self.chatgpt_model
 
@@ -167,6 +145,8 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             few_shots=self.query_prompt_few_shots,
             past_messages=messages[:-1],
         )
+        # If the temperature is not set in the config, use default value equal to 0.0
+        query_prompty._model.parameters.setdefault("temperature", 0.0)
 
         chat_completion: Union[ChatCompletion, ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]] = (
             await self.llm_client.chat_completion(
@@ -177,14 +157,8 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     if self.hf_model
                     else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
                 ),
-                temperature=(
-                    query_prompty._model.parameters["temperature"]
-                    if query_prompty._model.parameters["temperature"] is not None
-                    else 0.0
-                ),
                 **query_prompty._model.parameters,
                 n=1,
-                tools=tools,
                 seed=seed,
             )
         )
@@ -280,6 +254,14 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 ),
             ],
         }
+        # If the temperature is overridden via the API request, use that value.
+        # Otherwise, use the default value from the model configuration.
+        # If model configuration does not have a temperature, use the default value of 0.3.
+        if overrides["temperature"] is not None:
+            chat_prompty._model.parameters["temperature"] = overrides["temperature"]
+        else:
+            chat_prompty._model.parameters.setdefault("temperature", 0.3)
+
         chat_coroutine = self.llm_client.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
             model=(
@@ -288,15 +270,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
             ),
             messages=ast.literal_eval(messages),
-            temperature=(
-                overrides.get("temperature")
-                if overrides.get("temperature") is not None
-                else (
-                    chat_prompty._model.parameters["temperature"]
-                    if chat_prompty._model.parameters["temperature"] is not None
-                    else 0.3
-                )
-            ),
             **query_prompty._model.parameters,
             n=1,
             stream=should_stream,
