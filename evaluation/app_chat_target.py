@@ -48,7 +48,7 @@ class AppChatTarget(PromptChatTarget):
         if not resp_text:
             raise ValueError("The chat returned an empty response.")
 
-        logger.info(f'Received the following response from the prompt target "{resp_text}"')
+        logger.info(f"Received the following response from the prompt target '{resp_text}'")
         return construct_response_from_request(request=request, response_text_pieces=[resp_text])
 
     async def _complete_chat_async(self, messages: list[ChatMessage], target_parameters: dict) -> str:
