@@ -6,8 +6,6 @@ import time
 from pathlib import Path
 
 import yaml
-from dotenv import load_dotenv
-from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import AttackStrategy
 from pyrit.orchestrator import RedTeamingOrchestrator
@@ -15,9 +13,6 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 RED_TEAMING_RESULTS_DIR = "red_teaming"
-
-default_values.load_default_env()
-load_dotenv()
 
 logger = logging.getLogger("evaluation")
 
