@@ -120,8 +120,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         current_model = self.hf_model if self.hf_model else self.chatgpt_model
 
         # Load the Prompty object
-        prompty_path = SUPPORTED_MODELS.get(current_model) / "ask.prompty"
-        prompty = Prompty.load(source=prompty_path)
+        prompty = Prompty.load(source=SUPPORTED_MODELS.get(current_model) / "ask.prompty")
 
         updated_messages = prompty.render(
             question=q,
@@ -145,9 +144,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                     else 0.3
                 )
             ),
-            max_tokens=(
-                prompty._model.parameters["max_tokens"] if prompty._model.parameters["max_tokens"] is not None else 1024
-            ),
+            **prompty._model.parameters,
             n=1,
             seed=seed,
         )

@@ -159,8 +159,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         current_model = self.hf_model if self.hf_model else self.chatgpt_model
 
         # Load the Prompty object
-        query_prompty_path = SUPPORTED_MODELS.get(current_model) / "query.prompty"
-        query_prompty = Prompty.load(source=query_prompty_path)
+        query_prompty = Prompty.load(source=SUPPORTED_MODELS.get(current_model) / "query.prompty")
 
         # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
         query_messages = query_prompty.render(
@@ -182,12 +181,8 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     query_prompty._model.parameters["temperature"]
                     if query_prompty._model.parameters["temperature"] is not None
                     else 0.0
-                ),  # Minimize creativity for search query generation
-                max_tokens=(
-                    query_prompty._model.parameters["max_tokens"]
-                    if query_prompty._model.parameters["max_tokens"] is not None
-                    else 100
-                ),  # Setting too low risks malformed JSON, setting too high may affect performance
+                ),
+                **query_prompty._model.parameters,
                 n=1,
                 tools=tools,
                 seed=seed,
@@ -302,11 +297,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     else 0.3
                 )
             ),
-            max_tokens=(
-                chat_prompty._model.parameters["max_tokens"]
-                if chat_prompty._model.parameters["max_tokens"] is not None
-                else 1024
-            ),
+            **query_prompty._model.parameters,
             n=1,
             stream=should_stream,
             seed=seed,
