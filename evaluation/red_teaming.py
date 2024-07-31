@@ -90,7 +90,7 @@ def save_score(results: list, results_dir: Path):
 
     output = [
         {
-            "scorer_class_identifier": res.scorer_class_identifier["__type__"],
+            "scorer_class_identifier": res.scorer_class_identifier["__type__"] if res.scorer_class_identifier else "",
             "score_category": res.score_category,
             "score_value": res.score_value,
             "score_rationale": res.score_rationale,
