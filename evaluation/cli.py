@@ -9,11 +9,15 @@ from rich.logging import RichHandler
 
 from evaluation import service_setup
 from evaluation.evaluate import run_evaluation_from_config
-from evaluation.generate import generate_test_qa_data
+from evaluation.generate import generate_test_qa_answer, generate_test_qa_data
 from evaluation.red_teaming import run_red_teaming
 from evaluation.utils import load_config
 
 EVALUATION_DIR = Path(__file__).parent
+DEFAULT_CONFIG_PATH = EVALUATION_DIR / "config.json"
+DEFAULT_SCORER_DIR = EVALUATION_DIR / "scorer_definitions"
+DEFAULT_SYNTHETIC_DATA_DIR = EVALUATION_DIR / "input" / "qa.jsonl"
+DEFAULT_SYNTHETIC_DATA_ANSWERS_DIR = EVALUATION_DIR / "output" / "qa.jsonl"
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -45,7 +49,7 @@ def evaluate(
         dir_okay=False,
         file_okay=True,
         help="Path to the configuration JSON file.",
-        default=EVALUATION_DIR / "config.json",
+        default=DEFAULT_CONFIG_PATH,
     ),
     numquestions: Optional[int] = typer.Option(
         help="Number of questions to evaluate (defaults to all if not specified).",
@@ -67,17 +71,42 @@ def generate(
         exists=False,
         dir_okay=False,
         file_okay=True,
+        default=DEFAULT_SYNTHETIC_DATA_DIR,
         help="Path for the output file that will be generated.",
     ),
-    numquestions: int = typer.Option(help="Number of questions to generate", default=200),
-    persource: int = typer.Option(help="Number of questions to generate per source", default=5),
+    numquestions: int = typer.Option(help="Number of questions to generate.", default=200),
+    persource: int = typer.Option(help="Number of questions to generate per source.", default=5),
 ):
     generate_test_qa_data(
         openai_config=service_setup.get_openai_config_dict(),
         search_client=service_setup.get_search_client(),
         num_questions_total=numquestions,
         num_questions_per_source=persource,
-        output_file=EVALUATION_DIR / output,
+        output_file=output,
+    )
+
+
+@app.command()
+def generate_answers(
+    input: Path = typer.Option(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        default=DEFAULT_SYNTHETIC_DATA_DIR,
+        help="Path to the input file.",
+    ),
+    output: Path = typer.Option(
+        exists=False,
+        dir_okay=False,
+        file_okay=True,
+        default=DEFAULT_SYNTHETIC_DATA_ANSWERS_DIR,
+        help="Path for the output file to be generated.",
+    ),
+):
+    generate_test_qa_answer(
+        openai_config=service_setup.get_openai_config(),
+        question_path=input,
+        output_file=output,
     )
 
 
@@ -88,14 +117,14 @@ def red_teaming(
         dir_okay=False,
         file_okay=True,
         help="Path to the configuration JSON file.",
-        default=EVALUATION_DIR / "config.json",
+        default=DEFAULT_CONFIG_PATH,
     ),
     scorer_dir: Path = typer.Option(
         exists=True,
         dir_okay=True,
         file_okay=False,
         help="Path to the directory where the scorer YAML files are stored.",
-        default=EVALUATION_DIR / "scorer_definitions",
+        default=DEFAULT_SCORER_DIR,
     ),
     prompt_target: Optional[str] = typer.Option(
         default="application",
