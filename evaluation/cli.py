@@ -102,6 +102,7 @@ def red_teaming(
         help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'.",
     ),
 ):
+    config = load_config(config)
     red_team = service_setup.get_openai_target()
     if prompt_target == "application":
         target = service_setup.get_app_target(config)
@@ -117,7 +118,7 @@ def red_teaming(
         run_red_teaming(
             working_dir=EVALUATION_DIR,
             scorer_dir=scorer_dir,
-            config=load_config(config),
+            config=config,
             red_teaming_llm=red_team,
             prompt_target=target,
         )

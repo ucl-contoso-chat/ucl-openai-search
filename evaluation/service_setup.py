@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 
 import openai
 from azure.core.credentials import AzureKeyCredential
@@ -20,7 +19,6 @@ from pyrit.prompt_target import (
 )
 
 from evaluation.app_chat_target import AppChatTarget
-from evaluation.utils import load_config
 
 logger = logging.getLogger("evaluation")
 
@@ -174,10 +172,9 @@ def get_openai_target() -> PromptChatTarget:
         return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])
 
 
-def get_app_target(config: Path) -> PromptChatTarget:
+def get_app_target(config: dict) -> PromptChatTarget:
     """Get specified application chat target."""
-    app_config = load_config(config)
-    target_parameters = app_config.get("target_parameters", {})
+    target_parameters = config.get("target_parameters", {})
     endpoint = os.environ["BACKEND_URI"].rstrip("/") + "/ask"
     logger.info("Using Application Chat Target")
     return AppChatTarget(endpoint_uri=endpoint, target_parameters=target_parameters)
