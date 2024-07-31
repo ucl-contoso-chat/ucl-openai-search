@@ -32,12 +32,19 @@ Sources:
 {{ source }}
 {% endfor %}
 
-{% if past_messages is defined and past_messages|length > 0 %}
+{% if past_questions is defined %}
 Past conversation:
-{% for old_question in past_messages %}
+{% endif %}
+{% for old_question in past_questions %}
+{% if loop.first %}
+{{ old_question.content }}
+{% else %}
 {{ old_question.role }}:
 {{ old_question.content }}
+{% endif %}
 {% endfor %}
+
+{% if past_questions is defined and past_questions|length > 0 %}
 user:
 {% endif %}
 {{ question }}

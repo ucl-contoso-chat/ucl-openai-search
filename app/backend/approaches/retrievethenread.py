@@ -5,7 +5,7 @@ from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
 from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
 from openai_messages_token_helper import get_token_limit
-from promptflow.core import Prompty
+from promptflow.core import Prompty  # type: ignore
 
 from api_wrappers import LLMClient
 from approaches.approach import Approach, ThoughtStep
@@ -117,22 +117,29 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
 
         # Process results
         sources_content = self.get_sources_content(results, use_semantic_captions, use_image_citation=False)
-        current_model = self.hf_model if self.hf_model else self.chatgpt_model
 
         # Load the Prompty object
-        prompty = Prompty.load(source=SUPPORTED_MODELS.get(current_model) / "ask.prompty")
+        prompty_path = SUPPORTED_MODELS.get(self.hf_model if self.hf_model else self.chatgpt_model)
+        if prompty_path:
+            ask_prompty = Prompty.load(source=prompty_path / "ask.prompty")
+        else:
+            raise ValueError(
+                f"Model {self.hf_model if self.hf_model else self.chatgpt_model} is not supported. Please create a template for this model."
+            )
 
-        updated_messages = prompty.render(
+        updated_messages = ask_prompty.render(
             question=q,
             sources=sources_content,
         )
+        updated_messages = ast.literal_eval(updated_messages)
+
         # If the temperature is overridden via the API request, use that value.
         # Otherwise, use the default value from the model configuration.
         # If model configuration does not have a temperature, use the default value of 0.3.
-        if overrides["temperature"] is not None:
-            prompty._model.parameters["temperature"] = overrides["temperature"]
+        if overrides.get("temperature") is not None:
+            ask_prompty._model.parameters["temperature"] = overrides.get("temperature")
         else:
-            prompty._model.parameters.setdefault("temperature", 0.3)
+            ask_prompty._model.parameters.setdefault("temperature", 0.3)
 
         chat_completion = await self.llm_client.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
@@ -141,8 +148,8 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                 if self.hf_model
                 else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
             ),
-            messages=ast.literal_eval(updated_messages),
-            **prompty._model.parameters,
+            messages=updated_messages,
+            **ask_prompty._model.parameters,
             n=1,
             seed=seed,
         )

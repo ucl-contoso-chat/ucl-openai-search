@@ -22,7 +22,7 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
 )
 from openai_messages_token_helper import get_token_limit
-from promptflow.core import Prompty
+from promptflow.core import Prompty  # type: ignore
 
 from api_wrappers import LLMClient
 from approaches.approach import ThoughtStep
@@ -134,10 +134,15 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             raise ValueError("The most recent message content must be a string.")
 
         # Process results
-        current_model = self.hf_model if self.hf_model else self.chatgpt_model
 
         # Load the Prompty object
-        query_prompty = Prompty.load(source=SUPPORTED_MODELS.get(current_model) / "query.prompty")
+        prompty_path = SUPPORTED_MODELS.get(self.hf_model if self.hf_model else self.chatgpt_model)
+        if prompty_path:
+            query_prompty = Prompty.load(source=prompty_path / "query.prompty")
+        else:
+            raise ValueError(
+                f"Model {self.hf_model if self.hf_model else self.chatgpt_model} is not supported. Please create a template for this model."
+            )
 
         # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
         query_messages = query_prompty.render(
@@ -145,12 +150,13 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             few_shots=self.query_prompt_few_shots,
             past_messages=messages[:-1],
         )
+        query_messages = ast.literal_eval(query_messages)
         # If the temperature is not set in the config, use default value equal to 0.0
         query_prompty._model.parameters.setdefault("temperature", 0.0)
 
         chat_completion: Union[ChatCompletion, ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]] = (
             await self.llm_client.chat_completion(
-                messages=ast.literal_eval(query_messages),  # type: ignore
+                messages=query_messages,  # type: ignore
                 # Azure OpenAI takes the deployment name as the model name
                 model=(
                     self.hf_model
@@ -162,7 +168,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 seed=seed,
             )
         )
-
         query_text = self.get_search_query(chat_completion, original_user_query)
         # STEP 2: Retrieve relevant documents from the search index with the GPT optimized query
 
@@ -195,15 +200,16 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         )
 
         # Load the Prompty object
-        chat_prompty_path = SUPPORTED_MODELS.get(current_model) / "chat.prompty"
+        chat_prompty_path = prompty_path / "chat.prompty"
         chat_prompty = Prompty.load(source=chat_prompty_path)
 
-        messages = chat_prompty.render(
+        chat_messages = chat_prompty.render(
             question=original_user_query,
             sources=sources_content,
             system_message=system_message,
             past_messages=messages[:-1],
         )
+        chat_messages = ast.literal_eval(chat_messages)
 
         data_points = {"text": sources_content}
 
@@ -241,7 +247,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 ),
                 ThoughtStep(
                     "Prompt to generate answer",
-                    [str(message) for message in messages],
+                    [str(message) for message in chat_messages],
                     (
                         {"model": self.hf_model}
                         if self.hf_model
@@ -254,14 +260,16 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 ),
             ],
         }
+
         # If the temperature is overridden via the API request, use that value.
         # Otherwise, use the default value from the model configuration.
         # If model configuration does not have a temperature, use the default value of 0.3.
-        if overrides["temperature"] is not None:
-            chat_prompty._model.parameters["temperature"] = overrides["temperature"]
+        if overrides.get("temperature") is not None:
+            chat_prompty._model.parameters["temperature"] = overrides.get("temperature")
         else:
             chat_prompty._model.parameters.setdefault("temperature", 0.3)
 
+        print(chat_messages, flush=True)
         chat_coroutine = self.llm_client.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
             model=(
@@ -269,8 +277,8 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 if self.hf_model
                 else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
             ),
-            messages=ast.literal_eval(messages),
-            **query_prompty._model.parameters,
+            messages=chat_messages,
+            **chat_prompty._model.parameters,
             n=1,
             stream=should_stream,
             seed=seed,
