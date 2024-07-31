@@ -7,8 +7,9 @@ from pyrit.models import ChatMessage, PromptRequestResponse
 
 from evaluation.app_chat_target import AppChatTarget
 
-skip_outside_3_10_11 = pytest.mark.skipif(
-    sys.version_info < (3, 10) or sys.version_info >= (3, 12), reason="Test only runs on Python 3.10 and 3.11"
+skip_if_python_incompatible = pytest.mark.skipif(
+    sys.version_info < (3, 10) or sys.version_info >= (3, 12),
+    reason="requires Python 3.10 and 3.11, due to PyRIT dependency",
 )
 
 
@@ -27,7 +28,7 @@ def prompt_request_response():
 
 
 @pytest.mark.asyncio
-@skip_outside_3_10_11
+@skip_if_python_incompatible
 async def test_complete_chat_async(chat_target):
     chat_target._get_headers = MagicMock(return_value={})
     chat_target._construct_http_body = MagicMock(return_value={})
@@ -44,7 +45,7 @@ async def test_complete_chat_async(chat_target):
     assert response == "Test response"
 
 
-@skip_outside_3_10_11
+@skip_if_python_incompatible
 def test_construct_http_body(chat_target):
     messages = [ChatMessage(role="user", content="Test message")]
     chat_target.chat_message_normalizer = MagicMock()
@@ -58,13 +59,13 @@ def test_construct_http_body(chat_target):
     assert body["messages"][0]["content"] == "Test message"
 
 
-@skip_outside_3_10_11
+@skip_if_python_incompatible
 def test_get_headers(chat_target):
     headers = chat_target._get_headers()
     assert headers == {"Content-Type": "application/json"}
 
 
-@skip_outside_3_10_11
+@skip_if_python_incompatible
 def test_validate_request(chat_target, prompt_request_response):
     chat_target._validate_request(prompt_request=prompt_request_response)
 
