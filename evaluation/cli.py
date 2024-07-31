@@ -103,15 +103,22 @@ def red_teaming(
         help="Path to the directory where the scorer YAML files are stored.",
         default=EVALUATION_DIR / "scorer_definitions",
     ),
-    prompt_target: Optional[str] = typer.Option(default="application"),
+    prompt_target: Optional[str] = typer.Option(
+        default="application",
+        help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'.",
+    ),
 ):
     red_team = service_setup.get_openai_target()
     if prompt_target == "application":
-        target = service_setup.get_app_target()
+        target = service_setup.get_app_target(config)
     elif prompt_target == "azureopenai":
         target = service_setup.get_openai_target()
     elif prompt_target == "azureml":
         target = service_setup.get_azure_ml_chat_target()
+    else:
+        raise ValueError(
+            f"Invalid prompt_target value: {prompt_target}. Must be one of 'application', 'azureopenai', 'azureml'"
+        )
     asyncio.run(
         run_red_teaming(
             working_dir=EVALUATION_DIR,

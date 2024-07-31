@@ -18,7 +18,7 @@ def test_evaluate_row():
         "context": {"data_points": {"text": ["Context 1", "Context 2"]}},
     }
 
-    requests.post = lambda url, headers, json: MockResponse(response)
+    requests.post = lambda url, headers, json: MockResponse(response, url=url)
     target_url = "http://mock-target-url.com"
     openai_config = AzureOpenAIModelConfiguration("azure")
     openai_config.model = "mock_model"
@@ -44,7 +44,7 @@ def test_send_question_to_target_valid():
         "message": {"content": "This is the answer"},
         "context": {"data_points": {"text": ["Context 1", "Context 2"]}},
     }
-    requests.post = lambda url, headers, json: MockResponse(response)
+    requests.post = lambda url, headers, json: MockResponse(response, url=url)
     result = send_question_to_target("Question 1", "http://example.com")
     assert result["answer"] == "This is the answer"
     assert result["context"] == "Context 1\n\nContext 2"
@@ -53,7 +53,7 @@ def test_send_question_to_target_valid():
 
 def test_send_question_to_target_missing_error_store():
     response = {}
-    requests.post = lambda url, headers, json: MockResponse(response)
+    requests.post = lambda url, headers, json: MockResponse(response, url=url)
     result = send_question_to_target("Question", "http://example.com", raise_error=False)
     assert result["answer"] == (
         "Response does not adhere to the expected schema. \n"
@@ -69,7 +69,7 @@ def test_send_question_to_target_missing_error_store():
 
 def test_send_question_to_target_missing_all():
     response = {}
-    requests.post = lambda url, headers, json: MockResponse(response)
+    requests.post = lambda url, headers, json: MockResponse(response, url=url)
     try:
         send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)
     except Exception as e:
@@ -85,7 +85,7 @@ def test_send_question_to_target_missing_content():
         "message": {},
         "context": {"data_points": {"text": ["Context 1", "Context 2"]}},
     }
-    requests.post = lambda url, headers, json: MockResponse(response)
+    requests.post = lambda url, headers, json: MockResponse(response, url=url)
     try:
         send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)
     except Exception as e:
@@ -99,7 +99,7 @@ def test_send_question_to_target_missing_content():
 def test_send_question_to_target_missing_context():
     # Test case 5: Missing 'context' key in response
     response = {"message": {"content": "This is the answer"}}
-    requests.post = lambda url, headers, json: MockResponse(response)
+    requests.post = lambda url, headers, json: MockResponse(response, url=url)
     try:
         send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)
     except Exception as e:
@@ -112,11 +112,11 @@ def test_send_question_to_target_missing_context():
 
 def test_send_question_to_target_request_failed():
     # Test case 6: Request failed, response status code is 500
-    requests.post = lambda url, headers, json: MockResponse(None, status_code=500)
+    requests.post = lambda url, headers, json: MockResponse(None, status_code=500, url=url)
     try:
         send_question_to_target("Question", "Answer", "http://example.com", raise_error=True)
     except Exception as e:
-        assert isinstance(e, ConnectionError)
+        assert isinstance(e, requests.HTTPError)
 
 
 def test_run_evaluation():
@@ -171,11 +171,16 @@ def test_run_evaluation():
 
 
 class MockResponse:
-    def __init__(self, json_data, status_code=200, reason="Fail Test"):
+    def __init__(self, json_data, status_code=200, reason="Fail Test", url="http://mock-url.com"):
         self.json_data = json_data
         self.status_code = status_code
         self.reason = reason
         self.elapsed = timedelta(seconds=1)
+        self.url = url
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.HTTPError(self.reason)
 
     @property
     def ok(self):

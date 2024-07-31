@@ -57,6 +57,9 @@ def pytest_configure(config):
         sys.modules["pyrit"] = mock.MagicMock()
         sys.modules["pyrit.chat_message_normalizer"] = mock.MagicMock()
         sys.modules["pyrit.prompt_target"] = mock.MagicMock()
+        sys.modules["pyrit.common"] = mock.MagicMock()
+        sys.modules["pyrit.memory"] = mock.MagicMock()
+        sys.modules["pyrit.models"] = mock.MagicMock()
 
 
 async def mock_search(self, *args, **kwargs):

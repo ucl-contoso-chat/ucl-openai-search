@@ -38,8 +38,7 @@ def send_question_to_target(question: str, url: str, parameters: dict = {}, rais
         r.encoding = "utf-8"
         latency = r.elapsed.total_seconds()
 
-        if not r.ok:
-            raise ConnectionError(f"Request to target {url} failed with status code {r.status_code}: {r.reason} \n")
+        r.raise_for_status()
 
         try:
             response_dict = r.json()
@@ -146,7 +145,6 @@ def run_evaluation(
     with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
         parameters = {
             "evaluation_gpt_model": openai_config.model,
-            "evaluation_timestamp": int(time.time()),
             "testdata_path": str(testdata_path),
             "target_url": target_url,
             "target_parameters": target_parameters,
