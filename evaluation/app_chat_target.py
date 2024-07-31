@@ -62,9 +62,11 @@ class AppChatTarget(PromptChatTarget):
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
         response_json = response.json()
-        if "message" not in response_json or "content" not in response_json["message"]:
-            raise ValueError("The response does not contain the expected 'message' or 'content' fields")
-        return response_json["message"]["content"]
+
+        if (message_content := response_json.get("message", {}).get("content")) is None:
+            raise ValueError("Message content not found in response.")
+
+        return message_content
 
     def _construct_http_body(self, messages: list[ChatMessage], target_parameters: dict) -> dict:
         """Construct the HTTP request body for the application endpoint."""
