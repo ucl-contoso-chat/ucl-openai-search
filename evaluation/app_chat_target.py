@@ -1,8 +1,14 @@
 import logging
 
+from httpx import HTTPStatusError
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import net_utility
-from pyrit.exceptions import pyrit_target_retry
+from pyrit.exceptions import (
+    EmptyResponseException,
+    RateLimitException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
 from pyrit.memory import MemoryInterface
 from pyrit.models import (
     ChatMessage,
@@ -44,13 +50,27 @@ class AppChatTarget(PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        resp_text = await self._complete_chat_async(messages=messages, target_parameters=self.target_parameters)
+        try:
+            resp_text = await self._complete_chat_async(messages=messages, target_parameters=self.target_parameters)
 
-        if not resp_text:
-            raise ValueError("The chat returned an empty response.")
+            if not resp_text:
+                raise EmptyResponseException(message="The chat returned an empty response.")
 
-        logger.info(f"Received the following response from the prompt target '{resp_text}'")
-        return construct_response_from_request(request=request, response_text_pieces=[resp_text])
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
+        except HTTPStatusError as hse:
+            if hse.response.status_code == 400:
+                # Handle Bad Request
+                response_entry = handle_bad_request_exception(response_text=hse.response.text, request=request)
+            elif hse.response.status_code == 429:
+                raise RateLimitException()
+            else:
+                raise hse
+
+        logger.info(
+            "Received the following response from the prompt target"
+            + f"{response_entry.request_pieces[0].converted_value}"
+        )
+        return response_entry
 
     @pyrit_target_retry
     async def _complete_chat_async(self, messages: list[ChatMessage], target_parameters: dict) -> str:
