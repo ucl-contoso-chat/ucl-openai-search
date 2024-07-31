@@ -2,6 +2,7 @@ import logging
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import net_utility
+from pyrit.exceptions import pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import (
     ChatMessage,
@@ -51,6 +52,7 @@ class AppChatTarget(PromptChatTarget):
         logger.info(f"Received the following response from the prompt target '{resp_text}'")
         return construct_response_from_request(request=request, response_text_pieces=[resp_text])
 
+    @pyrit_target_retry
     async def _complete_chat_async(self, messages: list[ChatMessage], target_parameters: dict) -> str:
         """Complete a chat interaction by generating a response to the given input prompt."""
         headers = self._get_headers()
