@@ -33,7 +33,7 @@ class AppChatTarget(PromptChatTarget):
         self.target_parameters = target_parameters
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-
+        """Send a normalized prompt async to the target and return the response."""
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
@@ -52,7 +52,7 @@ class AppChatTarget(PromptChatTarget):
         return construct_response_from_request(request=request, response_text_pieces=[resp_text])
 
     async def _complete_chat_async(self, messages: list[ChatMessage], target_parameters: dict) -> str:
-        """Completes a chat interaction by generating a response to the given input prompt."""
+        """Complete a chat interaction by generating a response to the given input prompt."""
         headers = self._get_headers()
         payload = self._construct_http_body(messages, target_parameters)
 
@@ -65,7 +65,7 @@ class AppChatTarget(PromptChatTarget):
         return response_json["message"]["content"]
 
     def _construct_http_body(self, messages: list[ChatMessage], target_parameters: dict) -> dict:
-        """Constructs the HTTP request body for the application online endpoint."""
+        """Construct the HTTP request body for the application endpoint."""
         squashed_messages = self.chat_message_normalizer.normalize(messages)
         messages_dict = [message.model_dump() for message in squashed_messages]
         data = {
@@ -75,7 +75,7 @@ class AppChatTarget(PromptChatTarget):
         return data
 
     def _get_headers(self) -> dict:
-        """Construct the header for the request."""
+        """Construct headers for an HTTP request."""
         headers: dict = {
             "Content-Type": "application/json",
         }
@@ -83,7 +83,7 @@ class AppChatTarget(PromptChatTarget):
         return headers
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        """Validate the request."""
+        """Validate a prompt request."""
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 
