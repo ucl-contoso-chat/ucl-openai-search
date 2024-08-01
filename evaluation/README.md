@@ -11,14 +11,15 @@ As an alternative, you can either use an Azure-hosted OpenAI instance or openai.
 All of the following instructions assume that you're running commands from inside the directory of the repository.
 Before using the evaluation scripts, you'll need to:
 
-* Have a live deployment of the chat application on Azure
-* Be on an Azure-authenticated shell session.
+- Have a live deployment of the chat application on Azure
+- Be on an Azure-authenticated shell session.
   You can run the following command to ensure you're logged in before proceeding:
 
   ```shell
   azd auth login
   ```
-* Create a `.env` file with environment variables required by the evaluation scripts.
+
+- Create a `.env` file with environment variables required by the evaluation scripts.
   You can follow the instructions in the [following](#create-env-file) section to achieve that.
 
 ### Create .env file
@@ -42,9 +43,9 @@ by running the appropriate script depending on your platform:
 The provided solution offers multiple configuration combinations.
 One of the most important ones is tweaking the LLM used for evaluation, with a few options currently exposed:
 
-* OpenAI GPT on Azure (default)
-* Other models deployed on Azure ML
-* Instances provided by openai.com
+- OpenAI GPT on Azure (default)
+- Other models deployed on Azure ML
+- Instances provided by openai.com
 
 In order to change the default behaviour, you will have to set the corresponding environment variables before running
 the `create_eval_dotenv` script.
@@ -164,9 +165,9 @@ python -m evaluation red-teaming \
 
 `scorer-dir` is a directory that contains the customised scorer YAML files (set to the `evaluation/scorer_definitions` directory by default). Each scorer is defined by a YAML file that needs to contain the following fields:
 
-* `category`
-* `true_description`
-* `false_description`
+- `category`
+- `true_description`
+- `false_description`
 
 ### Run the red teaming script against the target OpenAI model on Azure
 
