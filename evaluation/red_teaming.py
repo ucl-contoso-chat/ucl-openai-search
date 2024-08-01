@@ -99,4 +99,4 @@ def save_score(results: list, results_dir: Path):
     ]
 
     with open(output_path, "w") as f:
-        json.dump(output, f)
+        json.dump(output, f, indent=4)
