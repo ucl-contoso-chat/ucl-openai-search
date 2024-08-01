@@ -2,8 +2,18 @@ name: Deploy
 
 on:
   workflow_call:
+    inputs:
+      azd_env_name:
+        description: 'Azure environment name'
+        required: false
+        type: string
 
   workflow_dispatch:
+    inputs:
+      azd_env_name:
+        description: 'Azure environment name'
+        required: false
+        type: string
   push:
     # Run when commits are pushed to mainline branch (main or master)
     # Set this to the mainline branch you are using
@@ -28,7 +38,7 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+      AZURE_ENV_NAME: ${{ github.event.inputs.azd_env_name || vars.AZURE_ENV_NAME }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
       # project specific
       AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}

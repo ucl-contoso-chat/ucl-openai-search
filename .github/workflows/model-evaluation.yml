@@ -3,6 +3,10 @@ name: Full Model Evaluation
 on:
   workflow_dispatch:
     inputs:
+      azd_env_name:
+        description: 'Azure environment name'
+        required: false
+        type: string
       purge:
         description: 'Whether to purge the deployment after evaluation'
         required: true
@@ -17,6 +21,8 @@ jobs:
     deploy-azure:
       uses: ./.github/workflows/azure-dev.yml
       secrets: inherit
+      with:
+        azd_env_name: ${{ inputs.azd_env_name || '' }}
 
     evaluate-models:
         needs: deploy-azure
@@ -29,7 +35,7 @@ jobs:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+          AZURE_ENV_NAME: ${{ inputs.azd_env_name || vars.AZURE_ENV_NAME }}
           AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
 
         steps:
@@ -66,9 +72,11 @@ jobs:
             run: |
               python -m pip install --upgrade pip
               pip install -r evaluation/requirements.txt
+
           - name: Generate Q&As
             run: |
               python -m evaluation generate
+
           - name: Run AI Rag Evaluations
             run: |
               python -m evaluation evaluate
@@ -81,6 +89,7 @@ jobs:
               AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ vars.AZURE_OPENAI_EVAL_DEPLOYMENT == '' && env.AZURE_OPENAI_EVAL_DEPLOYMENT || vars.AZURE_OPENAI_EVAL_DEPLOYMENT }}
               AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX == '' && env.AZURE_SEARCH_INDEX || vars.AZURE_SEARCH_INDEX }}
               AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID == '' && env.AZURE_PRINCIPAL_ID || secrets.AZURE_PRINCIPAL_ID }}
+
           - name: Run Red Teaming Evaluations
             run: |
               python -m evaluation red-teaming
@@ -112,6 +121,7 @@ jobs:
                 ${{ env.RED_TEAMING_RESULTS }}/scores.json
 
           #--------------------------Cleanup--------------------------------
+
           - name: Cleanup
             if: ${{ inputs.purge == true }}
             run: azd down --force --purge
