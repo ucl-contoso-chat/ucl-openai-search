@@ -16,7 +16,7 @@ Before using the evaluation scripts, you'll need to:
   You can run the following command to ensure you're logged in before proceeding:
 
   ```shell
-  azd auth login
+  az login
   ```
 
 - Create a `.env` file with environment variables required by the evaluation scripts.
