@@ -142,16 +142,6 @@ def run_evaluation(
         for row in questions_with_ratings:
             results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-    with open(results_dir / "evaluate_parameters.json", "w", encoding="utf-8") as parameters_file:
-        parameters = {
-            "evaluation_gpt_model": openai_config.model,
-            "testdata_path": str(testdata_path),
-            "target_url": target_url,
-            "target_parameters": target_parameters,
-            "num_questions": num_questions,
-        }
-        parameters_file.write(json.dumps(parameters, indent=4))
-
     summarize_results_and_plot(questions_with_ratings, requested_metrics, results_dir, passing_rate)
     return True
 
@@ -162,9 +152,12 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
     results_dir.mkdir(parents=True, exist_ok=True)
 
+    openai_config = service_setup.get_openai_config()
+    testdata_path = working_dir / config["testdata_path"]
+
     evaluation_run_complete = run_evaluation(
-        openai_config=service_setup.get_openai_config(),
-        testdata_path=working_dir / config["testdata_path"],
+        openai_config=openai_config,
+        testdata_path=testdata_path,
         results_dir=results_dir,
         target_url=os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url,
         target_parameters=config.get("target_parameters", {}),
@@ -186,6 +179,15 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     if evaluation_run_complete:
         results_config_path = results_dir / "config.json"
         logger.info("Saving original config file back to %s", results_config_path)
+
+        # Replace relative paths with absolute paths in the original config
+        config["testdata_path"] = str(testdata_path)
+        config["results_dir"] = str(results_dir)
+
+        # Add extra params to original config
+        config["target_url"] = target_url
+        config["evaluation_gpt_model"] = openai_config.model
+
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
     else:
