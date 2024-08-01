@@ -5,8 +5,9 @@
 # Previous evaluation results
 evaluation/results
 
-# Input dataset
+# Evaluation datasets
 evaluation/input
+evaluation/output
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
