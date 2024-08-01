@@ -63,19 +63,16 @@ jobs:
               echo "$GITHUB_ENV"
 
           - name: Install dependencies
-            working-directory: ./evaluation
             run: |
               python -m pip install --upgrade pip
-              pip install -r scripts/requirements.txt
-              pip install pyrit
+              pip install -r evaluation/requirements.txt
           - name: Generate Q&As
             run: |
               python -m evaluation generate
           - name: Run AI Rag Evaluations
-            working-directory: ./evaluation
             run: |
-              python -m scripts evaluate --config=./config.json --numquestions=10
-              echo "EVALUATION_RESULTS=evaluation/results/$(ls ./results/ | grep "experiment" | tail -n 1)" >> $GITHUB_ENV
+              python -m evaluation evaluate
+              echo "EVALUATION_RESULTS=evaluation/results/gpt_evaluation/$(ls evaluation/results/gpt_evaluation | grep "experiment" | tail -n 1)" >> $GITHUB_ENV
             env:
               OPENAI_HOST: ${{ vars.OPENAI_HOST == '' && env.OPENAI_HOST || vars.OPENAI_HOST }}
               AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE == '' && env.AZURE_OPENAI_SERVICE || vars.AZURE_OPENAI_SERVICE }}
@@ -85,9 +82,9 @@ jobs:
               AZURE_SEARCH_INDEX: ${{ vars.AZURE_SEARCH_INDEX == '' && env.AZURE_SEARCH_INDEX || vars.AZURE_SEARCH_INDEX }}
               AZURE_PRINCIPAL_ID: ${{ secrets.AZURE_PRINCIPAL_ID == '' && env.AZURE_PRINCIPAL_ID || secrets.AZURE_PRINCIPAL_ID }}
           - name: Run Red Teaming Evaluations
-            working-directory: ./evaluation
             run: |
-              python -m scripts red-teaming
+              python -m evaluation red-teaming
+              echo "RED_TEAMING_RESULTS=evaluation/results/red_teaming/$(ls evaluation/results/red_teaming | grep "experiment" | tail -n 1)" >> $GITHUB_ENV"
             env:
               OPENAI_HOST: ${{ vars.OPENAI_HOST == '' && env.OPENAI_HOST || vars.OPENAI_HOST }}
               AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE == '' && env.AZURE_OPENAI_SERVICE || vars.AZURE_OPENAI_SERVICE }}
@@ -109,10 +106,11 @@ jobs:
                 ${{ env.EVALUATION_RESULTS }}/summary.json
                 ${{ env.EVALUATION_RESULTS }}/eval_results.jsonl
                 ${{ env.EVALUATION_RESULTS }}/config.json
-                ${{ env.EVALUATION_RESULTS }}/evaluate_parameters.json
-                evaluation/eval.png
-                evaluation/mean_score.png
-                evaluation/passing_rate.png
+                ${{ env.EVALUATION_RESULTS }}/eval.png
+                ${{ env.EVALUATION_RESULTS }}/mean_score.png
+                ${{ env.EVALUATION_RESULTS }}/passing_rate.png
+                ${{ env.RED_TEAMING_RESULTS }}/scores.json
+
           #--------------------------Cleanup--------------------------------
           - name: Cleanup
             if: ${{ inputs.purge == true }}
