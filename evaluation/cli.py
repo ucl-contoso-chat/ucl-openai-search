@@ -57,7 +57,7 @@ def evaluate(
         parser=int_or_none,
     ),
     targeturl: Optional[str] = typer.Option(
-        help="URL of the target service to evaluate against (defaults to the one in the config).",
+        help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
         default=None,
         parser=str_or_none,
     ),
@@ -130,11 +130,16 @@ def red_teaming(
         default="application",
         help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'.",
     ),
+    targeturl: Optional[str] = typer.Option(
+        help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
+        default=None,
+        parser=str_or_none,
+    ),
 ):
     config = load_config(config)
     red_team = service_setup.get_openai_target()
     if prompt_target == "application":
-        target = service_setup.get_app_target(config)
+        target = service_setup.get_app_target(config, targeturl)
     elif prompt_target == "azureopenai":
         target = service_setup.get_openai_target()
     elif prompt_target == "azureml":

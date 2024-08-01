@@ -177,10 +177,10 @@ def get_openai_target() -> PromptChatTarget:
         return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])
 
 
-def get_app_target(config: dict) -> PromptChatTarget:
+def get_app_target(config: dict, target_url: str = None) -> PromptChatTarget:
     """Get specified application chat target."""
     target_parameters = config.get("target_parameters", {})
-    endpoint = os.environ["BACKEND_URI"].rstrip("/") + "/ask"
+    endpoint = os.environ["BACKEND_URI"].rstrip("/") + "/ask" if target_url is None else target_url
     logger.info("Using Application Chat Target")
     return AppChatTarget(endpoint_uri=endpoint, target_parameters=target_parameters)
 
