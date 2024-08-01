@@ -142,6 +142,4 @@ jobs:
 
       - name: Set Environment Variables
         run: |
-          set -a
-          source .azure/${{ env.AZURE_ENV_NAME }}/.env
-          cat .azure/${{ env.AZURE_ENV_NAME }}/.env >> $GITHUB_ENV
+          azd env get-values >> $GITHUB_ENV
