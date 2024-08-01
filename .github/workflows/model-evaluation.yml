@@ -43,7 +43,7 @@ jobs:
             with:
               python-version: ${{ matrix.python_version }}
               architecture: x64
-    
+
           - name: Install azd
             uses: Azure/setup-azd@v1.0.0
 
@@ -68,6 +68,9 @@ jobs:
               python -m pip install --upgrade pip
               pip install -r scripts/requirements.txt
               pip install pyrit
+          - name: Generate Q&As
+            run: |
+              python -m evaluation generate
           - name: Run AI Rag Evaluations
             working-directory: ./evaluation
             run: |
