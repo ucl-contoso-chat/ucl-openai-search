@@ -30,7 +30,7 @@ class AppChatTarget(PromptChatTarget):
         memory: MemoryInterface = None,
         target_parameters: dict,
     ) -> None:
-        """Initializes an instance of the AppChatTarget class."""
+        """Initialize an instance of the AppChatTarget class."""
         PromptChatTarget.__init__(self, memory=memory)
 
         self.endpoint_uri: str = endpoint_uri
