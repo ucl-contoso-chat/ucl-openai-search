@@ -4,7 +4,8 @@ description: A basic prompt using MistralAI for Chat page
 model:
   api: chat
   configuration:
-    type: "mistralai/Mistral-7B-Instruct-v0.3"
+    type: "hf"
+    messages_length_limit: 3895
   parameters:
     max_tokens: 1024
     temperature: 0.3
@@ -32,10 +33,10 @@ Sources:
 {{ source }}
 {% endfor %}
 
-{% if past_questions is defined %}
+{% if past_messages is defined %}
 Past conversation:
 {% endif %}
-{% for old_question in past_questions %}
+{% for old_question in past_messages %}
 {% if loop.first %}
 {{ old_question.content }}
 {% else %}
@@ -44,7 +45,7 @@ Past conversation:
 {% endif %}
 {% endfor %}
 
-{% if past_questions is defined and past_questions|length > 0 %}
+{% if past_messages is defined and past_messages|length > 0 %}
 user:
 {% endif %}
 {{ question }}

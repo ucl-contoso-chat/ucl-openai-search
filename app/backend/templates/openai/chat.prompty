@@ -5,6 +5,7 @@ model:
   api: chat
   configuration:
     type: openai
+    messages_length_limit: 4000
   parameters:
     max_tokens: 1024
     temperature: 0.3

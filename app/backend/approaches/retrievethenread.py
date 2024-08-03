@@ -128,6 +128,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             )
 
         updated_messages = ask_prompty.render(
+            system_message=overrides.get("prompt_template", self.system_chat_template),
             question=q,
             sources=sources_content,
         )

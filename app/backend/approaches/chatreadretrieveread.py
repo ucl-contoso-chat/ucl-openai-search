@@ -28,6 +28,7 @@ from api_wrappers import LLMClient
 from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
+from core.message_truncater.message_shortener import shorten_past_messages
 from templates.supported_models import SUPPORTED_MODELS
 
 
@@ -128,6 +129,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         minimum_search_score = overrides.get("minimum_search_score", 0.0)
         minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
         filter = self.build_filter(overrides, auth_claims)
+        current_model = self.hf_model if self.hf_model else self.chatgpt_model
 
         original_user_query = messages[-1]["content"]
         if not isinstance(original_user_query, str):
@@ -136,24 +138,37 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         # Process results
 
         # Load the Prompty object
-        prompty_path = SUPPORTED_MODELS.get(self.hf_model if self.hf_model else self.chatgpt_model)
+        prompty_path = SUPPORTED_MODELS.get(current_model)
         if prompty_path:
             query_prompty = Prompty.load(source=prompty_path / "query.prompty")
         else:
-            raise ValueError(
-                f"Model {self.hf_model if self.hf_model else self.chatgpt_model} is not supported. Please create a template for this model."
-            )
-
-        # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
-        query_messages = query_prompty.render(
-            question=original_user_query,
+            raise ValueError(f"Model {current_model} is not supported. Please create a template for this model.")
+        # Shorten the past messages if needed
+        question_token_limit = query_prompty._model.configuration.get(
+            "messages_length_limit", 4000
+        ) - query_prompty._model.parameters.get("max_tokens", 1024)
+        print(question_token_limit, flush=True)
+        past_messages = shorten_past_messages(
+            model=current_model,
+            model_type=query_prompty._model.configuration["type"],
+            system_message=self.query_prompt_template,
+            max_tokens=question_token_limit,
+            tools=query_prompty._model.parameters.get("tools"),
+            new_user_content=original_user_query,
             few_shots=self.query_prompt_few_shots,
             past_messages=messages[:-1],
+        )
+        # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
+        query_messages = query_prompty.render(
+            system_message=self.query_prompt_template,
+            question=original_user_query,
+            few_shots=self.query_prompt_few_shots,
+            past_messages=past_messages,
         )
         query_messages = ast.literal_eval(query_messages)
         # If the temperature is not set in the config, use default value equal to 0.0
         query_prompty._model.parameters.setdefault("temperature", 0.0)
-
+        print(query_messages, flush=True)
         chat_completion: Union[ChatCompletion, ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]] = (
             await self.llm_client.chat_completion(
                 messages=query_messages,  # type: ignore
@@ -200,14 +215,13 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         )
 
         # Load the Prompty object
-        chat_prompty_path = prompty_path / "chat.prompty"
-        chat_prompty = Prompty.load(source=chat_prompty_path)
+        chat_prompty = Prompty.load(source=prompty_path / "chat.prompty")
 
         chat_messages = chat_prompty.render(
-            question=original_user_query,
-            sources=sources_content,
             system_message=system_message,
-            past_messages=messages[:-1],
+            sources=sources_content,
+            past_messages=past_messages,
+            question=original_user_query,
         )
         chat_messages = ast.literal_eval(chat_messages)
 
@@ -269,7 +283,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         else:
             chat_prompty._model.parameters.setdefault("temperature", 0.3)
 
-        print(chat_messages, flush=True)
         chat_coroutine = self.llm_client.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
             model=(
