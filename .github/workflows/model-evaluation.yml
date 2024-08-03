@@ -34,6 +34,7 @@ jobs:
   evaluate-models:
     name: Run Evaluation and Red Teaming
     needs: deploy-azure
+    if: always()
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -144,7 +145,7 @@ jobs:
     name: Cleanup
     needs: evaluate-models
     runs-on: ubuntu-latest
-    if: ${{ inputs.purge == true }}
+    if: always() && ${{ inputs.purge == true }}
     steps:
       - name: Purge Azure deployment
         run: azd down --force --purge
