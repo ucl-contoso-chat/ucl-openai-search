@@ -147,7 +147,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         question_token_limit = query_prompty._model.configuration.get(
             "messages_length_limit", 4000
         ) - query_prompty._model.parameters.get("max_tokens", 1024)
-        print(question_token_limit, flush=True)
         past_messages = shorten_past_messages(
             model=current_model,
             model_type=query_prompty._model.configuration["type"],
@@ -168,7 +167,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         query_messages = ast.literal_eval(query_messages)
         # If the temperature is not set in the config, use default value equal to 0.0
         query_prompty._model.parameters.setdefault("temperature", 0.0)
-        print(query_messages, flush=True)
         chat_completion: Union[ChatCompletion, ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]] = (
             await self.llm_client.chat_completion(
                 messages=query_messages,  # type: ignore
