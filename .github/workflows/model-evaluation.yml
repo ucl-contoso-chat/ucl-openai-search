@@ -19,12 +19,14 @@ permissions:
 
 jobs:
   deploy-azure:
+    name: Deploy to Azure
     uses: ./.github/workflows/azure-dev.yml
     secrets: inherit
     with:
       azd_env_name: ${{ inputs.azd_env_name || '' }}
 
   evaluate-models:
+    name: Run Evaluation and Red Teaming
     needs: deploy-azure
     runs-on: ubuntu-latest
     strategy:
