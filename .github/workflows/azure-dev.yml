@@ -3,14 +3,14 @@ name: Deploy
 on:
   workflow_call:
     inputs:
-      azd_env_name:
+      azd-env-name:
         description: 'Azure environment name'
         required: false
         type: string
 
   workflow_dispatch:
     inputs:
-      azd_env_name:
+      azd-env-name:
         description: 'Azure environment name'
         required: false
         type: string
@@ -38,7 +38,7 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      AZURE_ENV_NAME: ${{ inputs.azd_env_name || vars.AZURE_ENV_NAME }}
+      AZURE_ENV_NAME: ${{ inputs.azd-env-name || vars.AZURE_ENV_NAME }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
       # project specific
       AZURE_OPENAI_SERVICE: ${{ vars.AZURE_OPENAI_SERVICE }}

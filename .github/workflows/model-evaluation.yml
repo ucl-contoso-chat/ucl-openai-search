@@ -3,10 +3,15 @@ name: Model Evaluation and Red Teaming
 on:
   workflow_dispatch:
     inputs:
-      azd_env_name:
+      azd-env-name:
         description: 'Azure environment name'
         required: false
         type: string
+      skip-deploy:
+        description: 'Skip deployment'
+        required: false
+        default: false
+        type: boolean
       purge:
         description: 'Whether to purge the deployment after evaluation'
         required: true
@@ -20,10 +25,11 @@ permissions:
 jobs:
   deploy-azure:
     name: Deploy to Azure
+    if: ${{ inputs.skip-deploy != true }}
     uses: ./.github/workflows/azure-dev.yml
     secrets: inherit
     with:
-      azd_env_name: ${{ inputs.azd_env_name || '' }}
+      azd-env-name: ${{ inputs.azd-env-name || '' }}
 
   evaluate-models:
     name: Run Evaluation and Red Teaming
@@ -37,7 +43,7 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      AZURE_ENV_NAME: ${{ inputs.azd_env_name || vars.AZURE_ENV_NAME }}
+      AZURE_ENV_NAME: ${{ inputs.azd-env-name || vars.AZURE_ENV_NAME }}
 
     steps:
       #--------------------------Setup--------------------------------
@@ -87,12 +93,6 @@ jobs:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
       #--------------------------Run Evaluation--------------------------------
-
-      - name: Info debug
-        run: |
-          echo "$GITHUB_ENV"
-          echo $(which az)
-          echo $(which azd)
 
       - name: Install dependencies
         run: |
