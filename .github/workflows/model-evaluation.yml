@@ -1,4 +1,4 @@
-name: Full Model Evaluation
+name: Model Evaluation and Red Teaming
 
 on:
   workflow_dispatch:
