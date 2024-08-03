@@ -230,7 +230,7 @@ def plot_box_charts(
     layout: Tuple[int, int], data: List[List[float]], titles: List[str], y_labels: List[str], output_path: Path
 ):
     """Plot box charts for the provided data."""
-    # assert layout[0] * layout[1] == len(data), "Number of data points must match the layout"
+    assert layout[0] * layout[1] == len(data), "Number of data points must match the layout"
 
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
@@ -376,5 +376,13 @@ def summarize_results_and_plot(
     data = [data for _, data in aggregated_data_lists.items()]
     titles = [display_metric_name[mn] for mn in aggregated_data_lists.keys()]
     y_labels = [metric_value_labels[mn] for mn in aggregated_data_lists.keys()]
+    logger.info(data)
+    logger.info(titles)
 
-    plot_box_charts((1, 3), data[4:], titles[4:], y_labels[4:], results_dir / "evaluation_stat_boxplot.png")
+    plot_box_charts(
+        (1, 3),
+        data[len(gpt_metric_list) :],
+        titles[len(gpt_metric_list) :],
+        y_labels[len(gpt_metric_list) :],
+        results_dir / "evaluation_stat_boxplot.png",
+    )
