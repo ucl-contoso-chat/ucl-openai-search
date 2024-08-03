@@ -105,7 +105,6 @@ jobs:
           azd env refresh -e $AZURE_ENV_NAME --no-prompt
           ./scripts/create_eval_dotenv.sh
         env:
-          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
           AZURE_DOCUMENTINTELLIGENCE_LOCATION: ${{ vars.AZURE_DOCUMENTINTELLIGENCE_LOCATION }}
 
       - name: Generate Q&As
@@ -141,39 +140,6 @@ jobs:
             ${{ env.EVALUATION_RESULTS }}/passing_rate.png
             ${{ env.RED_TEAMING_RESULTS }}/scores.json
 
-  cleanup:
-    name: Cleanup
-    needs: evaluate-models
-    runs-on: ubuntu-latest
-    if: ${{ always() && inputs.purge == true }}
-    steps:
-      - name: Install azd
-        uses: Azure/setup-azd@v1.0.0
-
-      #--------------------------Azure Login--------------------------------
-
-      - name: Log in with Azure (Federated Credentials)
-        if: ${{ env.AZURE_CLIENT_ID != '' }}
-        run: |
-          azd auth login `
-            --client-id "$Env:AZURE_CLIENT_ID" `
-            --federated-credential-provider "github" `
-            --tenant-id "$Env:AZURE_TENANT_ID"
-        shell: pwsh
-
-      - name: Log in with Azure (Client Credentials)
-        if: ${{ env.AZURE_CREDENTIALS != '' }}
-        run: |
-          $info = $Env:AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
-          Write-Host "::add-mask::$($info.clientSecret)"
-
-          azd auth login `
-            --client-id "$($info.clientId)" `
-            --client-secret "$($info.clientSecret)" `
-            --tenant-id "$($info.tenantId)"
-        shell: pwsh
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Purge Azure deployment
+      - name: Cleanup
+        if: ${{ always() && inputs.purge == true }}
         run: azd down --force --purge
