@@ -151,5 +151,5 @@ jobs:
       #------------------------- Cleanup --------------------------
 
       - name: Purge deployment
-        if: ${{ always() && inputs.purge == true }}
+        if: ${{ always() && inputs.purge }}
         run: azd down --force --purge
