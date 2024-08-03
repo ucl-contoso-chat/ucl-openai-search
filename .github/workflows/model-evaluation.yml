@@ -40,7 +40,7 @@ jobs:
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      # deployment-specific variables
+      # deployment-specific variables (only expose the ones necessary for the evaluation)
       AZURE_ENV_NAME: ${{ inputs.azd-env-name || vars.AZURE_ENV_NAME }}
       AZURE_DOCUMENTINTELLIGENCE_LOCATION: ${{ vars.AZURE_DOCUMENTINTELLIGENCE_LOCATION }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
@@ -51,7 +51,7 @@ jobs:
       HUGGINGFACE_MODEL: ${{ vars.HUGGINGFACE_MODEL }}
 
     steps:
-      #--------------------------Setup--------------------------------
+      #-------------------------- Setup ---------------------------
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
       - name: Install azd
         uses: Azure/setup-azd@v1.0.0
 
-      #--------------------------Azure Login--------------------------------
+      #----------------------- Azure Login ------------------------
 
       - name: Azure login
         uses: azure/login@v2
@@ -97,14 +97,14 @@ jobs:
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
-      #--------------------------Deploy Application----------------------------
+      #-------------------- Deploy Application --------------------
 
       - name: Provision and deploy application
         if: ${{ !inputs.skip-deploy }}
         run: |
           azd up --no-prompt
 
-      #--------------------------Run Evaluation--------------------------------
+      #---------------------- Run Evaluation ----------------------
 
       - name: Install dependencies
         run: |
@@ -147,6 +147,8 @@ jobs:
             ${{ env.EVALUATION_RESULTS }}/mean_score.png
             ${{ env.EVALUATION_RESULTS }}/passing_rate.png
             ${{ env.RED_TEAMING_RESULTS }}/scores.json
+
+      #------------------------- Cleanup --------------------------
 
       - name: Purge deployment
         if: ${{ always() && inputs.purge == true }}
