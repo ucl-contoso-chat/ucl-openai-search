@@ -3,6 +3,11 @@ name: Model Evaluation and Red Teaming
 on:
   workflow_dispatch:
     inputs:
+      eval-num-questions:
+        description: 'Number of questions to generate for evaluation'
+        required: false
+        default: 200
+        type: number
       azd-env-name:
         description: 'Azure environment name'
         required: false
@@ -112,11 +117,11 @@ jobs:
 
       - name: Generate Q&As
         run: |
-          python -m evaluation generate
+          python -m evaluation generate --numquestions ${{ inputs.eval-num-questions }}
 
       - name: Run AI RAG Chat evaluation
         run: |
-          python -m evaluation evaluate
+          python -m evaluation evaluate --numquestions ${{ inputs.eval-num-questions }}
 
           # Store evaluation results path
           results_path=$(ls -d evaluation/results/gpt_evaluation/experiment-* | tail -n 1)
