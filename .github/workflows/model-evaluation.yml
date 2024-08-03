@@ -68,6 +68,8 @@ jobs:
       - name: Info debug
         run: |
           echo "$GITHUB_ENV"
+          echo $(which az)
+          echo $(which azd)
 
       - name: Install dependencies
         run: |
@@ -75,11 +77,8 @@ jobs:
           pip install -r evaluation/requirements.txt
 
       - name: Create evaluation environment
-        uses: azure/cli@v2
-        with:
-          azcliversion: latest
-          inlineScript: |
-            ./scripts/create_eval_dotenv.sh
+        run: |
+          ./scripts/create_eval_dotenv.sh
         env:
           AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
 
