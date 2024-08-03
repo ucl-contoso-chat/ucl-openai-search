@@ -91,7 +91,8 @@ jobs:
       - name: Provision and deploy application
         if: ${{ !inputs.skip-deploy }}
         run: |
-          azd up
+          azd env refresh -e $AZURE_ENV_NAME --no-prompt
+          azd up --no-prompt
 
       #--------------------------Run Evaluation--------------------------------
 
@@ -102,7 +103,6 @@ jobs:
 
       - name: Create evaluation environment
         run: |
-          azd env refresh -e $AZURE_ENV_NAME --no-prompt
           ./scripts/create_eval_dotenv.sh
 
       - name: Generate Q&As
