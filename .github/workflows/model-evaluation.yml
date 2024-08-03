@@ -145,8 +145,7 @@ jobs:
     name: Cleanup
     needs: evaluate-models
     runs-on: ubuntu-latest
-    if: always() && ${{ inputs.purge == true }}
+    if: ${{ always() && inputs.purge == true }}
     steps:
       - name: Purge Azure deployment
         run: azd down --force --purge
-        if: always()
