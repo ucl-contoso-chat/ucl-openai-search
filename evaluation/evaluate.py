@@ -16,7 +16,7 @@ from rich.progress import track
 
 from evaluation import service_setup
 from evaluation.evaluate_metrics import metrics_by_name
-from evaluation.utils import load_jsonl
+from evaluation.utils import load_jsonl, radar_factory
 
 EVALUATION_RESULTS_DIR = "gpt_evaluation"
 
@@ -194,43 +194,55 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     else:
         logger.error("Evaluation was terminated early due to an error ⬆")
 
-def plot_bar_charts(layout: Tuple[int, int], data: List[Dict[str, any]], titles: List[str], y_labels: List[str], output_path: Path, width = 0.4):
+
+def plot_bar_charts(
+    layout: Tuple[int, int],
+    data: List[Dict[str, any]],
+    titles: List[str],
+    y_labels: List[str],
+    output_path: Path,
+    width=0.4,
+):
     """Plot bar charts for the provided data."""
     assert layout[0] * layout[1] == len(data), "Number of data points must match the layout"
-    
+
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
-    
+
     for i, ax in enumerate(axs.flat):
         x_data = list(data[i].keys())
         y_data = list(data[i].values())
         name = titles[i]
-        
+
         ax.bar(x_data, y_data, width=width, label=name)
         ax.set_title(name)
         ax.set_ylim(0, np.ceil(max(y_data) * 1.2))
         ax.set_ylabel(y_labels[i])
-        
+
         for j, v in enumerate(y_data):
-            ax.text(j, v*1.02, str(round(v, 2)), ha='center')
-            
+            ax.text(j, v * 1.02, str(round(v, 2)), ha="center")
+
     plt.savefig(output_path)
     plt.close(fig)
-    
-def plot_box_charts(layout: Tuple[int, int], data: List[List[float]], titles: List[str], y_labels: List[str], output_path: Path):
+
+
+def plot_box_charts(
+    layout: Tuple[int, int], data: List[List[float]], titles: List[str], y_labels: List[str], output_path: Path
+):
     """Plot box charts for the provided data."""
-    assert layout[0] * layout[1] == len(data), "Number of data points must match the layout"
-    
+    # assert layout[0] * layout[1] == len(data), "Number of data points must match the layout"
+
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
-    
+
     for i, ax in enumerate(axs.flat):
         ax.boxplot(data[i])
         ax.set_title(titles[i])
         ax.set_ylabel(y_labels[i])
-        
+
     plt.savefig(output_path)
     plt.close(fig)
+
 
 def plot_box_chart(data: List[float], title: str, x_labels: List[str], y_label: str, output_path: Path):
     """Plot a box chart for the provided data."""
@@ -241,41 +253,46 @@ def plot_box_chart(data: List[float], title: str, x_labels: List[str], y_label: 
     plt.savefig(output_path)
     plt.close(fig)
 
+
+def plot_radar_chart(metric_label_list: List[str], data: List, title: str, output_path: Path):
+    theta = radar_factory(num_vars=len(metric_label_list))
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection="radar"))
+    fig.subplots_adjust(wspace=0.5, hspace=0.20, top=0.85, bottom=0.15)
+
+    color = "c"  # Cyan
+
+    ax.set_title(title, weight="bold", size="large", horizontalalignment="center", verticalalignment="center")
+    ax.plot(theta, data, color=color)
+    ax.fill(theta, data, facecolor=color, alpha=0.25, label="_nolegend_")
+    ax.tick_params(pad=15)
+    ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
+    ax.set_varlabels(metric_label_list)
+
+    plt.savefig(output_path)
+    plt.close(fig)
+
+
 def summarize_results_and_plot(
     questions_with_ratings: list, requested_metrics: list, results_dir: Path, passing_rate: int
 ):
     """Summarize the evaluation results and plot them."""
     df = pd.DataFrame(questions_with_ratings)
     summary = {}
-    gpt_metric_list, numeric_metric_list = [], []
+    gpt_metric_list, gpt_metric_mean_list, numeric_metric_list = [], [], []
     rating_stat_data = {
         "pass_count": {},
         "pass_rate": {},
         "mean_rating": {},
     }
-    num_stat_data = {
-        "latency": {},
-        "f1_score" : {},
-        "answer_length": {}
-    }
+    num_stat_data = {"latency": {}, "f1_score": {}, "answer_length": {}}
     aggregated_data_lists = {}
-    
+
     width = 0.4  # the width of the bars
-    
-    gpt_metrics = [
-        "gpt_groundedness",
-        "gpt_relevance",
-        "gpt_coherence",
-        "gpt_similarity",
-        "gpt_fluency"
-    ]
-    
-    numeric_metrics = [
-        "latency",
-        "f1_score",
-        "answer_length"
-    ]
-    
+
+    gpt_metrics = ["gpt_groundedness", "gpt_relevance", "gpt_coherence", "gpt_similarity", "gpt_fluency"]
+
+    numeric_metrics = ["latency", "f1_score", "answer_length"]
+
     display_metric_name = {
         "pass_count": "Pass Count",
         "pass_rate": "Pass Rate",
@@ -287,9 +304,9 @@ def summarize_results_and_plot(
         "gpt_relevance": "GPT Relevance Rating",
         "gpt_coherence": "GPT Coherence Rating",
         "gpt_similarity": "GPT Similarity Rating",
-        "gpt_fluency": "GPT Fluency Rating"
+        "gpt_fluency": "GPT Fluency Rating",
     }
-    
+
     short_metric_name = {
         "pass_count": "Pass Count",
         "pass_rate": "Pass Rate",
@@ -301,9 +318,9 @@ def summarize_results_and_plot(
         "gpt_relevance": "Relevance",
         "gpt_coherence": "Coherence",
         "gpt_similarity": "Similarity",
-        "gpt_fluency": "Fluency"
+        "gpt_fluency": "Fluency",
     }
-        
+
     metric_value_labels = {
         "pass_count": "Number of Questions",
         "pass_rate": "Percentage",
@@ -315,20 +332,21 @@ def summarize_results_and_plot(
         "gpt_relevance": "Rating Score",
         "gpt_coherence": "Rating Score",
         "gpt_similarity": "Rating Score",
-        "gpt_fluency": "Rating Score"
+        "gpt_fluency": "Rating Score",
     }
-    
+
     for metric in requested_metrics:
         metric_name = metric.METRIC_NAME
         data = df[metric_name].dropna()
         if len(data) > 0:
             aggregated_data_lists[metric_name] = data.tolist()
-        
+
         metric_result = metric.get_aggregate_stats(df, passing_rate)
         summary[metric.METRIC_NAME] = metric_result
-        if (metric.METRIC_NAME in gpt_metrics):
+        if metric.METRIC_NAME in gpt_metrics:
             gpt_metric_list.append(metric.METRIC_NAME)
             short_name = short_metric_name[metric_name]
+            gpt_metric_mean_list.append(metric_result["mean_rating"])
             for stat, value in metric_result.items():
                 rating_stat_data[stat][short_name] = value
         if metric.METRIC_NAME in numeric_metrics:
@@ -341,13 +359,16 @@ def summarize_results_and_plot(
     logger.info("Evaluation results saved in %s", results_dir)
 
     # Draw the chart for the results
-    metrics = gpt_metric_list
     data = [data for _, data in rating_stat_data.items()]
     titles = [display_metric_name[mn] for mn in rating_stat_data.keys()]
     y_labels = [metric_value_labels[mn] for mn in rating_stat_data.keys()]
 
     plot_bar_charts((1, 3), data, titles, y_labels, results_dir / "evaluation_results.png", width)
-    
+
+    plot_radar_chart(
+        gpt_metric_list, gpt_metric_mean_list, "GPT Rating Metrics Results", results_dir / "evaluation_gpt_radar.png"
+    )
+
     data = [aggregated_data_lists[m] for m in gpt_metric_list]
     labels = [short_metric_name[m] for m in gpt_metric_list]
     plot_box_chart(data, "GPT Ratings", labels, "Rating Score", results_dir / "evaluation_gpt_boxplot.png")
@@ -355,5 +376,5 @@ def summarize_results_and_plot(
     data = [data for _, data in aggregated_data_lists.items()]
     titles = [display_metric_name[mn] for mn in aggregated_data_lists.keys()]
     y_labels = [metric_value_labels[mn] for mn in aggregated_data_lists.keys()]
-    
+
     plot_box_charts((1, 3), data[4:], titles[4:], y_labels[4:], results_dir / "evaluation_stat_boxplot.png")
