@@ -99,14 +99,14 @@ jobs:
 
       #-------------------- Deploy Application --------------------
 
-      - name: Refresh (or create) azd environment
-        run: |
-          azd env refresh --no-prompt
-
       - name: Provision and deploy application
         if: ${{ !inputs.skip-deploy }}
         run: |
           azd up --no-prompt
+
+      - name: Refresh azd environment
+        run: |
+          azd env refresh --no-prompt
 
       #---------------------- Run Evaluation ----------------------
 
