@@ -116,8 +116,12 @@ jobs:
             ${{ env.EVALUATION_RESULTS }}/passing_rate.png
             ${{ env.RED_TEAMING_RESULTS }}/scores.json
 
-      #--------------------------Cleanup--------------------------------
-
-      - name: Cleanup
-        if: ${{ inputs.purge == true }}
+  cleanup:
+    name: Cleanup
+    needs: evaluate-models
+    runs-on: ubuntu-latest
+    if: ${{ inputs.purge == true }}
+    steps:
+      - name: Purge Azure deployment
         run: azd down --force --purge
+        if: always()
