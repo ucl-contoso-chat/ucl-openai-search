@@ -78,13 +78,11 @@ jobs:
 
       - name: Create evaluation environment
         run: |
-          az version
-          azd version
-          azd env get-values
-          echo "HERE."
+          azd env refresh -e $AZURE_ENV_NAME --no-prompt
           ./scripts/create_eval_dotenv.sh
         env:
           AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+          AZURE_DOCUMENTINTELLIGENCE_LOCATION: ${{ vars.AZURE_DOCUMENTINTELLIGENCE_LOCATION }}
 
       - name: Generate Q&As
         run: |
