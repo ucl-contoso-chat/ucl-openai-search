@@ -44,7 +44,10 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # required by azd
       AZURE_ENV_NAME: ${{ inputs.azd-env-name || vars.AZURE_ENV_NAME }}
+      AZURE_DOCUMENTINTELLIGENCE_LOCATION: ${{ vars.AZURE_DOCUMENTINTELLIGENCE_LOCATION }}
 
     steps:
       #--------------------------Setup--------------------------------
@@ -104,8 +107,6 @@ jobs:
         run: |
           azd env refresh -e $AZURE_ENV_NAME --no-prompt
           ./scripts/create_eval_dotenv.sh
-        env:
-          AZURE_DOCUMENTINTELLIGENCE_LOCATION: ${{ vars.AZURE_DOCUMENTINTELLIGENCE_LOCATION }}
 
       - name: Generate Q&As
         run: |
