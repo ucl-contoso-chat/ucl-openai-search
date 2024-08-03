@@ -23,18 +23,8 @@ permissions:
   contents: read
 
 jobs:
-  deploy-azure:
-    name: Deploy to Azure
-    if: ${{ inputs.skip-deploy != true }}
-    uses: ./.github/workflows/azure-dev.yml
-    secrets: inherit
-    with:
-      azd-env-name: ${{ inputs.azd-env-name || '' }}
-
-  evaluate-models:
+  evaluation:
     name: Run Evaluation and Red Teaming
-    needs: deploy-azure
-    if: always()
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -96,6 +86,13 @@ jobs:
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
+      #--------------------------Deploy Application----------------------------
+
+      - name: Provision and deploy application
+        if: ${{ !inputs.skip-deploy }}
+        run: |
+          azd up
+
       #--------------------------Run Evaluation--------------------------------
 
       - name: Install dependencies
@@ -141,6 +138,6 @@ jobs:
             ${{ env.EVALUATION_RESULTS }}/passing_rate.png
             ${{ env.RED_TEAMING_RESULTS }}/scores.json
 
-      - name: Cleanup
+      - name: Purge deployment
         if: ${{ always() && inputs.purge == true }}
         run: azd down --force --purge
