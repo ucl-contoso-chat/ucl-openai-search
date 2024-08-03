@@ -78,7 +78,10 @@ jobs:
 
       - name: Create evaluation environment
         run: |
-          chmod +x ./scripts/create_eval_dotenv.sh
+          az version
+          azd version
+          azd env get-values
+          echo "HERE."
           ./scripts/create_eval_dotenv.sh
         env:
           AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
