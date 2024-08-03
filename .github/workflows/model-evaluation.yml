@@ -86,7 +86,7 @@ jobs:
         run: |
           python -m evaluation generate
 
-      - name: Run AI Rag Evaluations
+      - name: Run AI RAG Chat evaluation
         run: |
           python -m evaluation evaluate
 
@@ -94,7 +94,7 @@ jobs:
           results_path=$(ls -d evaluation/results/gpt_evaluation/experiment-* | tail -n 1)
           echo "EVALUATION_RESULTS=$results_path" >> $GITHUB_ENV
 
-      - name: Run Red Teaming Evaluations
+      - name: Run Red Teaming evaluation
         run: |
           python -m evaluation red-teaming
 
