@@ -133,7 +133,7 @@ jobs:
 
           # Store red teaming results path
           results_path=$(ls -d evaluation/results/red_teaming/experiment-* | tail -n 1)
-          echo "RED_TEAMING_RESULTS=$results_path" >> $GITHUB_ENV"
+          echo "RED_TEAMING_RESULTS=$results_path" >> $GITHUB_ENV
 
       - name: Dump results
         uses: actions/upload-artifact@v4
