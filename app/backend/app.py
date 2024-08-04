@@ -578,6 +578,10 @@ async def setup_clients():
         )
     # TODO: Make the embedding client fully compatible with the LLMClient once we're able to generate embeddings using Hugging Face models
     emb_client = llm_client
+
+    if HUGGINGFACE_MODEL not in HF_MODELS.keys():
+        raise ValueError(f"Hugging Face model {HUGGINGFACE_MODEL} is not supported. Supported models are {HF_MODELS}")
+
     if HUGGINGFACE_MODEL:
         if not HUGGINGFACE_API_KEY:
             raise ValueError("HUGGINGFACE_API_KEY must be set when HUGGINGFACE_MODEL is set")
