@@ -376,8 +376,6 @@ def summarize_results_and_plot(
     data = [data for _, data in aggregated_data_lists.items()]
     titles = [display_metric_name[mn] for mn in aggregated_data_lists.keys()]
     y_labels = [metric_value_labels[mn] for mn in aggregated_data_lists.keys()]
-    logger.info(data)
-    logger.info(titles)
 
     plot_box_charts(
         (1, 3),
