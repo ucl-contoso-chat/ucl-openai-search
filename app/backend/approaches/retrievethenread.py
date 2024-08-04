@@ -97,6 +97,9 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
         filter = self.build_filter(overrides, auth_claims)
 
+        if overrides.get("hf_model") is not None and self.hf_model is not overrides.get("hf_model"):
+            self.hf_model = overrides.get("hf_model")
+
         # If retrieval mode includes vectors, compute an embedding for the query
         vectors: list[VectorQuery] = []
         if use_vector_search:

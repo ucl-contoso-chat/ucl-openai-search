@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Stack, IDropdownOption, Dropdown, IDropdownProps, List } from "@fluentui/react";
+import { Stack, IDropdownOption, Dropdown, IDropdownProps } from "@fluentui/react";
 import { useId } from "@fluentui/react-hooks";
 
 import { HelpCallout } from "../../components/HelpCallout";
@@ -12,11 +12,12 @@ interface Props {
 }
 
 export const ModelChoiceHF = ({ updateCurrentModel, defaultHFModel, modelsList }: Props) => {
-    const [hf_model, setHfModel] = useState<String>(defaultHFModel);
+    const [hf_model, setHfModel] = useState<string>(defaultHFModel);
 
     const onHfModelChange = (_ev: React.FormEvent<HTMLDivElement>, option?: IDropdownOption<string> | undefined) => {
-        setHfModel(option?.data || "");
-        updateCurrentModel(option?.data || "");
+        const newModel = option?.key as string;
+        setHfModel(newModel);
+        updateCurrentModel(newModel);
     };
 
     const hfModelId = useId("hfModel");
@@ -25,20 +26,19 @@ export const ModelChoiceHF = ({ updateCurrentModel, defaultHFModel, modelsList }
         key: model,
         text: model
     }));
-    console.log(defaultHFModel);
-    console.log(modelsList);
+
     return (
         <Stack tokens={{ childrenGap: 10 }}>
             <Dropdown
                 id={hfModelFieldId}
                 label="HuggingFace Model"
-                selectedKey={hf_model.toString()}
+                selectedKey={hf_model}
                 options={modelsMapping}
                 required
                 onChange={onHfModelChange}
                 aria-labelledby={hfModelId}
                 onRenderLabel={(props: IDropdownProps | undefined) => (
-                    <HelpCallout labelId={hfModelId} fieldId={hfModelFieldId} helpText={toolTipText.retrievalMode} label={props?.label} />
+                    <HelpCallout labelId={hfModelId} fieldId={hfModelFieldId} helpText={toolTipText.hfModel} label={props?.label} />
                 )}
             />
         </Stack>
