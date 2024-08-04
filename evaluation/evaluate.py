@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -200,11 +201,16 @@ def plot_bar_charts(
     data: List[Dict[str, any]],
     titles: List[str],
     y_labels: List[str],
-    output_path: Path,
+    y_max_lim: List[float] = None,
     width=0.4,
+    output_path: Path = Path("evaluation_results.png"),
 ):
     """Plot bar charts for the provided data."""
     assert layout[0] * layout[1] == len(data), "Number of data points must match the layout"
+
+    font = {"weight": "normal", "size": 9}
+
+    matplotlib.rc("font", **font)
 
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
@@ -213,10 +219,15 @@ def plot_bar_charts(
         x_data = list(data[i].keys())
         y_data = list(data[i].values())
         name = titles[i]
+        colors = plt.cm.tab20.colors[: len(x_data)]
 
-        ax.bar(x_data, y_data, width=width, label=name)
-        ax.set_title(name)
-        ax.set_ylim(0, np.ceil(max(y_data) * 1.2))
+        ax.bar(x_data, y_data, width=width, label=name, color=colors)
+        ax.set_title(name, pad=20)
+        if y_max_lim is not None and len(y_max_lim) > i and y_max_lim[i] is not None:
+            ax.set_ylim(0, max(y_max_lim[i], max(y_data)))
+        else:
+            ax.set_ylim(0, np.ceil(max(y_data)) * 1.2)
+
         ax.set_ylabel(y_labels[i])
 
         for j, v in enumerate(y_data):
@@ -244,12 +255,22 @@ def plot_box_charts(
     plt.close(fig)
 
 
-def plot_box_chart(data: List[float], title: str, x_labels: List[str], y_label: str, output_path: Path):
+def plot_box_chart(
+    data: List[float],
+    title: str,
+    x_labels: List[str],
+    y_label: str,
+    y_lim: Tuple[float, float] = None,
+    output_path: Path = Path("boxplot.png"),
+):
     """Plot a box chart for the provided data."""
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.boxplot(data, patch_artist=True, tick_labels=x_labels)
+    fig.tight_layout(pad=3.0)
     ax.set_title(title)
     ax.set_ylabel(y_label)
+    if y_lim is not None:
+        ax.set_ylim(y_lim[0], y_lim[1])
     plt.savefig(output_path)
     plt.close(fig)
 
@@ -257,11 +278,11 @@ def plot_box_chart(data: List[float], title: str, x_labels: List[str], y_label: 
 def plot_radar_chart(metric_label_list: List[str], data: List, title: str, output_path: Path):
     theta = radar_factory(num_vars=len(metric_label_list))
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection="radar"))
-    fig.subplots_adjust(wspace=0.5, hspace=0.20, top=0.85, bottom=0.15)
+    fig.subplots_adjust(wspace=0.5, hspace=0.20, top=0.85, bottom=0.05)
 
     color = "c"  # Cyan
 
-    ax.set_title(title, weight="bold", size="large", horizontalalignment="center", verticalalignment="center")
+    ax.set_title(title, weight="bold", size="large", horizontalalignment="center", verticalalignment="center", pad=20)
     ax.plot(theta, data, color=color)
     ax.fill(theta, data, facecolor=color, alpha=0.25, label="_nolegend_")
     ax.tick_params(pad=15)
@@ -314,7 +335,7 @@ def summarize_results_and_plot(
         "latency": "Latency",
         "f1_score": "F1 Score",
         "answer_length": "Length",
-        "gpt_groundedness": "Groundedness",
+        "gpt_groundedness": "Groundness",
         "gpt_relevance": "Relevance",
         "gpt_coherence": "Coherence",
         "gpt_similarity": "Similarity",
@@ -363,15 +384,27 @@ def summarize_results_and_plot(
     titles = [display_metric_name[mn] for mn in rating_stat_data.keys()]
     y_labels = [metric_value_labels[mn] for mn in rating_stat_data.keys()]
 
-    plot_bar_charts((1, 3), data, titles, y_labels, results_dir / "evaluation_results.png", width)
+    plot_bar_charts(
+        (1, 3),
+        data,
+        titles,
+        y_labels,
+        [len(questions_with_ratings), 1.0, 5.0],
+        width,
+        results_dir / "evaluation_results.png",
+    )
 
+    gpt_metric_short_names = [short_metric_name[mtrc] for mtrc in gpt_metric_list]
     plot_radar_chart(
-        gpt_metric_list, gpt_metric_mean_list, "GPT Rating Metrics Results", results_dir / "evaluation_gpt_radar.png"
+        gpt_metric_short_names,
+        gpt_metric_mean_list,
+        "GPT Rating Metrics Results",
+        results_dir / "evaluation_gpt_radar.png",
     )
 
     data = [aggregated_data_lists[m] for m in gpt_metric_list]
     labels = [short_metric_name[m] for m in gpt_metric_list]
-    plot_box_chart(data, "GPT Ratings", labels, "Rating Score", results_dir / "evaluation_gpt_boxplot.png")
+    plot_box_chart(data, "GPT Ratings", labels, "Rating Score", [0.0, 5.0], results_dir / "evaluation_gpt_boxplot.png")
 
     data = [data for _, data in aggregated_data_lists.items()]
     titles = [display_metric_name[mn] for mn in aggregated_data_lists.keys()]
