@@ -137,16 +137,18 @@ class ChatReadRetrieveReadApproach(ChatApproach):
 
         # Process results
 
-        # Load the Prompty object
+        # Load the Prompty objects for AI Search query and chat answer generation.
         prompty_path = SUPPORTED_MODELS.get(current_model)
         if prompty_path:
+            chat_prompty = Prompty.load(source=prompty_path / "chat.prompty")
             query_prompty = Prompty.load(source=prompty_path / "query.prompty")
         else:
             raise ValueError(f"Model {current_model} is not supported. Please create a template for this model.")
         # Shorten the past messages if needed
-        question_token_limit = query_prompty._model.configuration.get(
+        question_token_limit = chat_prompty._model.configuration.get(
             "messages_length_limit", 4000
-        ) - query_prompty._model.parameters.get("max_tokens", 1024)
+        ) - chat_prompty._model.parameters.get("max_tokens", 1024)
+
         past_messages = shorten_past_messages(
             model=current_model,
             model_type=query_prompty._model.configuration["type"],
@@ -211,9 +213,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             overrides.get("prompt_template"),
             self.follow_up_questions_prompt_content if overrides.get("suggest_followup_questions") else "",
         )
-
-        # Load the Prompty object
-        chat_prompty = Prompty.load(source=prompty_path / "chat.prompty")
 
         chat_messages = chat_prompty.render(
             system_message=system_message,
