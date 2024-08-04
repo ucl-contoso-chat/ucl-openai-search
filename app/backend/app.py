@@ -6,7 +6,7 @@ import mimetypes
 import os
 import time
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, Union, cast
+from typing import Any, AsyncGenerator, Dict, List, Union, cast
 
 from azure.cognitiveservices.speech import (
     ResultReason,
@@ -64,6 +64,7 @@ from config import (
     CONFIG_CHAT_VISION_APPROACH,
     CONFIG_CREDENTIAL,
     CONFIG_GPT4V_DEPLOYED,
+    CONFIG_HF_MODEL,
     CONFIG_INGESTER,
     CONFIG_OPENAI_CLIENT,
     CONFIG_SEARCH_CLIENT,
@@ -90,6 +91,7 @@ from prepdocs import (
 )
 from prepdocslib.filestrategy import UploadUserFileStrategy
 from prepdocslib.listfilestrategy import File
+from templates.supported_models import HF_MODELS
 
 bp = Blueprint("routes", __name__, static_folder="static")
 # Fix Windows registry issue with mimetypes
@@ -276,8 +278,17 @@ def config():
             "showSpeechInput": current_app.config[CONFIG_SPEECH_INPUT_ENABLED],
             "showSpeechOutputBrowser": current_app.config[CONFIG_SPEECH_OUTPUT_BROWSER_ENABLED],
             "showSpeechOutputAzure": current_app.config[CONFIG_SPEECH_OUTPUT_AZURE_ENABLED],
+            "huggingfaceModel": current_app.config[CONFIG_HF_MODEL],
         }
     )
+
+
+@bp.route("/hf_models", methods=["GET"])
+def hf_models():
+    model_names: List[str] = []
+    for model_name in HF_MODELS.keys():
+        model_names.append(model_name)
+    return jsonify(model_names)
 
 
 @bp.route("/speech", methods=["POST"])
@@ -570,10 +581,13 @@ async def setup_clients():
     if HUGGINGFACE_MODEL:
         if not HUGGINGFACE_API_KEY:
             raise ValueError("HUGGINGFACE_API_KEY must be set when HUGGINGFACE_MODEL is set")
+
+        login(token=HUGGINGFACE_API_KEY)
         llm_client = HuggingFaceClient(token=HUGGINGFACE_API_KEY, model=HUGGINGFACE_MODEL)
 
     current_app.config[CONFIG_OPENAI_CLIENT] = llm_client
     current_app.config[CONFIG_SEARCH_CLIENT] = search_client
+    current_app.config[CONFIG_HF_MODEL] = HUGGINGFACE_MODEL if HUGGINGFACE_MODEL else None
     current_app.config[CONFIG_BLOB_CONTAINER_CLIENT] = blob_container_client
     current_app.config[CONFIG_AUTH_CLIENT] = auth_helper
 
@@ -584,9 +598,6 @@ async def setup_clients():
     current_app.config[CONFIG_SPEECH_INPUT_ENABLED] = USE_SPEECH_INPUT_BROWSER
     current_app.config[CONFIG_SPEECH_OUTPUT_BROWSER_ENABLED] = USE_SPEECH_OUTPUT_BROWSER
     current_app.config[CONFIG_SPEECH_OUTPUT_AZURE_ENABLED] = USE_SPEECH_OUTPUT_AZURE
-
-    if HUGGINGFACE_MODEL:
-        login(token=HUGGINGFACE_API_KEY)
 
     # Various approaches to integrate GPT and external knowledge, most applications will use a single one of these patterns
     # or some derivative, here we include several for exploration purposes

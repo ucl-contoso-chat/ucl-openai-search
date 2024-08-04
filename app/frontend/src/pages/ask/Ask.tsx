@@ -4,7 +4,7 @@ import { useId } from "@fluentui/react-hooks";
 
 import styles from "./Ask.module.css";
 
-import { askApi, configApi, getSpeechApi, ChatAppResponse, ChatAppRequest, RetrievalMode, VectorFieldOptions, GPT4VInput } from "../../api";
+import { askApi, configApi, getSpeechApi, ChatAppResponse, ChatAppRequest, RetrievalMode, VectorFieldOptions, GPT4VInput, getSupportedModels } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -20,6 +20,7 @@ import { UploadFile } from "../../components/UploadFile";
 import { useMsal } from "@azure/msal-react";
 import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { LoginContext } from "../../loginContext";
+import { ModelChoiceHF } from "../../components/ModelChoiceHF";
 
 export function Component(): JSX.Element {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -30,6 +31,8 @@ export function Component(): JSX.Element {
     const [seed, setSeed] = useState<number | null>(null);
     const [minimumRerankerScore, setMinimumRerankerScore] = useState<number>(0);
     const [minimumSearchScore, setMinimumSearchScore] = useState<number>(0);
+    const [huggingFaceModel, setHuggingFaceModel] = useState<string>("");
+    const [huggingFaceModelList, setHuggingFaceModelList] = useState<string[]>([]);
     const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>(RetrievalMode.Hybrid);
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
@@ -75,11 +78,21 @@ export function Component(): JSX.Element {
             setShowSpeechInput(config.showSpeechInput);
             setShowSpeechOutputBrowser(config.showSpeechOutputBrowser);
             setShowSpeechOutputAzure(config.showSpeechOutputAzure);
+            setHuggingFaceModel(config.huggingfaceModel);
         });
+    };
+
+    const getModelsList = async () => {
+        const models = await getSupportedModels();
+        setHuggingFaceModelList(models);
     };
 
     useEffect(() => {
         getConfig();
+    }, []);
+
+    useEffect(() => {
+        getModelsList();
     }, []);
 
     useEffect(() => {
@@ -115,6 +128,7 @@ export function Component(): JSX.Element {
                         prompt_template_suffix: promptTemplateSuffix.length === 0 ? undefined : promptTemplateSuffix,
                         exclude_category: excludeCategory.length === 0 ? undefined : excludeCategory,
                         top: retrieveCount,
+                        hf_model: huggingFaceModel,
                         temperature: temperature,
                         minimum_reranker_score: minimumRerankerScore,
                         minimum_search_score: minimumSearchScore,
@@ -442,6 +456,14 @@ export function Component(): JSX.Element {
                             setUseGPT4V(useGPT4V);
                         }}
                         updateGPT4VInputs={inputs => setGPT4VInput(inputs)}
+                    />
+                )}
+
+                {huggingFaceModel && (
+                    <ModelChoiceHF
+                        defaultHFModel={huggingFaceModel}
+                        modelsList={huggingFaceModelList}
+                        updateCurrentModel={(huggingFaceModel: string) => setHuggingFaceModel(huggingFaceModel)}
                     />
                 )}
 
