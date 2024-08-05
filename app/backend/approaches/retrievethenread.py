@@ -86,7 +86,6 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         if not isinstance(q, str):
             raise ValueError("The most recent message content must be a string.")
         overrides = context.get("overrides", {})
-        seed = overrides.get("seed", None)
         auth_claims = context.get("auth_claims", {})
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
@@ -137,13 +136,15 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         )
         updated_messages = ast.literal_eval(updated_messages)
 
-        # If the temperature is overridden via the API request, use that value.
+        # If the parameters are overridden via the API request, use that value.
         # Otherwise, use the default value from the model configuration.
-        # If model configuration does not have a temperature, use the default value of 0.3.
-        if overrides.get("temperature") is not None:
-            ask_prompty._model.parameters["temperature"] = overrides.get("temperature")
-        else:
-            ask_prompty._model.parameters.setdefault("temperature", 0.3)
+        ask_prompty._model.parameters.update(
+            {
+                param: overrides[param]
+                for param in self.llm_client.allowed_chat_completion_params
+                if overrides.get(param) is not None
+            }
+        )
 
         chat_completion = await self.llm_client.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
@@ -155,7 +156,6 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
             messages=updated_messages,
             **ask_prompty._model.parameters,
             n=1,
-            seed=seed,
         )
         final_result = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
 
