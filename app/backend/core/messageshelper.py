@@ -64,7 +64,7 @@ def select_encoding(model: str, model_type: str):
     """
     original_encoding_for_model = tiktoken.encoding_for_model
 
-    def hugging_face_encoding():
+    def hugging_face_encoding(model):
         return get_hf_encoding(model)
 
     if model_type == "hf":
