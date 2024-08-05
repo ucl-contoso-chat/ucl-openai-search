@@ -38,8 +38,8 @@ def normalize_content(content: Union[str, Iterable[ChatCompletionContentPartPara
 
 
 def get_hf_encoding(model: str) -> AutoTokenizer:
-    """
-    Get the Hugging Face tokenizer for a given model.
+    """Get the Hugging Face tokenizer for a given model.
+
     Args:
         model (str): The name of the model to get the tokenizer for.
     Returns:
@@ -53,10 +53,14 @@ def get_hf_encoding(model: str) -> AutoTokenizer:
 
 @contextmanager
 def select_encoding(model: str, model_type: str):
-    """
-    Override the encoding for a given model and then restore it.
+    """Select encoding to be used for a given model.
+
+    Temporarily override the encoding used with Hugging Face models, by monkey-patching
+    the `tiktoken` method used by the `openai-messages-token-helper` package.
+
     Args:
         model (str): The name of the model to override the encoding for.
+        model_type (str): The type of the model [openai, hf].
     """
     original_encoding_for_model = tiktoken.encoding_for_model
 
@@ -85,10 +89,12 @@ def build_past_messages(
     past_messages: list[ChatCompletionMessageParam] = [],  # *not* including system prompt
     fallback_to_default: bool = False,
 ) -> list[ChatCompletionMessageParam]:
-    """
+    """Build list of past messages for a chat conversation.
+
     Build a list of messages for a chat conversation, given the system prompt, new user message,
     and past messages. The function will truncate the history of past messages if necessary to
     stay within the token limit and return the truncated messages.
+
     Args:
         model (str): The model name to use for token calculation, like gpt-3.5-turbo.
         model_type (str): The type of the model to use for encoding [openai, hf].
