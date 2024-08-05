@@ -28,7 +28,7 @@ from api_wrappers import LLMClient
 from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
-from core.message_truncater.message_shortener import shorten_past_messages
+from core.messageshelper import build_past_messages
 from templates.supported_models import SUPPORTED_MODELS
 
 
@@ -120,7 +120,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             ],
         ],
     ]:
-        seed = overrides.get("seed", None)
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
@@ -132,10 +131,9 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         current_model = self.hf_model if self.hf_model else self.chatgpt_model
 
         original_user_query = messages[-1]["content"]
+
         if not isinstance(original_user_query, str):
             raise ValueError("The most recent message content must be a string.")
-
-        # Process results
 
         # Load the Prompty objects for AI Search query and chat answer generation.
         prompty_path = SUPPORTED_MODELS.get(current_model)
@@ -144,12 +142,22 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             query_prompty = Prompty.load(source=prompty_path / "query.prompty")
         else:
             raise ValueError(f"Model {current_model} is not supported. Please create a template for this model.")
+
+        # If the parameters are overridden via the API request, use that value.
+        # Otherwise, use the default value from the model configuration.
+        chat_prompty._model.parameters.update(
+            {
+                param: overrides[param]
+                for param in self.llm_client.allowed_chat_completion_params
+                if overrides.get(param) is not None
+            }
+        )
         # Shorten the past messages if needed
         question_token_limit = chat_prompty._model.configuration.get(
             "messages_length_limit", 4000
         ) - chat_prompty._model.parameters.get("max_tokens", 1024)
 
-        past_messages = shorten_past_messages(
+        past_messages = build_past_messages(
             model=current_model,
             model_type=query_prompty._model.configuration["type"],
             system_message=self.query_prompt_template,
@@ -167,6 +175,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             past_messages=past_messages,
         )
         query_messages = ast.literal_eval(query_messages)
+
         # If the temperature is not set in the config, use default value equal to 0.0
         query_prompty._model.parameters.setdefault("temperature", 0.0)
         chat_completion: Union[ChatCompletion, ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]] = (
@@ -180,7 +189,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 ),
                 **query_prompty._model.parameters,
                 n=1,
-                seed=seed,
             )
         )
         query_text = self.get_search_query(chat_completion, original_user_query)
@@ -272,14 +280,6 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             ],
         }
 
-        # If the temperature is overridden via the API request, use that value.
-        # Otherwise, use the default value from the model configuration.
-        # If model configuration does not have a temperature, use the default value of 0.3.
-        if overrides.get("temperature") is not None:
-            chat_prompty._model.parameters["temperature"] = overrides.get("temperature")
-        else:
-            chat_prompty._model.parameters.setdefault("temperature", 0.3)
-
         chat_coroutine = self.llm_client.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
             model=(
@@ -291,6 +291,5 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             **chat_prompty._model.parameters,
             n=1,
             stream=should_stream,
-            seed=seed,
         )
         return (extra_info, chat_coroutine)
