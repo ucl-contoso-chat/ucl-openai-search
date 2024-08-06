@@ -66,6 +66,29 @@ def evaluate(
 
 
 @app.command()
+def compare(
+    config: Path = typer.Option(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="Path to the configuration JSON file.",
+        default=DEFAULT_CONFIG_PATH,
+    ),
+    numquestions: Optional[int] = typer.Option(
+        help="Number of questions to evaluate (defaults to all if not specified).",
+        default=None,
+        parser=int_or_none,
+    ),
+    targeturl: Optional[str] = typer.Option(
+        help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
+        default=None,
+        parser=str_or_none,
+    ),
+):
+    run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl)
+
+
+@app.command()
 def generate(
     output: Path = typer.Option(
         exists=False,

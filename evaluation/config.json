@@ -3,6 +3,7 @@
     "results_dir": "results",
     "passing_rate": 3,
     "requested_metrics": ["gpt_groundedness", "gpt_relevance", "gpt_coherence", "gpt_similarity", "gpt_fluency", "answer_length", "latency", "f1_score"],
+    "compared_models":["gpt-35-turbo", "mistralai/Mistral-7B-Instruct-v0.3", "microsoft/Phi-3-mini-4k-instruct"],
     "max_workers": 1,
     "target_parameters": {
         "overrides": {
@@ -20,7 +21,8 @@
                 "embedding"
             ],
             "use_gpt4v": false,
-            "gpt4v_input": "textAndImages"
+            "gpt4v_input": "textAndImages",
+            "set_model":""
         }
     }
 }
