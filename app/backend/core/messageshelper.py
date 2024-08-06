@@ -13,6 +13,7 @@ from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
 )
+from openai_messages_token_helper import model_helper
 from openai_messages_token_helper.model_helper import (
     count_tokens_for_message,
     count_tokens_for_system_and_tools,
@@ -58,18 +59,21 @@ def select_encoding(model: str, model_type: str):
     Args:
         model (str): The name of the model to override the encoding for.
     """
-    original_encoding_for_model = tiktoken.encoding_for_model
+    original_encoding_for_model = model_helper.encoding_for_model
+    original_tiktoken_encoding = tiktoken.encoding_for_model
 
-    def hugging_face_encoding(model):
+    def hugging_face_encoding(model, *args, **kwargs):
         return get_hf_encoding(model)
 
     if model_type == "hf":
+        model_helper.encoding_for_model = hugging_face_encoding
         tiktoken.encoding_for_model = hugging_face_encoding
 
     try:
         yield
     finally:
-        tiktoken.encoding_for_model = original_encoding_for_model
+        model_helper.encoding_for_model = original_encoding_for_model
+        tiktoken.encoding_for_model = original_tiktoken_encoding
 
 
 def build_past_messages(
