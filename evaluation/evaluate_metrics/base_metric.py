@@ -10,6 +10,11 @@ DEFAULT_PASSING_THRESHOLD = 4.0
 
 class BaseMetric(ABC):
     METRIC_NAME = "name_of_metric"
+    
+    # Constants for diagram generation
+    DISPLAY_TITLE = "Title of Metric Diagram"
+    SHORT_NAME = "Short Name"
+    Y_AXIS_LABEL = "Y Axis Label"
 
     @classmethod
     @abstractmethod
