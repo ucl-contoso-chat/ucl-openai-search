@@ -10,7 +10,7 @@ from promptflow.core import Prompty  # type: ignore
 from api_wrappers import LLMClient
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
-from templates.supported_models import SUPPORTED_MODELS
+from templates.supported_models import OPENAI_MODELS
 
 
 class RetrieveThenReadApproach(Approach):
@@ -46,9 +46,10 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         *,
         search_client: SearchClient,
         auth_helper: AuthenticationHelper,
-        llm_client: LLMClient,
+        llm_clients: dict[str, LLMClient],
         emb_client: LLMClient,
-        hf_model: Optional[str],  # Not needed for OpenAI
+        current_model: str,
+        available_models: dict[str, dict[str, str]],
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         embedding_model: str,
@@ -61,9 +62,10 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
     ):
         self.search_client = search_client
         self.chatgpt_deployment = chatgpt_deployment
-        self.llm_client = llm_client
+        self.llm_clients = llm_clients
         self.emb_client = emb_client
-        self.hf_model = hf_model
+        self.current_model = current_model
+        self.available_models = available_models
         self.auth_helper = auth_helper
         self.chatgpt_model = chatgpt_model
         self.embedding_model = embedding_model
@@ -96,8 +98,12 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
         filter = self.build_filter(overrides, auth_claims)
 
-        if overrides.get("hf_model") is not None and self.hf_model is not overrides.get("hf_model"):
-            self.hf_model = overrides.get("hf_model")
+        if overrides.get("set_model") is not None and self.current_model is not overrides.get("set_model"):
+            self.current_model = overrides.get("set_model")
+
+        print(self.current_model)
+        print(self.available_models)
+        current_api = self.llm_clients[self.available_models[self.current_model]["type"]]
 
         # If retrieval mode includes vectors, compute an embedding for the query
         vectors: list[VectorQuery] = []
@@ -121,13 +127,22 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         sources_content = self.get_sources_content(results, use_semantic_captions, use_image_citation=False)
 
         # Load the Prompty object
-        prompty_path = SUPPORTED_MODELS.get(self.hf_model if self.hf_model else self.chatgpt_model)
+        prompty_path = self.available_models.get(self.current_model)["path"]
+
         if prompty_path:
             ask_prompty = Prompty.load(source=prompty_path / "ask.prompty")
         else:
-            raise ValueError(
-                f"Model {self.hf_model if self.hf_model else self.chatgpt_model} is not supported. Please create a template for this model."
-            )
+            raise ValueError(f"Model {self.current_model} is not supported. Please create a template for this model.")
+
+        # If the parameters are overridden via the API request, use that value.
+        # Otherwise, use the default value from the model configuration.
+        ask_prompty._model.parameters.update(
+            {
+                param: overrides[param]
+                for param in current_api.allowed_chat_completion_params
+                if overrides.get(param) is not None
+            }
+        )
 
         updated_messages = ask_prompty.render(
             system_message=overrides.get("prompt_template", self.system_chat_template),
@@ -136,22 +151,12 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         )
         updated_messages = ast.literal_eval(updated_messages)
 
-        # If the parameters are overridden via the API request, use that value.
-        # Otherwise, use the default value from the model configuration.
-        ask_prompty._model.parameters.update(
-            {
-                param: overrides[param]
-                for param in self.llm_client.allowed_chat_completion_params
-                if overrides.get(param) is not None
-            }
-        )
-
-        chat_completion = await self.llm_client.chat_completion(
+        chat_completion = await current_api.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
             model=(
-                self.hf_model
-                if self.hf_model
-                else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
+                self.chatgpt_deployment
+                if self.chatgpt_deployment and self.current_model in OPENAI_MODELS
+                else self.current_model
             ),
             messages=updated_messages,
             **ask_prompty._model.parameters,
@@ -183,13 +188,9 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                     "Prompt to generate answer",
                     [str(message) for message in updated_messages],
                     (
-                        {"model": self.hf_model}
-                        if self.hf_model
-                        else (
-                            {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
-                            if self.chatgpt_deployment
-                            else {"model": self.chatgpt_model}
-                        )
+                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
+                        if self.chatgpt_deployment
+                        else {"model": self.current_model}
                     ),
                 ),
             ],

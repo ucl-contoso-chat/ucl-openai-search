@@ -23,7 +23,7 @@ export type ChatAppRequestOverrides = {
     exclude_category?: string;
     seed?: number;
     top?: number;
-    hf_model: string;
+    set_model: string;
     temperature?: number;
     minimum_search_score?: number;
     minimum_reranker_score?: number;
@@ -88,7 +88,7 @@ export type Config = {
     showSpeechInput: boolean;
     showSpeechOutputBrowser: boolean;
     showSpeechOutputAzure: boolean;
-    huggingfaceModel: string;
+    currentModel: string;
 };
 
 export type SimpleAPIResponse = {

@@ -35,7 +35,7 @@ export default defineConfig({
             "/upload": "http://localhost:50505",
             "/delete_uploaded": "http://localhost:50505",
             "/list_uploaded": "http://localhost:50505",
-            "/hf_models": "http://localhost:50505"
+            "/getmodels": "http://localhost:50505"
         }
     }
 });

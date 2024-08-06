@@ -30,7 +30,7 @@ import { ClearChatButton } from "../../components/ClearChatButton";
 import { UploadFile } from "../../components/UploadFile";
 import { useLogin, getToken, requireAccessControl } from "../../authConfig";
 import { VectorSettings } from "../../components/VectorSettings";
-import { ModelChoiceHF } from "../../components/ModelChoiceHF";
+import { ModelChoice } from "../../components/ModelChoice";
 import { useMsal } from "@azure/msal-react";
 import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { GPT4VSettings } from "../../components/GPT4VSettings";
@@ -44,8 +44,8 @@ const Chat = () => {
     const [seed, setSeed] = useState<number | null>(null);
     const [minimumRerankerScore, setMinimumRerankerScore] = useState<number>(0);
     const [minimumSearchScore, setMinimumSearchScore] = useState<number>(0);
-    const [huggingFaceModel, setHuggingFaceModel] = useState<string>("");
-    const [huggingFaceModelList, setHuggingFaceModelList] = useState<string[]>([]);
+    const [model, setModel] = useState<string>("");
+    const [modelsList, setModelsList] = useState<string[]>([]);
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
     const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>(RetrievalMode.Hybrid);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
@@ -95,13 +95,13 @@ const Chat = () => {
             setShowSpeechInput(config.showSpeechInput);
             setShowSpeechOutputBrowser(config.showSpeechOutputBrowser);
             setShowSpeechOutputAzure(config.showSpeechOutputAzure);
-            setHuggingFaceModel(config.huggingfaceModel);
+            setModel(config.currentModel);
         });
     };
 
     const getModelsList = async () => {
         const models = await getSupportedModels();
-        setHuggingFaceModelList(models);
+        setModelsList(models);
     };
 
     const handleAsyncRequest = async (question: string, answers: [string, ChatAppResponse][], responseBody: ReadableStream<any>) => {
@@ -185,7 +185,7 @@ const Chat = () => {
                         vector_fields: vectorFieldList,
                         use_gpt4v: useGPT4V,
                         gpt4v_input: gpt4vInput,
-                        hf_model: huggingFaceModel,
+                        set_model: model,
                         ...(seed !== null ? { seed: seed } : {})
                     }
                 },
@@ -651,13 +651,7 @@ const Chat = () => {
                         />
                     )}
 
-                    {huggingFaceModel && (
-                        <ModelChoiceHF
-                            defaultHFModel={huggingFaceModel}
-                            modelsList={huggingFaceModelList}
-                            updateCurrentModel={(huggingFaceModel: string) => setHuggingFaceModel(huggingFaceModel)}
-                        />
-                    )}
+                    <ModelChoice defaultModel={model} modelsList={modelsList} updateCurrentModel={(model: string) => setModel(model)} />
 
                     {showVectorOption && (
                         <VectorSettings

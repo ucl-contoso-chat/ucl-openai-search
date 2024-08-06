@@ -38,10 +38,11 @@ class RetrieveThenReadVisionApproach(Approach):
         *,
         search_client: SearchClient,
         blob_container_client: ContainerClient,
-        llm_client: LLMClient,
+        llm_clients: dict[str, LLMClient],
         emb_client: LLMClient,
         auth_helper: AuthenticationHelper,
-        hf_model: Optional[str],  # Not needed for OpenAI
+        current_model: str,
+        available_models: dict[str, dict[str, str]],
         gpt4v_deployment: Optional[str],
         gpt4v_model: str,
         embedding_deployment: Optional[str],  # Not needed for non-Azure OpenAI or for retrieval_mode="text"
@@ -56,10 +57,11 @@ class RetrieveThenReadVisionApproach(Approach):
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
-        self.llm_client = llm_client
+        self.llm_clients = llm_clients
         self.emb_client = emb_client
         self.auth_helper = auth_helper
-        self.hf_model = hf_model
+        self.current_model = current_model
+        self.available_models = available_models
         self.embedding_model = embedding_model
         self.embedding_deployment = embedding_deployment
         self.embedding_dimensions = embedding_dimensions

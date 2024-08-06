@@ -24,9 +24,10 @@ export async function configApi(): Promise<Config> {
 }
 
 export async function getSupportedModels(): Promise<string[]> {
-    const response = await fetch(`${BACKEND_URI}/hf_models`, {
+    const response = await fetch(`${BACKEND_URI}/getmodels`, {
         method: "GET"
     });
+    console.log(response);
 
     return await response.json();
 }

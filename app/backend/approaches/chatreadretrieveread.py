@@ -29,7 +29,7 @@ from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
 from core.messageshelper import build_past_messages
-from templates.supported_models import SUPPORTED_MODELS
+from templates.supported_models import OPENAI_MODELS
 
 
 class ChatReadRetrieveReadApproach(ChatApproach):
@@ -44,9 +44,10 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         *,
         search_client: SearchClient,
         auth_helper: AuthenticationHelper,
-        llm_client: LLMClient,
+        llm_clients: dict[str, LLMClient],
         emb_client: LLMClient,
-        hf_model: Optional[str],  # Not needed for OpenAI
+        current_model: str,
+        available_models: dict[str, dict[str, str]],
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         embedding_deployment: Optional[str],  # Not needed for non-Azure OpenAI or for retrieval_mode="text"
@@ -58,10 +59,11 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         query_speller: str,
     ):
         self.search_client = search_client
-        self.llm_client = llm_client
+        self.llm_clients = llm_clients
         self.emb_client = emb_client
         self.auth_helper = auth_helper
-        self.hf_model = hf_model
+        self.current_model = current_model
+        self.available_models = available_models
         self.chatgpt_model = chatgpt_model
         self.chatgpt_deployment = chatgpt_deployment
         self.embedding_deployment = embedding_deployment
@@ -130,10 +132,12 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
         filter = self.build_filter(overrides, auth_claims)
 
-        if overrides.get("hf_model") is not None and self.hf_model is not overrides.get("hf_model"):
-            self.hf_model = overrides.get("hf_model")
+        if overrides.get("set_model") is not None:
+            self.current_model = overrides.get("set_model")
 
-        current_model = self.hf_model if self.hf_model else self.chatgpt_model
+        print(self.current_model, flush=True)
+
+        current_api = self.llm_clients[self.available_models[self.current_model]["type"]]
 
         original_user_query = messages[-1]["content"]
 
@@ -141,19 +145,19 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             raise ValueError("The most recent message content must be a string.")
 
         # Load the Prompty objects for AI Search query and chat answer generation.
-        prompty_path = SUPPORTED_MODELS.get(current_model)
+        prompty_path = self.available_models.get(self.current_model)["path"]
         if prompty_path:
             chat_prompty = Prompty.load(source=prompty_path / "chat.prompty")
             query_prompty = Prompty.load(source=prompty_path / "query.prompty")
         else:
-            raise ValueError(f"Model {current_model} is not supported. Please create a template for this model.")
+            raise ValueError(f"Model {self.current_model} is not supported. Please create a template for this model.")
 
         # If the parameters are overridden via the API request, use that value.
         # Otherwise, use the default value from the model configuration.
         chat_prompty._model.parameters.update(
             {
                 param: overrides[param]
-                for param in self.llm_client.allowed_chat_completion_params
+                for param in current_api.allowed_chat_completion_params
                 if overrides.get(param) is not None
             }
         )
@@ -163,7 +167,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         ) - chat_prompty._model.parameters.get("max_tokens", 1024)
 
         past_messages = build_past_messages(
-            model=current_model,
+            model=self.current_model,
             model_type=query_prompty._model.configuration["type"],
             system_message=self.query_prompt_template,
             max_tokens=question_token_limit,
@@ -184,13 +188,13 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         # If the temperature is not set in the config, use default value equal to 0.0
         query_prompty._model.parameters.setdefault("temperature", 0.0)
         chat_completion: Union[ChatCompletion, ChatCompletionOutput, AsyncIterable[ChatCompletionStreamOutput]] = (
-            await self.llm_client.chat_completion(
+            await current_api.chat_completion(
                 messages=query_messages,  # type: ignore
                 # Azure OpenAI takes the deployment name as the model name
                 model=(
-                    self.hf_model
-                    if self.hf_model
-                    else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
+                    self.chatgpt_deployment
+                    if self.chatgpt_deployment and self.current_model in OPENAI_MODELS
+                    else self.current_model
                 ),
                 **query_prompty._model.parameters,
                 n=1,
@@ -244,8 +248,8 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     "Prompt to generate search query",
                     [str(message) for message in query_messages],
                     (
-                        {"model": self.hf_model}
-                        if self.hf_model
+                        {"model": self.current_model}
+                        if self.current_model
                         else (
                             {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
                             if self.chatgpt_deployment
@@ -273,8 +277,8 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                     "Prompt to generate answer",
                     [str(message) for message in chat_messages],
                     (
-                        {"model": self.hf_model}
-                        if self.hf_model
+                        {"model": self.current_model}
+                        if self.current_model
                         else (
                             {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
                             if self.chatgpt_deployment
@@ -285,12 +289,12 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             ],
         }
 
-        chat_coroutine = self.llm_client.chat_completion(
+        chat_coroutine = current_api.chat_completion(
             # Azure OpenAI takes the deployment name as the model name
             model=(
-                self.hf_model
-                if self.hf_model
-                else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
+                self.chatgpt_deployment
+                if self.chatgpt_deployment and self.current_model in OPENAI_MODELS
+                else self.current_model
             ),
             messages=chat_messages,
             **chat_prompty._model.parameters,

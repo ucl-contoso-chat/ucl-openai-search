@@ -35,10 +35,11 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         *,
         search_client: SearchClient,
         blob_container_client: ContainerClient,
-        llm_client: LLMClient,
+        llm_clients: dict[str, LLMClient],
         emb_client: LLMClient,
         auth_helper: AuthenticationHelper,
-        hf_model: Optional[str],  # Not needed for OpenAI
+        current_model: str,
+        available_models: dict[str, dict[str, str]],
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         gpt4v_deployment: Optional[str],  # Not needed for non-Azure OpenAI
@@ -55,10 +56,11 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
     ):
         self.search_client = search_client
         self.blob_container_client = blob_container_client
-        self.llm_client = llm_client
+        self.llm_clients = llm_clients
         self.emb_client = emb_client
         self.auth_helper = auth_helper
-        self.hf_model = hf_model
+        self.current_model = current_model
+        self.available_models = available_models
         self.chatgpt_model = chatgpt_model
         self.chatgpt_deployment = chatgpt_deployment
         self.gpt4v_deployment = gpt4v_deployment
