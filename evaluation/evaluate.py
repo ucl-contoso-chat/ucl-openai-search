@@ -200,23 +200,23 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     else:
         logger.error("Evaluation was terminated early due to an error ⬆")
 
+
 def dump_summary(rated_questions: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
     """Save the summary to a file."""
-    
+
     summary = {}
     rated_questions_df = pd.DataFrame(rated_questions)
-    
+
     for metric in requested_metrics:
         metric_result = metric.get_aggregate_stats(rated_questions_df, passing_rate)
         summary[metric.METRIC_NAME] = metric_result
-    
+
     with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summary, indent=4))
     logger.info("Evaluation results saved in %s", results_dir)
 
-def plot_diagrams(
-    questions_with_ratings: list, requested_metrics: list, passing_rate: int, results_dir: Path
-):
+
+def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing_rate: int, results_dir: Path):
     """Summarize the evaluation results and plot them."""
     df = pd.DataFrame(questions_with_ratings)
     rating_stat_data = {
@@ -236,7 +236,7 @@ def plot_diagrams(
         data = df[metric_name].dropna()
 
         metric_result = metric.get_aggregate_stats(df, passing_rate)
-        if issubclass(metric, BuiltinRatingMetric): # If it's a GPT Rating metric
+        if issubclass(metric, BuiltinRatingMetric):  # If it's a GPT Rating metric
             requested_gpt_metrics[metric_name] = metric
             if len(data) > 0:
                 gpt_metric_data_points[short_name] = data.tolist()
@@ -259,21 +259,15 @@ def plot_diagrams(
         "pass_rate": "Percentage",
         "mean_rating": "Rating Score",
     }
-    
-    stats_y_lim = {
-        "pass_count": len(questions_with_ratings),
-        "pass_rate": 1.0,
-        "mean_rating": 5.0
-    }
+
+    stats_y_lim = {"pass_count": len(questions_with_ratings), "pass_rate": 1.0, "mean_rating": 5.0}
 
     # Draw the chart for the results
     data = [data for _, data in rating_stat_data.items()]
     titles = [display_stats_name[mn] for mn in rating_stat_data.keys()]
     y_labels = [stats_y_labels[mn] for mn in rating_stat_data.keys()]
     y_lims = [stats_y_lim[mn] for mn in rating_stat_data.keys()]
-    layout = (int(np.ceil(len(rating_stat_data) / 3)),
-              3 if len(rating_stat_data) > 3 else len(rating_stat_data))
-        
+    layout = (int(np.ceil(len(rating_stat_data) / 3)), 3 if len(rating_stat_data) > 3 else len(rating_stat_data))
 
     plot_bar_charts(
         layout,
@@ -296,13 +290,17 @@ def plot_diagrams(
 
     data = [data for _, data in gpt_metric_data_points.items()]
     labels = list(gpt_metric_data_points.keys())
-    plot_single_box_chart(data, "GPT Ratings", labels, "Rating Score", [0.0, 5.0], results_dir / "evaluation_gpt_boxplot.png")
+    plot_single_box_chart(
+        data, "GPT Ratings", labels, "Rating Score", [0.0, 5.0], results_dir / "evaluation_gpt_boxplot.png"
+    )
 
     data = [data for _, data in stat_metric_data_points.items()]
     titles = list(stat_metric_data_points.keys())
     y_labels = [metric.Y_AXIS_LABEL for _, metric in requested_stat_metrics.items()]
-    layout = (int(np.ceil(len(stat_metric_data_points) / 3)),
-              3 if len(stat_metric_data_points) > 3 else len(stat_metric_data_points))
+    layout = (
+        int(np.ceil(len(stat_metric_data_points) / 3)),
+        3 if len(stat_metric_data_points) > 3 else len(stat_metric_data_points),
+    )
 
     plot_multiple_box_charts(
         layout,

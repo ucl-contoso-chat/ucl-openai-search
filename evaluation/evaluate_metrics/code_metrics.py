@@ -36,7 +36,7 @@ class AnswerLengthMetric(BaseMetric):
 
 class HasCitationMetric(BaseMetric):
     METRIC_NAME = "has_citation"
-    
+
     DISPLAY_TITLE = "Has Citation"
     SHORT_NAME = "Has Citation"
 
@@ -61,7 +61,7 @@ class HasCitationMetric(BaseMetric):
 
 class CitationMatchMetric(BaseMetric):
     METRIC_NAME = "citation_match"
-    
+
     DISPLAY_TITLE = "Citation Match"
     SHORT_NAME = "Citation Match"
 
@@ -90,7 +90,7 @@ class CitationMatchMetric(BaseMetric):
 
 class LatencyMetric(BaseMetric):
     METRIC_NAME = "latency"
-    
+
     DISPLAY_TITLE = "Response Latency (seconds)"
     SHORT_NAME = "Latency"
     Y_AXIS_LABEL = "Latency in Seconds"

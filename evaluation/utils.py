@@ -20,4 +20,3 @@ def save_jsonl(data: list[dict], path: Path):
     with open(path, "w", encoding="utf-8") as f:
         for item in data:
             f.write(json.dumps(item) + "\n")
-

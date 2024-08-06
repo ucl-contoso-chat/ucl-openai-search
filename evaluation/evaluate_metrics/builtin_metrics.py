@@ -18,7 +18,7 @@ class BuiltinRatingMetric(BaseMetric):
 
 class BuiltinRelevanceMetric(BuiltinRatingMetric):
     METRIC_NAME = "gpt_relevance"
-    
+
     DISPLAY_TITLE = "GPT Relevance Rating"
     SHORT_NAME = "Relevance"
     Y_AXIS_LABEL = "Rating Score (1-5)"
@@ -54,7 +54,7 @@ class BuiltinGroundednessMetric(BuiltinRatingMetric):
 
 class BuiltinSimilarityMetric(BuiltinRatingMetric):
     METRIC_NAME = "gpt_similarity"
-    
+
     DISPLAY_TITLE = "GPT Similarity Rating"
     SHORT_NAME = "Similarity"
     Y_AXIS_LABEL = "Rating Score (1-5)"
@@ -66,7 +66,7 @@ class BuiltinSimilarityMetric(BuiltinRatingMetric):
 
 class BuiltinFluencyMetric(BuiltinRatingMetric):
     METRIC_NAME = "gpt_fluency"
-    
+
     DISPLAY_TITLE = "GPT Fluency Rating"
     SHORT_NAME = "Fluency"
     Y_AXIS_LABEL = "Rating Score (1-5)"
@@ -78,7 +78,7 @@ class BuiltinFluencyMetric(BuiltinRatingMetric):
 
 class BuiltinF1ScoreMetric(BaseMetric):
     METRIC_NAME = "f1_score"
-    
+
     DISPLAY_TITLE = "F1 Score"
     SHORT_NAME = "F1 Score"
     Y_AXIS_LABEL = "F1 Score"

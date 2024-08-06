@@ -31,7 +31,7 @@ def plot_bar_charts(
 
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
-    
+
     if axs is not np.ndarray:
         axs = np.array([axs])
 
@@ -63,10 +63,10 @@ def plot_multiple_box_charts(
     """Plot box charts for the provided data."""
     if layout[0] * layout[1] != len(data):
         raise ValueError("Number of data points must match the layout")
-    
+
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
-    
+
     if axs is not np.ndarray:
         axs = np.array([axs])
 
