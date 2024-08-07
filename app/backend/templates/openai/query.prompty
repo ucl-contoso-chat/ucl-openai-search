@@ -26,7 +26,7 @@ sample:
   past_messages: [{"role": "user", "content": "What is the weather today"}, {"role": "assistant", "content": "It is sunny today"}]
 
 ---
-user:
+system:
 {{ system_message }}
 
 

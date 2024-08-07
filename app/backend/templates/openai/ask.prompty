@@ -21,7 +21,7 @@ sample:
   question: What is included in my Northwind Health Plus plan that is not in standard?
   sources: ["source1.txt: This is data from source1\nsource2.txt:This is data from source 2"]
 ---
-user:
+system:
 {{ system_message }}
 
 Sources:
