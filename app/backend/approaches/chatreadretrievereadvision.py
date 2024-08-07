@@ -21,6 +21,7 @@ from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
 from core.imageshelper import fetch_image
+from templates.supported_models import ModelConfig
 
 
 class ChatReadRetrieveReadVisionApproach(ChatApproach):
@@ -39,7 +40,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         emb_client: LLMClient,
         auth_helper: AuthenticationHelper,
         current_model: str,
-        available_models: dict[str, dict[str, str]],
+        available_models: dict[str, ModelConfig],
         chatgpt_model: str,
         chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         gpt4v_deployment: Optional[str],  # Not needed for non-Azure OpenAI
@@ -131,6 +132,8 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
             raise ValueError("The most recent message content must be a string.")
         past_messages: list[ChatCompletionMessageParam] = messages[:-1]
 
+        current_api = self.llm_clients[self.available_models[self.current_model].type]
+
         # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
         user_query_request = "Generate search query for: " + original_user_query
 
@@ -146,9 +149,9 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
             max_tokens=self.chatgpt_token_limit - query_response_token_limit,
         )
 
-        chat_completion: Union[ChatCompletion, ChatCompletionOutput] = await self.llm_client.chat_completion(
+        chat_completion: Union[ChatCompletion, ChatCompletionOutput] = await current_api.chat_completion(
             model=query_deployment if query_deployment else query_model,
-            messages=self.llm_client.format_message(query_messages),
+            messages=query_messages,
             temperature=0.0,  # Minimize creativity for search query generation
             max_tokens=query_response_token_limit,
             n=1,
@@ -259,9 +262,9 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
             ],
         }
 
-        chat_coroutine = self.llm_client.chat_completion(
+        chat_coroutine = current_api.chat_completion(
             model=self.gpt4v_deployment if self.gpt4v_deployment else self.gpt4v_model,
-            messages=self.llm_client.format_message(messages),
+            messages=messages,
             temperature=overrides.get("temperature", 0.3),
             max_tokens=response_token_limit,
             n=1,

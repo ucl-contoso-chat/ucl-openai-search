@@ -2,7 +2,7 @@ import logging
 import unicodedata
 from collections.abc import Iterable
 from contextlib import contextmanager
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import tiktoken
 from openai.types.chat import (
@@ -38,7 +38,7 @@ def normalize_content(content: Union[str, Iterable[ChatCompletionContentPartPara
         return content
 
 
-def get_hf_encoding(model: str) -> AutoTokenizer:
+def get_hf_encoding(model: Union[str, Any], *args) -> AutoTokenizer:
     """
     Get the Hugging Face tokenizer for a given model.
     Args:
@@ -53,7 +53,7 @@ def get_hf_encoding(model: str) -> AutoTokenizer:
 
 
 @contextmanager
-def select_encoding(model: str, model_type: str):
+def select_encoding(model_type: str):
     """
     Override the encoding for a given model and then restore it.
     Args:
@@ -62,8 +62,8 @@ def select_encoding(model: str, model_type: str):
     original_encoding_for_model = model_helper.encoding_for_model
     original_tiktoken_encoding = tiktoken.encoding_for_model
 
-    def hugging_face_encoding(model, *args, **kwargs):
-        return get_hf_encoding(model)
+    def hugging_face_encoding(model, *args):
+        return get_hf_encoding(model, *args)
 
     if model_type == "hf":
         model_helper.encoding_for_model = hugging_face_encoding
@@ -107,7 +107,7 @@ def build_past_messages(
     Returns:
         list[ChatCompletionMessageParam]: Past messages truncated to fit within the token limit.
     """
-    with select_encoding(model, model_type):
+    with select_encoding(model_type):
         total_token_count = count_tokens_for_system_and_tools(
             model,
             ChatCompletionSystemMessageParam(role="system", content=normalize_content(system_message)),

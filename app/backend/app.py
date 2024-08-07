@@ -92,10 +92,7 @@ from prepdocs import (
 )
 from prepdocslib.filestrategy import UploadUserFileStrategy
 from prepdocslib.listfilestrategy import File
-from templates.supported_models import (
-    HF_MODELS,
-    OPENAI_MODELS,
-)
+from templates.supported_models import get_supported_models
 
 bp = Blueprint("routes", __name__, static_folder="static")
 # Fix Windows registry issue with mimetypes
@@ -586,24 +583,18 @@ async def setup_clients():
     current_model: str
 
     # TODO: Add vision-ready models
-    available_models = {**HF_MODELS, OPENAI_CHATGPT_MODEL: OPENAI_MODELS[OPENAI_CHATGPT_MODEL]}
+    available_models = get_supported_models(OPENAI_CHATGPT_MODEL, AZURE_OPENAI_CHATGPT_DEPLOYMENT)
 
-    if DEFAULT_MODEL is None:
-        current_model = OPENAI_CHATGPT_MODEL
+    current_model = list(available_models.keys())[0] if DEFAULT_MODEL is None else DEFAULT_MODEL
 
     if DEFAULT_MODEL is not None and DEFAULT_MODEL not in available_models.keys():
         raise ValueError(f"DEFAULT_MODEL must be set to a supported model from {available_models.keys()}")
-
-    current_model = DEFAULT_MODEL
 
     if not HUGGINGFACE_API_KEY:
         raise ValueError("HUGGINGFACE_API_KEY must be set if you want to use full capabilities.")
     else:
         login(token=HUGGINGFACE_API_KEY)
-        if DEFAULT_MODEL in HF_MODELS.keys():
-            hf_client = HuggingFaceClient(token=HUGGINGFACE_API_KEY, model=DEFAULT_MODEL)
-        else:
-            hf_client = HuggingFaceClient(token=HUGGINGFACE_API_KEY)
+        hf_client = HuggingFaceClient(token=HUGGINGFACE_API_KEY)
 
     llm_clients: dict[str, LLMClient] = {"openai": openai_client, "hf": hf_client}
 
@@ -630,8 +621,6 @@ async def setup_clients():
         auth_helper=auth_helper,
         current_model=current_model,
         available_models=available_models,
-        chatgpt_model=OPENAI_CHATGPT_MODEL,
-        chatgpt_deployment=AZURE_OPENAI_CHATGPT_DEPLOYMENT,
         embedding_model=OPENAI_EMB_MODEL,
         embedding_deployment=AZURE_OPENAI_EMB_DEPLOYMENT,
         embedding_dimensions=OPENAI_EMB_DIMENSIONS,
@@ -647,8 +636,6 @@ async def setup_clients():
         auth_helper=auth_helper,
         current_model=current_model,
         available_models=available_models,
-        chatgpt_model=OPENAI_CHATGPT_MODEL,
-        chatgpt_deployment=AZURE_OPENAI_CHATGPT_DEPLOYMENT,
         embedding_model=OPENAI_EMB_MODEL,
         embedding_deployment=AZURE_OPENAI_EMB_DEPLOYMENT,
         embedding_dimensions=OPENAI_EMB_DIMENSIONS,
