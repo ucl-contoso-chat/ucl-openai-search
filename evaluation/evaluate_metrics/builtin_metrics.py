@@ -19,9 +19,9 @@ class BuiltinRatingMetric(BaseMetric):
 class BuiltinRelevanceMetric(BuiltinRatingMetric):
     METRIC_NAME = "gpt_relevance"
 
-    DISPLAY_TITLE = "GPT Relevance Rating"
+    DISPLAY_NAME = "GPT Relevance Rating"
     SHORT_NAME = "Relevance"
-    Y_AXIS_LABEL = "Rating Score (1-5)"
+    NOTE = "Rating Score (1-5)"
 
     @classmethod
     def evaluator_fn(cls, openai_config, **kwargs):
@@ -31,9 +31,9 @@ class BuiltinRelevanceMetric(BuiltinRatingMetric):
 class BuiltinCoherenceMetric(BuiltinRatingMetric):
     METRIC_NAME = "gpt_coherence"
 
-    DISPLAY_TITLE = "GPT Coherence Rating"
+    DISPLAY_NAME = "GPT Coherence Rating"
     SHORT_NAME = "Coherence"
-    Y_AXIS_LABEL = "Rating Score (1-5)"
+    NOTE = "Rating Score (1-5)"
 
     @classmethod
     def evaluator_fn(cls, openai_config, **kwargs):
@@ -43,9 +43,9 @@ class BuiltinCoherenceMetric(BuiltinRatingMetric):
 class BuiltinGroundednessMetric(BuiltinRatingMetric):
     METRIC_NAME = "gpt_groundedness"
 
-    DISPLAY_TITLE = "GPT Groundedness Rating"
+    DISPLAY_NAME = "GPT Groundedness Rating"
     SHORT_NAME = "Groundedness"
-    Y_AXIS_LABEL = "Rating Score (1-5)"
+    NOTE = "Rating Score (1-5)"
 
     @classmethod
     def evaluator_fn(cls, openai_config, **kwargs):
@@ -55,9 +55,9 @@ class BuiltinGroundednessMetric(BuiltinRatingMetric):
 class BuiltinSimilarityMetric(BuiltinRatingMetric):
     METRIC_NAME = "gpt_similarity"
 
-    DISPLAY_TITLE = "GPT Similarity Rating"
+    DISPLAY_NAME = "GPT Similarity Rating"
     SHORT_NAME = "Similarity"
-    Y_AXIS_LABEL = "Rating Score (1-5)"
+    NOTE = "Rating Score (1-5)"
 
     @classmethod
     def evaluator_fn(cls, openai_config, **kwargs):
@@ -67,9 +67,9 @@ class BuiltinSimilarityMetric(BuiltinRatingMetric):
 class BuiltinFluencyMetric(BuiltinRatingMetric):
     METRIC_NAME = "gpt_fluency"
 
-    DISPLAY_TITLE = "GPT Fluency Rating"
+    DISPLAY_NAME = "GPT Fluency Rating"
     SHORT_NAME = "Fluency"
-    Y_AXIS_LABEL = "Rating Score (1-5)"
+    NOTE = "Rating Score (1-5)"
 
     @classmethod
     def evaluator_fn(cls, openai_config, **kwargs):
@@ -79,9 +79,9 @@ class BuiltinFluencyMetric(BuiltinRatingMetric):
 class BuiltinF1ScoreMetric(BaseMetric):
     METRIC_NAME = "f1_score"
 
-    DISPLAY_TITLE = "F1 Score"
+    DISPLAY_NAME = "F1 Score"
     SHORT_NAME = "F1 Score"
-    Y_AXIS_LABEL = "F1 Score"
+    NOTE = "F1 Score"
 
     @classmethod
     def evaluator_fn(cls, **kwargs):

@@ -289,7 +289,7 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
 
     data = [data for _, data in stat_metric_data_points.items()]
     titles = list(stat_metric_data_points.keys())
-    y_labels = [metric.Y_AXIS_LABEL for _, metric in requested_stat_metrics.items()]
+    y_labels = [metric.NOTE for _, metric in requested_stat_metrics.items()]
     layout = (
         int(np.ceil(len(stat_metric_data_points) / 3)),
         3 if len(stat_metric_data_points) > 3 else len(stat_metric_data_points),
