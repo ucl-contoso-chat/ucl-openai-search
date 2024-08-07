@@ -147,30 +147,28 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
                     )
                     return False
 
-            requested_metrics = [
-                metrics_by_name[metric_name] for metric_name in requested_metrics if metric_name in metrics_by_name
-            ]
+        requested_metrics = [
+            metrics_by_name[metric_name] for metric_name in requested_metrics if metric_name in metrics_by_name
+        ]
 
-            questions_per_model_with_ratings = []
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {
-                    executor.submit(
-                        evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters
-                    ): row
-                    for row in testdata
-                }
-                for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
-                    row_result = future.result()
-                    questions_per_model_with_ratings.append(row_result)
+        questions_per_model_with_ratings = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters): row
+                for row in testdata
+            }
+            for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
+                row_result = future.result()
+                questions_per_model_with_ratings.append(row_result)
 
-            logger.info("Evaluation calls have completed. Calculating overall metrics now...")
-            results_dir.mkdir(parents=True, exist_ok=True)
+        logger.info("Evaluation calls have completed. Calculating overall metrics now...")
+        results_dir.mkdir(parents=True, exist_ok=True)
 
-            with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
-                for row in questions_per_model_with_ratings:
-                    results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+        with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
+            for row in questions_per_model_with_ratings:
+                results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-            questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
+        questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
         dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
         plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
 
