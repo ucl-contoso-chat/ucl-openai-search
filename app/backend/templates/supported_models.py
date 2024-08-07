@@ -72,6 +72,15 @@ def get_supported_models(model_name: str, deployment_name: Optional[str] = None)
 def check_if_openai_model(
     model: Dict[str, ModelConfig], deployment_type: str, model_name: str
 ) -> Optional[ModelConfig]:
+    """This function checks the dictionary of OpenAI models and returns the model for a given deployment
+    type if it matches the required model name.
+    Args:
+        model (Dict[str, ModelConfig]): The dictionary of OpenAI models, both for deployment types 'azure' and 'openai'.
+        deployment_type (str): The deployment type of the model ['azure', 'openai'].
+        model_name (str): The name of the model to check.
+    Returns:
+        Optional[ModelConfig]: The model if it matches the required model name, else None
+    """
     received_model = model[deployment_type]
     if received_model.model_name == model_name:
         return received_model
