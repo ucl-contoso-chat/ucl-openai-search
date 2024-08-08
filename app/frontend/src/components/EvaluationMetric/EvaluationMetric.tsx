@@ -8,9 +8,13 @@ interface Props {
 
 export const EvaluationMetric = ({ metric, checked, onClick }: Props) => {
     return (
-        <div title={metric.name} className={checked ? styles.metricContainerSelected : styles.metricContainer} onClick={() => onClick(metric.name, checked)}>
+        <div
+            title={metric.name}
+            className={(checked ? styles.metricContainerSelected : styles.metricContainer) + " " + styles.hideScrollbar}
+            onClick={() => onClick(metric.name, checked)}
+        >
             <div className={styles.metricTitle}>{metric.display_name}</div>
-            <div className={styles.metricDescription}>{metric.description}</div>
+            <div className={styles.metricDescription + " " + styles.hideScrollbar}>{metric.description}</div>
         </div>
     );
 };

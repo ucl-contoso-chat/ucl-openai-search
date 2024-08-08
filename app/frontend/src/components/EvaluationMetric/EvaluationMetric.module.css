@@ -41,6 +41,15 @@
     font-size: 0.875rem;
 }
 
+.hideScrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.hideScrollbar::-webkit-scrollbar {
+    display: none;
+}
+
 @media (min-width: 992px) {
     .evaluationMetricContainer {
         display: grid;
