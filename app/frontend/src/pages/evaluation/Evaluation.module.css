@@ -1,0 +1,76 @@
+.evaluationContainer {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    margin-top: 1rem;
+}
+
+.evaluationTopSection {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+}
+
+.evaluationTitle {
+    font-size: 2.75rem;
+    font-weight: 600;
+    margin-top: 0;
+}
+
+.evaluationInstruction {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.625rem;
+}
+
+.evaluationCollapseList {
+    width: 100%;
+    margin-top: 1rem;
+    max-width: 50rem;
+}
+
+.evaluationCollapseItem {
+    margin-bottom: 2rem;
+}
+
+.evaluationCollapseTitle {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-top: 0;
+}
+
+.evaluationText {
+    margin: 0;
+    font-size: 1rem;
+    width: 25rem;
+    min-height: 4.5rem;
+    align-self: left;
+}
+
+.submitButton {
+    margin-top: 1.25rem;
+}
+
+.errorContainer {
+    max-width: 50rem;
+    margin: 0.5rem;
+    padding: 1rem;
+}
+
+.evaluationFooter {
+    margin-top: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 992px) {
+    .evaluationContainer {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .evaluationTitle {
+        font-size: 4rem;
+        margin-top: 4rem;
+    }
+}
