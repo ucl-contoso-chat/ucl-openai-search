@@ -155,4 +155,6 @@ static/
 
 data/**/*.md5
 
+evaluation/report
+
 .DS_Store
