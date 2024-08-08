@@ -3,7 +3,7 @@
 
     <template pageSize="a4" leftMargin="20mm" rightMargin="20mm" topMargin="20mm" bottomMargin="10mm" showBoundary="0">
         <pageTemplate id="main">
-            <frame id="first" x1="36" y1="36" width="500" height="740"/>
+            <frame id="first" x1="36" y1="36" width="500" height="800"/>
         </pageTemplate>
     </template>
 
@@ -35,7 +35,7 @@
             paragraphs.
         </para> -->
         <h2>GPT Rating Data Summary</h2>
-        <blockTable rowHeights="1.25cm,1.25cm,1.25cm,1.25cm" colWidths="4cm,4cm,4cm,4cm" >
+        <blockTable rowHeights="0.75cm,0.75cm,0.75cm,0.75cm" colWidths="4cm,4cm,4cm,4cm" >
             <tr>
                 <td>
                     <para></para>
@@ -141,13 +141,17 @@
 
     <h2>Diagrams</h2>
 
-    <illustration width="480" height="300">
-        <image file="{{diagrams.eval_results_path}}" preserveAspectRatio="1" x="60" y="0" width="360" height="270" />
+    <illustration width="600" height="300">
+        <image file="{{diagrams.eval_results_path}}" preserveAspectRatio="1" x="10" y="0" width="525" height="140" />
+        <image file="{{diagrams.stat_boxplot_path}}" preserveAspectRatio="1" x="10" y="150" width="525" height="140" />
     </illustration>
 
-    <illustration width="480" height="600">
-        <image file="{{diagrams.mean_score_path}}" preserveAspectRatio="1" x="60" y="300" width="360" height="270" />
-        <image file="{{diagrams.passing_rate_path}}" preserveAspectRatio="1" x="60" y="0" width="360" height="270" />
+    <illustration width="600" height="360">
+        <image file="{{diagrams.gpt_boxplot_path}}" preserveAspectRatio="1" x="30" y="80" width="480" height="360" />
+    </illustration>
+
+    <illustration width="480" height="300">
+        <image file="{{diagrams.eval_radar_path}}" preserveAspectRatio="1" x="30" y="0" width="480" height="360" />
     </illustration>
 
     <para spaceAfter="5.0cm"></para>

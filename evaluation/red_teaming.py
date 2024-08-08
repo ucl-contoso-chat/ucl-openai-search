@@ -6,8 +6,6 @@ import time
 from pathlib import Path
 
 import yaml
-from dotenv import load_dotenv
-from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import AttackStrategy
 from pyrit.orchestrator import RedTeamingOrchestrator
@@ -15,9 +13,6 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 RED_TEAMING_RESULTS_DIR = "red_teaming"
-
-default_values.load_default_env()
-load_dotenv()
 
 logger = logging.getLogger("evaluation")
 
@@ -49,9 +44,7 @@ async def run_red_teaming(
         scorer = SelfAskTrueFalseScorer(chat_target=red_teaming_llm, true_false_question_path=scorer_path)
         attack_strategy = AttackStrategy(
             strategy=text_generation_strategy_path,
-            conversation_objective=(
-                scorer_data["conversation_objective"] if "conversation_objective" in scorer_data else ""
-            ),
+            conversation_objective=scorer_data.get("conversation_objective", ""),
         )
 
         with RedTeamingOrchestrator(
@@ -97,7 +90,7 @@ def save_score(results: list, results_dir: Path):
 
     output = [
         {
-            "scorer_class_identifier": res.scorer_class_identifier["__type__"],
+            "scorer_class_identifier": res.scorer_class_identifier["__type__"] if res.scorer_class_identifier else "",
             "score_category": res.score_category,
             "score_value": res.score_value,
             "score_rationale": res.score_rationale,
@@ -106,4 +99,4 @@ def save_score(results: list, results_dir: Path):
     ]
 
     with open(output_path, "w") as f:
-        json.dump(output, f)
+        json.dump(output, f, indent=4)

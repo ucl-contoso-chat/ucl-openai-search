@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 
 import openai
 from azure.core.credentials import AzureKeyCredential
@@ -20,7 +19,6 @@ from pyrit.prompt_target import (
 )
 
 from evaluation.app_chat_target import AppChatTarget
-from evaluation.utils import load_config
 
 logger = logging.getLogger("evaluation")
 
@@ -30,13 +28,18 @@ def _log_env_vars():
     vars = [
         "OPENAI_HOST",
         "OPENAI_GPT_MODEL",
-        "AZURE_OPENAI_EVAL_DEPLOYMENT",
-        "AZURE_OPENAI_SERVICE",
-        "OPENAICOM_KEY",
-        "OPENAICOM_ORGANIZATION",
         "AZURE_SEARCH_SERVICE",
         "AZURE_SEARCH_INDEX",
+        "AZURE_SEARCH_KEY",
+        "BACKEND_URI",
         "AZURE_OPENAI_KEY",
+        "AZURE_OPENAI_SERVICE",
+        "AZURE_OPENAI_EVAL_DEPLOYMENT",
+        "AZURE_OPENAI_EVAL_ENDPOINT",
+        "OPENAICOM_KEY",
+        "OPENAICOM_ORGANIZATION",
+        "AZURE_ML_ENDPOINT",
+        "AZURE_ML_MANAGED_KEY",
         "TENANT_ID",
         "CLIENT_ID",
         "CLIENT_SECRET",
@@ -174,11 +177,10 @@ def get_openai_target() -> PromptChatTarget:
         return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])
 
 
-def get_app_target(config: Path) -> PromptChatTarget:
+def get_app_target(config: dict, target_url: str = None) -> PromptChatTarget:
     """Get specified application chat target."""
-    app_config = load_config(config)
-    target_parameters = app_config.get("target_parameters", {})
-    endpoint = os.environ["BACKEND_URI"].rstrip("/") + "/ask"
+    target_parameters = config.get("target_parameters", {})
+    endpoint = os.environ["BACKEND_URI"].rstrip("/") + "/ask" if target_url is None else target_url
     logger.info("Using Application Chat Target")
     return AppChatTarget(endpoint_uri=endpoint, target_parameters=target_parameters)
 

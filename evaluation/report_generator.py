@@ -6,6 +6,7 @@ from os import path
 import preppy
 
 from evaluation.jsondict import condJSONSafe
+from evaluation.utils import load_jsonl
 
 
 class RML2PDFEngine(enum.Enum):
@@ -36,15 +37,15 @@ def generate_eval_report(results_dir: str = "", output_path: str = ""):
         summary = json.load(eval_json_file)
         summary = condJSONSafe(summary)
 
-    with open(path.join(results_dir, "eval_results.jsonl")) as eval_json_file:
-        eval_results = json.load(eval_json_file)
-        eval_results = condJSONSafe(eval_results)
+    eval_results = load_jsonl(path.join(results_dir, "eval_results.jsonl"))
+    eval_results = condJSONSafe(eval_results)
 
     diagrams = condJSONSafe(
         {
-            "eval_results_path": path.join(results_dir, "eval.png"),
-            "mean_score_path": path.join(results_dir, "mean_score.png"),
-            "passing_rate_path": path.join(results_dir, "passing_rate.png"),
+            "eval_results_path": path.join(results_dir, "evaluation_results.png"),
+            "gpt_boxplot_path": path.join(results_dir, "evaluation_gpt_boxplot.png"),
+            "stat_boxplot_path": path.join(results_dir, "evaluation_stat_boxplot.png"),
+            "eval_radar_path": path.join(results_dir, "evaluation_gpt_radar.png"),
         }
     )
 

@@ -1,9 +1,11 @@
 azure-ai-generative[evaluate]==1.0.0b3
 azure-identity
 azure-search-documents
+httpx
 matplotlib
 numpy
 openai
+openai-messages-token-helper
 pandas
 promptflow-core
 promptflow-evals

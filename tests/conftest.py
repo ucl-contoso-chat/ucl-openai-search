@@ -54,12 +54,17 @@ def pytest_configure(config):
     # Although no tests directly depend on it, the module is mocked globally when running
     # on incompatible Python versions to prevent the evaluation suite from failing with import errors
     if not (3, 10) <= sys.version_info < (3, 12):
-        sys.modules["pyrit"] = mock.MagicMock()
-        sys.modules["pyrit.chat_message_normalizer"] = mock.MagicMock()
-        sys.modules["pyrit.prompt_target"] = mock.MagicMock()
-        sys.modules["pyrit.common"] = mock.MagicMock()
-        sys.modules["pyrit.memory"] = mock.MagicMock()
-        sys.modules["pyrit.models"] = mock.MagicMock()
+        modules_to_mock = [
+            "pyrit",
+            "pyrit.chat_message_normalizer",
+            "pyrit.common",
+            "pyrit.exceptions",
+            "pyrit.memory",
+            "pyrit.models",
+            "pyrit.prompt_target",
+        ]
+        for module in modules_to_mock:
+            sys.modules[module] = mock.MagicMock()
 
 
 async def mock_search(self, *args, **kwargs):

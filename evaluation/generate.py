@@ -1,9 +1,13 @@
-import json
 import logging
 from pathlib import Path
 
 from azure.ai.generative.synthetic.qa import QADataGenerator, QAType
 from azure.search.documents import SearchClient
+from openai_messages_token_helper import get_token_limit
+from promptflow.core import ModelConfiguration
+
+from evaluation import service_setup
+from evaluation.utils import load_jsonl, save_jsonl
 
 logger = logging.getLogger("evaluation")
 
@@ -43,7 +47,34 @@ def generate_test_qa_data(
             qa.append({"question": question, "truth": answer + citation})
 
     logger.info("Writing %d questions to '%s'", len(qa), output_file)
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_file, "w", encoding="utf-8") as f:
-        for item in qa:
-            f.write(json.dumps(item) + "\n")
+    save_jsonl(qa, output_file)
+
+
+def generate_test_qa_answer(
+    openai_config: ModelConfiguration,
+    question_path: Path,
+    output_file: Path,
+):
+    """Generate answers for test QA data to use for evaluation on Azure AI Studio."""
+    logger.info("Generating answers based on the quesion of %s", question_path)
+
+    openai_client = service_setup.get_openai_client(openai_config)
+
+    questions = load_jsonl(question_path)
+    for question in questions:
+        response = openai_client.chat.completions.create(
+            model=openai_config.model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"{question['question']}",
+                }
+            ],
+            n=1,
+            max_tokens=get_token_limit(openai_config.model),
+            temperature=0.3,
+        )
+        question["answer"] = response.choices[0].message.content.split("\n")[0]
+
+    logger.info("Writing %d questions with answer to %s", len(questions), output_file)
+    save_jsonl(questions, output_file)
