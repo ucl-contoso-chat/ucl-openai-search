@@ -583,7 +583,12 @@ async def setup_clients():
     current_model: str
 
     # TODO: Add vision-ready models
-    available_models = get_supported_models(OPENAI_CHATGPT_MODEL, AZURE_OPENAI_CHATGPT_DEPLOYMENT)
+    deployment_information = {
+        "type": "azure" if AZURE_OPENAI_CHATGPT_DEPLOYMENT else "openai",
+        "model_name": OPENAI_CHATGPT_MODEL,
+        "deployment_name": AZURE_OPENAI_CHATGPT_DEPLOYMENT,
+    }
+    available_models = get_supported_models(deployment_information)
 
     current_model = list(available_models.keys())[0] if DEFAULT_MODEL is None else DEFAULT_MODEL
 

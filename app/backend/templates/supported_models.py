@@ -42,46 +42,43 @@ MODEL_CONFIGS: Dict[str, Union[ModelConfig, dict[str, ModelConfig]]] = {
 }
 
 
-def get_supported_models(model_name: str, deployment_name: Optional[str] = None) -> dict[str, ModelConfig]:
-    """This function returns the supported models based on the used OpenAI model and the deployment type.
-    The deployment type is either "azure" or "openai", meaning that the model is either deployed on Azure or using OpenAI
-    API directly. This function then concatenates the all supported Hugging Face models and the available OpenAI model.
+def get_supported_models(openai_deployment: dict) -> dict[str, ModelConfig]:
+    """Get the supported Hugging Face and OpenAI models.
+
+    This function returns a dictionary of the supported models, including the Hugging Face ones
+    and the specified OpenAI deployment, in 2 steps:
+    1. Retrieve the supported Hugging Face models.
+    2. Retrieve the specified OpenAI model, by looking through the model configurations for the one
+       that matches the specified deployment type and model name.
+
+    The deployment type of the OpenAI model can be either "azure" or "openai", depending on whether
+    the model is deployed on Azure or openai.com.
+
     Args:
-        model_name (str): The name of the OpenAI model.
-        deployment_name (Optional[str]): The deployment name where the OpenAI is deployed.
+        openai_deployment (dict): A dictionary containing the deployment type ("azure"/"openai"),
+            model name, and deployment name.
     Returns:
-        List[str]: A list of supported models.
+        dict[str]: A dictionary of supported models.
     """
     supported_models = {}
+
+    # Retrieve Hugging Face models
     for key, model in MODEL_CONFIGS.items():
-        if not isinstance(model, dict) and model.type == "hf":
+        if isinstance(model, ModelConfig) and model.type == "hf":
             supported_models[key] = model
-            continue
 
-        if isinstance(model, dict):
-            deployment_type = "azure" if deployment_name else "openai"
-            openai_model = check_if_openai_model(model, deployment_type, model_name)
-
-            if openai_model:
-                openai_model.identifier = deployment_name if deployment_name else model_name
+    # Retrieve specified OpenAI model
+    deployment_type, model_name, deployment_name = (
+        openai_deployment["type"],
+        openai_deployment["model_name"],
+        openai_deployment["deployment_name"],
+    )
+    for key, model_config in MODEL_CONFIGS.items():
+        if isinstance(model_config, dict):
+            openai_model = model_config.get(deployment_type)
+            if openai_model and openai_model.model_name == model_name:
+                openai_model.identifier = deployment_name if deployment_type == "azure" else model_name
                 supported_models[key] = openai_model
+                break
 
     return supported_models
-
-
-def check_if_openai_model(
-    model: Dict[str, ModelConfig], deployment_type: str, model_name: str
-) -> Optional[ModelConfig]:
-    """This function checks the dictionary of OpenAI models and returns the model for a given deployment
-    type if it matches the required model name.
-    Args:
-        model (Dict[str, ModelConfig]): The dictionary of OpenAI models, both for deployment types 'azure' and 'openai'.
-        deployment_type (str): The deployment type of the model ['azure', 'openai'].
-        model_name (str): The name of the model to check.
-    Returns:
-        Optional[ModelConfig]: The model if it matches the required model name, else None
-    """
-    received_model = model[deployment_type]
-    if received_model.model_name == model_name:
-        return received_model
-    return None
