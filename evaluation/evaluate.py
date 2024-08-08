@@ -13,14 +13,14 @@ from promptflow.core import AzureOpenAIModelConfiguration
 from rich.progress import track
 
 from evaluation import service_setup
-from evaluation.diagram_gen import (
+from evaluation.evaluate_metrics import metrics_by_name
+from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
+from evaluation.plotting import (
     plot_bar_charts,
     plot_multiple_box_charts,
     plot_radar_chart,
     plot_single_box_chart,
 )
-from evaluation.evaluate_metrics import metrics_by_name
-from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
 from evaluation.utils import load_jsonl
 
 EVALUATION_RESULTS_DIR = "gpt_evaluation"

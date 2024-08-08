@@ -12,7 +12,7 @@ from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
-from evaluation.diagram_gen import plot_radar_chart
+from evaluation.plotting import plot_radar_chart
 
 RED_TEAMING_RESULTS_DIR = "red_teaming"
 
