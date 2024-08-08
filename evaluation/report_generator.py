@@ -5,6 +5,8 @@ from os import path
 
 import preppy
 
+from evaluation.evaluate_metrics import metrics_by_name
+from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
 from evaluation.jsondict import condJSONSafe
 from evaluation.utils import load_jsonl
 
@@ -35,10 +37,51 @@ def generate_eval_report(results_dir: str = "", output_path: str = ""):
 
     with open(path.join(results_dir, "summary.json")) as eval_json_file:
         summary = json.load(eval_json_file)
-        summary = condJSONSafe(summary)
+
+    gpt_summary = {}
+    stat_summary = {}
+    for key, value in summary.items():
+        if key in metrics_by_name:
+            metric = metrics_by_name[key]
+            value["title"] = metric.DISPLAY_NAME
+            value = condJSONSafe(value)
+            if issubclass(metric, BuiltinRatingMetric):
+                gpt_summary[key] = value
+            else:
+                stat_summary[key] = value
+
+    gpt_summary = condJSONSafe(gpt_summary)
+    stat_summary = condJSONSafe(stat_summary)
 
     eval_results = load_jsonl(path.join(results_dir, "eval_results.jsonl"))
-    eval_results = condJSONSafe(eval_results)
+    conversation_results = [{} for _ in range(len(eval_results))]
+
+    for i in range(len(eval_results)):
+        res = eval_results[i]
+        metric_values = []
+        for key, value in res.items():
+            if key in metrics_by_name:
+                metric_value = {}
+                metric = metrics_by_name[key]
+                metric_value["title"] = metric.DISPLAY_NAME
+
+                if issubclass(metric, BuiltinRatingMetric):
+                    metric_value["unit"] = " / 5.0"
+                elif key == "answer_length":
+                    metric_value["unit"] = "words"
+                elif key == "latency":
+                    metric_value["unit"] = "seconds"
+
+                if isinstance(value, float):
+                    value = round(value, 2)
+
+                metric_value["value"] = value
+                metric_values.append(condJSONSafe(metric_value))
+            else:
+                conversation_results[i][key] = value
+        conversation_results[i]["metrics"] = condJSONSafe(metric_values)
+
+    conversation_results = condJSONSafe(conversation_results)
 
     diagrams = condJSONSafe(
         {
@@ -61,7 +104,13 @@ def generate_eval_report(results_dir: str = "", output_path: str = ""):
                     contexts[label] = text
     contexts = condJSONSafe(contexts)
 
-    passin_data = dict(summary=summary, conversations=eval_results, diagrams=diagrams, contexts=contexts)
+    passin_data = dict(
+        gpt_summary=gpt_summary,
+        stat_summary=stat_summary,
+        conversations=conversation_results,
+        diagrams=diagrams,
+        contexts=contexts,
+    )
 
     rml = template.getOutput(passin_data, quoteFunc=preppy.stdQuote)
     rml = str(rml, encoding="utf-8")

@@ -81,7 +81,7 @@ class BuiltinF1ScoreMetric(BaseMetric):
 
     DISPLAY_NAME = "F1 Score"
     SHORT_NAME = "F1 Score"
-    NOTE = "F1 Score"
+    NOTE = ""
 
     @classmethod
     def evaluator_fn(cls, **kwargs):

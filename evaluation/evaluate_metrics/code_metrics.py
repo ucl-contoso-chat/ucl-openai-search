@@ -11,7 +11,7 @@ class AnswerLengthMetric(BaseMetric):
 
     DISPLAY_NAME = "Answer Length"
     SHORT_NAME = "Length"
-    NOTE = "Length by Word Count"
+    NOTE = "Word Count"
 
     @classmethod
     def evaluator_fn(cls, **kwargs):
@@ -91,9 +91,9 @@ class CitationMatchMetric(BaseMetric):
 class LatencyMetric(BaseMetric):
     METRIC_NAME = "latency"
 
-    DISPLAY_NAME = "Response Latency (seconds)"
+    DISPLAY_NAME = "Response Latency"
     SHORT_NAME = "Latency"
-    NOTE = "Latency in Seconds"
+    NOTE = "Seconds"
 
     @classmethod
     def evaluator_fn(cls, **kwargs):
