@@ -29,7 +29,6 @@ sample:
 system:
 {{ system_message }}
 
-
 {% if few_shots is defined and few_shots|length > 0 %}
 {% for shot in few_shots %}
 {{ shot.role }}:
