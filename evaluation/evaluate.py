@@ -125,7 +125,9 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
             "latency",
         ],
     )
-    compared_models = config.get("compared_models", ["openai_gpt"])
+    compared_models = config.get("compared_models")
+    print(compared_models)
+    print(1)
     target_url = os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url
 
     try:
@@ -138,37 +140,41 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
         logger.info("Starting evaluation...")
 
         questions_with_ratings_dict = {}
+        requested_metrics_list = requested_metrics
         for model in compared_models:
             target_parameters["overrides"]["set_model"] = model
-            for metric in requested_metrics:
+            for metric in requested_metrics_list:
+                print(metric)
                 if metric not in metrics_by_name:
                     logger.error(
                         f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}"
                     )
                     return False
 
-        requested_metrics = [
-            metrics_by_name[metric_name] for metric_name in requested_metrics if metric_name in metrics_by_name
-        ]
+            requested_metrics = [
+                metrics_by_name[metric_name] for metric_name in requested_metrics_list if metric_name in metrics_by_name
+            ]
 
-        questions_per_model_with_ratings = []
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
-                executor.submit(evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters): row
-                for row in testdata
-            }
-            for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
-                row_result = future.result()
-                questions_per_model_with_ratings.append(row_result)
+            questions_per_model_with_ratings = []
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(
+                        evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters
+                    ): row
+                    for row in testdata
+                }
+                for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
+                    row_result = future.result()
+                    questions_per_model_with_ratings.append(row_result)
 
-        logger.info("Evaluation calls have completed. Calculating overall metrics now...")
-        results_dir.mkdir(parents=True, exist_ok=True)
+            logger.info("Evaluation calls have completed. Calculating overall metrics now...")
+            results_dir.mkdir(parents=True, exist_ok=True)
 
-        with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
-            for row in questions_per_model_with_ratings:
-                results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+            with open(results_dir / "eval_results.jsonl", "a", encoding="utf-8") as results_file:
+                for row in questions_per_model_with_ratings:
+                    results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-        questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
+            questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
         dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
         plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
 
@@ -197,11 +203,13 @@ def dump_summary(rated_questions_for_models: dict, requested_metrics: list, pass
     for key in rated_questions_for_models:
         rated_questions = rated_questions_for_models[key]
         summary = {}
+        summary["model_name"] = key
         rated_questions_df = pd.DataFrame(rated_questions)
-
+        results_per_model = {}
         for metric in requested_metrics:
             metric_result = metric.get_aggregate_stats(rated_questions_df, passing_rate)
-            summary[metric.METRIC_NAME] = metric_result
+            results_per_model[metric.METRIC_NAME] = metric_result
+        summary["model_result"] = results_per_model
 
         with open(results_dir / "summary.json", "a", encoding="utf-8") as summary_file:
             summary_file.write(json.dumps(summary, indent=4))
@@ -211,36 +219,49 @@ def dump_summary(rated_questions_for_models: dict, requested_metrics: list, pass
 
 def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, passing_rate: int, results_dir: Path):
     """Summarize the evaluation results and plot them."""
-    df = pd.DataFrame(questions_with_ratings_dict)
-    rating_stat_data = {
+    # df = pd.DataFrame(questions_with_ratings_dict)
+    rating_stat_data_per_model = {
         "pass_count": {},
         "pass_rate": {},
         "mean_rating": {},
     }
-    stat_metric_data = {"latency": {}, "f1_score": {}, "answer_length": {}}
+    stat_metric_data_per_model = {"latency": {}, "f1_score": {}, "answer_length": {}}
+    rating_stat_data = {}
+    stat_metric_data = {}
+    for key in questions_with_ratings_dict:
+        rating_stat_data[key] = rating_stat_data_per_model
+        stat_metric_data[key] = stat_metric_data_per_model
     requested_gpt_metrics, requested_stat_metrics = {}, {}
     gpt_metric_data_points, stat_metric_data_points = {}, {}
 
     width = 0.4  # the width of the bars
 
-    for metric in requested_metrics:
-        metric_name = metric.METRIC_NAME
-        short_name = metric.SHORT_NAME
-        data = df[metric_name].dropna()
+    for model, metrics_list in questions_with_ratings_dict.items():
+        data_per_model = []
+        for metrics in metrics_list:
+            data_per_model.append(metrics)
+            df = pd.DataFrame(data_per_model)
+            data_dict_gpt = {}
+            data_dict_stat = {}
+            for metric in requested_metrics:
+                metric_name = metric.METRIC_NAME
+                short_name = metric.SHORT_NAME
+                data = df[metric_name].dropna()
 
-        metric_result = metric.get_aggregate_stats(df, passing_rate)
-        if issubclass(metric, BuiltinRatingMetric):  # If it's a GPT Rating metric
-            requested_gpt_metrics[metric_name] = metric
-            if len(data) > 0:
-                gpt_metric_data_points[short_name] = data.tolist()
-            for stat, value in metric_result.items():
-                rating_stat_data[stat][short_name] = value
-        else:
-            requested_stat_metrics[metric_name] = metric
-            if len(data) > 0:
-                stat_metric_data_points[short_name] = data.tolist()
-            stat_metric_data[short_name] = metric_result
-
+                metric_result = metric.get_aggregate_stats(df, passing_rate)
+                if issubclass(metric, BuiltinRatingMetric):  # If it's a GPT Rating metric
+                    requested_gpt_metrics[metric_name] = metric
+                    if len(data) > 0:
+                        data_dict_gpt[short_name] = data.tolist()
+                    for stat, value in metric_result.items():
+                        rating_stat_data[model][stat][short_name] = value
+                else:
+                    requested_stat_metrics[metric_name] = metric
+                    if len(data) > 0:
+                        data_dict_stat[short_name] = data.tolist()
+                    stat_metric_data[model][short_name] = metric_result
+            gpt_metric_data_points[model] = data_dict_gpt
+            stat_metric_data_points[model] = data_dict_stat
     display_stats_name = {
         "pass_count": "Pass Count",
         "pass_rate": "Pass Rate",
@@ -253,14 +274,23 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         "mean_rating": "Rating Score",
     }
 
-    stats_y_lim = {"pass_count": len(questions_with_ratings_dict), "pass_rate": 1.0, "mean_rating": 5.0}
-
+    stats_y_lim = {
+        "pass_count": len(questions_with_ratings_dict[next(iter(questions_with_ratings_dict))]),
+        "pass_rate": 1.0,
+        "mean_rating": 5.0,
+    }
     # Draw the chart for the results
-    data = [data for _, data in rating_stat_data.items()]
-    titles = [display_stats_name[mn] for mn in rating_stat_data.keys()]
-    y_labels = [stats_y_labels[mn] for mn in rating_stat_data.keys()]
-    y_lims = [stats_y_lim[mn] for mn in rating_stat_data.keys()]
-    layout = (int(np.ceil(len(rating_stat_data) / 3)), 3 if len(rating_stat_data) > 3 else len(rating_stat_data))
+    data = {}
+    for key in questions_with_ratings_dict:
+        data_per_model = [data for _, data in rating_stat_data[key].items()]
+        data[key] = data_per_model
+        titles = [display_stats_name[mn] for mn in rating_stat_data[key].keys()]
+        y_labels = [stats_y_labels[mn] for mn in rating_stat_data[key].keys()]
+        y_lims = [stats_y_lim[mn] for mn in rating_stat_data[key].keys()]
+        layout = (
+            int(np.ceil(len(rating_stat_data[key]) / 3)),
+            3 if len(rating_stat_data[key]) > 3 else len(rating_stat_data[key]),
+        )
 
     plot_bar_charts(
         layout,
@@ -272,7 +302,19 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         results_dir / "evaluation_results.png",
     )
 
-    gpt_metric_avg_ratings = [val for _, val in rating_stat_data["mean_rating"].items()]
+    gpt_metric_avg_ratings = {}
+    data_for_single_box = {}
+    data_for_multi_box = {}
+    for key in questions_with_ratings_dict:
+        gpt_metric_avg_ratings[key] = [val for _, val in rating_stat_data[key]["mean_rating"].items()]
+        data_for_single_box[key] = [data for _, data in gpt_metric_data_points[key].items()]
+        data_for_multi_box[key] = [data for _, data in stat_metric_data_points[key].items()]
+        label_for_single_box = list(gpt_metric_data_points[key].keys())
+        titles_for_multi_box = list(stat_metric_data_points[key].keys())
+        layout = (
+            int(np.ceil(len(stat_metric_data_points[key]) / 3)),
+            3 if len(stat_metric_data_points[key]) > 3 else len(stat_metric_data_points[key]),
+        )
     gpt_metric_short_names = [m.SHORT_NAME for _, m in requested_gpt_metrics.items()]
     plot_radar_chart(
         gpt_metric_short_names,
@@ -280,25 +322,23 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         "GPT Rating Metrics Results",
         results_dir / "evaluation_gpt_radar.png",
     )
-
-    data = [data for _, data in gpt_metric_data_points.items()]
-    labels = list(gpt_metric_data_points.keys())
+    print("label_for_single_box:")
+    print(label_for_single_box)
     plot_single_box_chart(
-        data, "GPT Ratings", labels, "Rating Score", [0.0, 5.0], results_dir / "evaluation_gpt_boxplot.png"
+        data_for_single_box,
+        "GPT Ratings",
+        label_for_single_box,
+        "Rating Score",
+        [0.0, 5.0],
+        results_dir / "evaluation_gpt_boxplot.png",
     )
 
-    data = [data for _, data in stat_metric_data_points.items()]
-    titles = list(stat_metric_data_points.keys())
     y_labels = [metric.NOTE for _, metric in requested_stat_metrics.items()]
-    layout = (
-        int(np.ceil(len(stat_metric_data_points) / 3)),
-        3 if len(stat_metric_data_points) > 3 else len(stat_metric_data_points),
-    )
 
     plot_multiple_box_charts(
         layout,
-        data,
-        titles,
+        data_for_multi_box,
+        titles_for_multi_box,
         y_labels,
         results_dir / "evaluation_stat_boxplot.png",
     )

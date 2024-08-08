@@ -14,7 +14,7 @@ from matplotlib.transforms import Affine2D
 
 def plot_bar_charts(
     layout: Tuple[int, int],
-    data: List[Dict[str, any]],
+    data: Dict[str, List[Dict[str, any]]],
     titles: List[str],
     y_labels: List[str],
     y_max_lim: List[float] = None,
@@ -36,42 +36,64 @@ def plot_bar_charts(
         axs = np.array([axs])
 
     for i, ax in enumerate(axs.flat):
-        x_data = list(data[i].keys())
-        y_data = list(data[i].values())
-        name = titles[i]
-        colors = plt.cm.tab20.colors[: len(x_data)]
+        ax = axs.flat[i]
+        category_labels = []
+        y_data = []
+        for key, categories in data.items():
+            category_labels.append(key)
+            all_x_data = set()
+            for category in categories:
+                all_x_data.update(category.keys())
+            all_x_data = sorted(list(all_x_data))
+            x_base = list(range(len(all_x_data)))
+            bar_width = 0.25
+            offsets = [-bar_width, 0, bar_width]
+            category_positions = [[x + offset for x in x_base] for offset in offsets]
+            bar_width = width / len(categories)
+            y_data_per_model = list(categories[i].values())
+            y_data.append(y_data_per_model)
 
-        ax.bar(x_data, y_data, width=width, label=name, color=colors)
-        ax.set_title(name, pad=20)
+        colors = plt.cm.tab20.colors
+        for pos_list, height, color, label in zip(category_positions, y_data, colors, category_labels):
+            bars = ax.bar(pos_list, height, width=bar_width, color=color, label=label)
+            for bar in bars:
+                yval = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 2), ha="center", va="bottom", fontsize=8)
+
         if y_max_lim is not None and len(y_max_lim) > i and y_max_lim[i] is not None:
-            ax.set_ylim(0, max(y_max_lim[i], max(y_data)))
+            ax.set_ylim(0, y_max_lim[i])
         else:
             ax.set_ylim(0, np.ceil(max(y_data)) * 1.2)
 
+        ax.set_title(titles[i], pad=20)
         ax.set_ylabel(y_labels[i])
-
-        for j, v in enumerate(y_data):
-            ax.text(j, v * 1.02, str(round(v, 2)), ha="center")
+        ax.set_xticks(x_base)
+        ax.set_xticklabels(all_x_data)
+        ax.legend()
 
     plt.savefig(output_path)
     plt.close(fig)
 
 
 def plot_multiple_box_charts(
-    layout: Tuple[int, int], data: List[List[float]], titles: List[str], y_labels: List[str], output_path: Path
+    layout: Tuple[int, int],
+    data: Dict[str, List[List[float]]],
+    titles: List[str],
+    y_labels: List[str],
+    output_path: Path,
 ):
     """Plot box charts for the provided data."""
     if layout[0] * layout[1] != len(data):
-        raise ValueError("Number of data points must match the layout")
+        raise ValueError("Number of plots must match the layout")
 
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
 
-    if axs is not np.ndarray:
+    if not isinstance(axs, np.ndarray):
         axs = np.array([axs])
 
-    for i, ax in enumerate(axs.flat):
-        ax.boxplot(data[i])
+    for i, (ax, (key, values)) in enumerate(zip(axs.flat, data.items())):
+        ax.boxplot(values)
         ax.set_title(titles[i])
         ax.set_ylabel(y_labels[i])
 
@@ -80,7 +102,7 @@ def plot_multiple_box_charts(
 
 
 def plot_single_box_chart(
-    data: List[float],
+    data: Dict[str, List[List[float]]],
     title: str,
     x_labels: List[str],
     y_label: str,
@@ -88,27 +110,61 @@ def plot_single_box_chart(
     output_path: Path = Path("boxplot.png"),
 ):
     """Plot a box chart for the provided data."""
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.boxplot(data, patch_artist=True, tick_labels=x_labels)
-    fig.tight_layout(pad=3.0)
-    ax.set_title(title)
-    ax.set_ylabel(y_label)
-    if y_lim is not None:
-        ax.set_ylim(y_lim[0], y_lim[1])
+    print("data:")
+    print(data)
+
+    plt.figure(figsize=(10, 6))
+
+    positions = range(1, len(x_labels) + 1)
+
+    offset = 0.2
+    box_positions = []
+
+    for i, (key, values) in enumerate(data.items()):
+        current_positions = [p + i * offset - (offset * (len(data) - 1) / 2) for p in positions]
+        box_positions.append(current_positions)
+
+        plt.boxplot(
+            values,
+            positions=current_positions,
+            widths=0.15,
+            patch_artist=True,
+            boxprops=dict(facecolor=f"C{i}"),
+            medianprops=dict(color="red"),
+            whiskerprops=dict(color=f"C{i}"),
+            capprops=dict(color=f"C{i}"),
+            flierprops=dict(marker="o", color=f"C{i}", alpha=0.5),
+        )
+
+    plt.title(title)
+    plt.ylabel(y_label)
+    plt.xticks(positions, x_labels)
+
+    if y_lim:
+        plt.ylim(y_lim)
+
+    plt.legend(data.keys(), loc="upper right")
+
     plt.savefig(output_path)
-    plt.close(fig)
+    plt.close()
 
 
-def plot_radar_chart(metric_label_list: List[str], data: List, title: str, output_path: Path):
+def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title: str, output_path: Path):
     theta = radar_factory(num_vars=len(metric_label_list))
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection="radar"))
     fig.subplots_adjust(wspace=0.5, hspace=0.20, top=0.85, bottom=0.05)
 
-    color = "c"  # Cyan
+    colors = ["b", "r", "g", "m", "c", "y"]
 
     ax.set_title(title, weight="bold", size="large", horizontalalignment="center", verticalalignment="center", pad=20)
-    ax.plot(theta, data, color=color)
-    ax.fill(theta, data, facecolor=color, alpha=0.25, label="_nolegend_")
+    # ax.plot(theta, data, color=color)
+    # ax.fill(theta, data, facecolor=color, alpha=0.25, label="_nolegend_")
+
+    for idx, (label, data) in enumerate(data.items()):
+        color = colors[idx % len(colors)]
+        ax.plot(theta, data, color=color, label=label)
+        ax.fill(theta, data, facecolor=color, alpha=0.25)
+
     ax.tick_params(pad=15)
     ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
     ax.set_varlabels(metric_label_list)

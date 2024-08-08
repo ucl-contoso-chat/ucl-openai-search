@@ -48,7 +48,7 @@ def evaluate(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Path to the configuration JSON file.",
+        help="Path to the configuration JSON file. The name of the model to be evaluated should be specified in the JSON file.",
         default=DEFAULT_CONFIG_PATH,
     ),
     numquestions: Optional[int] = typer.Option(
@@ -71,7 +71,7 @@ def compare(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Path to the configuration JSON file.",
+        help="Path to the configuration JSON file.The name of the model to be compared should be specified in the JSON file.",
         default=DEFAULT_CONFIG_PATH,
     ),
     numquestions: Optional[int] = typer.Option(
