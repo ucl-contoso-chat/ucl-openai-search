@@ -285,6 +285,7 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
         gpt_metric_short_names,
         gpt_metric_avg_ratings,
         "GPT Rating Metrics Results",
+        5,
         results_dir / "evaluation_gpt_radar.png",
     )
 
