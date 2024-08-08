@@ -60,6 +60,15 @@ const Layout = () => {
                                     Ask a question
                                 </NavLink>
                             </li>
+                            <li>
+                                <NavLink
+                                    to="/evaluate"
+                                    className={({ isActive }) => (isActive ? styles.headerNavPageLinkActive : styles.headerNavPageLink)}
+                                    onClick={() => setMenuOpen(false)}
+                                >
+                                    Evaluate
+                                </NavLink>
+                            </li>
                         </ul>
                     </nav>
                     <div className={styles.loginMenuContainer}>

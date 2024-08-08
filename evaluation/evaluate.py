@@ -1,7 +1,9 @@
 import concurrent.futures
 import json
 import logging
+import math
 import os
+import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -200,6 +202,58 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     else:
         logger.error("Evaluation was terminated early due to an error ⬆")
 
+def run_evaluation_by_request(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
+    """Run evaluation using the provided configuration file."""
+    timestamp = int(time.time())
+    results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    openai_config = service_setup.get_openai_config()
+    testdata_path = working_dir / config["testdata_path"]
+
+    evaluation_run_complete = run_evaluation(
+        openai_config=openai_config,
+        testdata_path=testdata_path,
+        results_dir=results_dir,
+        target_url=os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url,
+        target_parameters=config.get("target_parameters", {}),
+        passing_rate=config.get("passing_rate", 3),
+        max_workers=config.get("max_workers", 4),
+        num_questions=num_questions,
+        requested_metrics=config.get(
+            "requested_metrics",
+            [
+                "gpt_groundedness",
+                "gpt_relevance",
+                "gpt_coherence",
+                "answer_length",
+                "latency",
+            ],
+        ),
+    )
+
+    if evaluation_run_complete:
+        results_config_path = results_dir / "config.json"
+        logger.info("Saving original config file back to %s", results_config_path)
+
+        # Replace relative paths with absolute paths in the original config
+        config["testdata_path"] = str(testdata_path)
+        config["results_dir"] = str(results_dir)
+
+        # Add extra params to original config
+        config["target_url"] = target_url
+        config["evaluation_gpt_model"] = openai_config.model
+
+        with open(results_config_path, "w", encoding="utf-8") as output_config:
+            output_config.write(json.dumps(config, indent=4))
+
+        result_file_name = shutil.make_archive(results_dir, "zip", results_dir)
+        shutil.rmtree(results_dir)
+        return working_dir / result_file_name
+    else:
+        shutil.rmtree(results_dir)
+        logger.error("Evaluation was terminated early due to an error ⬆")
+        return "Evaluation was terminated early"
 
 def dump_summary(rated_questions: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
     """Save evaluation summary to a file."""
