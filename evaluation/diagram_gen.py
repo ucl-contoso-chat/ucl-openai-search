@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -12,6 +13,22 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 
 
+def save_figures(fig, output_path: Path, format="pdf"):
+    """Save the current figure to the provided output path."""
+
+    if not isinstance(output_path, Path):
+        output_path = Path(output_path)
+
+    if not output_path.parent.exists():
+        os.mkdir(output_path.parent)
+
+    if output_path.suffix != f".{format}":
+        output_path = output_path.with_suffix(f".{format}")
+
+    plt.savefig(output_path, bbox_inches="tight", format=format)
+    plt.close()
+
+
 def plot_bar_charts(
     layout: Tuple[int, int],
     data: List[Dict[str, any]],
@@ -19,7 +36,7 @@ def plot_bar_charts(
     y_labels: List[str],
     y_max_lim: List[float] = None,
     width=0.4,
-    output_path: Path = Path("evaluation_results.png"),
+    output_path: Path = Path("evaluation_results.pdf"),
 ):
     """Plot bar charts for the provided data."""
     if layout[0] * layout[1] != len(data):
@@ -53,8 +70,7 @@ def plot_bar_charts(
         for j, v in enumerate(y_data):
             ax.text(j, v * 1.02, str(round(v, 2)), ha="center")
 
-    plt.savefig(output_path)
-    plt.close(fig)
+    save_figures(fig, output_path)
 
 
 def plot_multiple_box_charts(
@@ -75,8 +91,7 @@ def plot_multiple_box_charts(
         ax.set_title(titles[i])
         ax.set_ylabel(y_labels[i])
 
-    plt.savefig(output_path)
-    plt.close(fig)
+    save_figures(fig, output_path)
 
 
 def plot_single_box_chart(
@@ -95,8 +110,7 @@ def plot_single_box_chart(
     ax.set_ylabel(y_label)
     if y_lim is not None:
         ax.set_ylim(y_lim[0], y_lim[1])
-    plt.savefig(output_path)
-    plt.close(fig)
+    save_figures(fig, output_path)
 
 
 def plot_radar_chart(metric_label_list: List[str], data: List, title: str, output_path: Path):
@@ -113,8 +127,7 @@ def plot_radar_chart(metric_label_list: List[str], data: List, title: str, outpu
     ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
     ax.set_varlabels(metric_label_list)
 
-    plt.savefig(output_path)
-    plt.close(fig)
+    save_figures(fig, output_path)
 
 
 def radar_factory(num_vars):
