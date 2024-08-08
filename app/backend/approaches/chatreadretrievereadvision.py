@@ -41,8 +41,6 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         auth_helper: AuthenticationHelper,
         current_model: str,
         available_models: dict[str, ModelConfig],
-        chatgpt_model: str,
-        chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         gpt4v_deployment: Optional[str],  # Not needed for non-Azure OpenAI
         gpt4v_model: str,
         embedding_deployment: Optional[str],  # Not needed for non-Azure OpenAI or for retrieval_mode="text"
@@ -62,8 +60,6 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         self.auth_helper = auth_helper
         self.current_model = current_model
         self.available_models = available_models
-        self.chatgpt_model = chatgpt_model
-        self.chatgpt_deployment = chatgpt_deployment
         self.gpt4v_deployment = gpt4v_deployment
         self.gpt4v_model = gpt4v_model
         self.embedding_deployment = embedding_deployment
