@@ -5,7 +5,6 @@ from typing import Dict, List, Tuple
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
 from matplotlib.patches import RegularPolygon
 from matplotlib.path import Path as MatPath
 from matplotlib.projections import register_projection
@@ -14,7 +13,7 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 
 
-def save_figures(fig: Figure, output_path: Path, format: str = "pdf"):
+def save_figures(output_path: Path, format: str = "pdf"):
     """Save the current figure to the provided output path."""
 
     if not isinstance(output_path, Path):
@@ -24,7 +23,6 @@ def save_figures(fig: Figure, output_path: Path, format: str = "pdf"):
         os.mkdir(output_path.parent)
 
     plt.savefig(output_path, bbox_inches="tight", format=format)
-    plt.close(fig)
 
 
 def plot_bar_charts(
@@ -68,7 +66,8 @@ def plot_bar_charts(
         for j, v in enumerate(y_data):
             ax.text(j, v * 1.02, str(round(v, 2)), ha="center")
 
-    save_figures(fig, output_path)
+    save_figures(output_path)
+    plt.close(fig)
 
 
 def plot_multiple_box_charts(
@@ -89,7 +88,8 @@ def plot_multiple_box_charts(
         ax.set_title(titles[i])
         ax.set_ylabel(y_labels[i])
 
-    save_figures(fig, output_path)
+    save_figures(output_path)
+    plt.close(fig)
 
 
 def plot_single_box_chart(
@@ -108,7 +108,8 @@ def plot_single_box_chart(
     ax.set_ylabel(y_label)
     if y_lim is not None:
         ax.set_ylim(y_lim[0], y_lim[1])
-    save_figures(fig, output_path)
+    save_figures(output_path)
+    plt.close(fig)
 
 
 def plot_radar_chart(metric_label_list: List[str], data: List, title: str, _range: int, output_path: Path):
@@ -125,7 +126,8 @@ def plot_radar_chart(metric_label_list: List[str], data: List, title: str, _rang
     ax.set_rgrids(range(_range + 1), angle=10)
     ax.set_varlabels(metric_label_list)
 
-    save_figures(fig, output_path)
+    save_figures(output_path)
+    plt.close(fig)
 
 
 def radar_factory(num_vars):
