@@ -61,7 +61,7 @@ def plot_bar_charts(
                 ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 1), ha="center", va="bottom", fontsize=8)
 
         if y_max_lim is not None and len(y_max_lim) > i and y_max_lim[i] is not None:
-            ax.set_ylim(0, y_max_lim[i])
+            ax.set_ylim(0, y_max_lim[i] * 1.3)
         else:
             ax.set_ylim(0, np.ceil(max(y_data)) * 1.2)
 
