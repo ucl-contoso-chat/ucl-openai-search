@@ -6,15 +6,20 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
-from promptflow.core import AzureOpenAIModelConfiguration
 from rich.progress import track
 
 from evaluation import service_setup
+from evaluation.diagram_gen import (
+    plot_bar_charts,
+    plot_multiple_box_charts,
+    plot_radar_chart,
+    plot_single_box_chart,
+)
 from evaluation.evaluate_metrics import metrics_by_name
+from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
 from evaluation.utils import load_jsonl
 
 EVALUATION_RESULTS_DIR = "gpt_evaluation"
@@ -77,9 +82,11 @@ def evaluate_row(
     target_parameters: dict = {},
 ) -> dict:
     """Evaluate a single row of test data."""
+    model_name = target_parameters["overrides"]["set_model"]
     output = {}
     output["question"] = row["question"]
     output["truth"] = row["truth"]
+    output["model_name"] = model_name
     target_response = send_question_to_target(
         question=row["question"],
         url=target_url,
@@ -97,53 +104,20 @@ def evaluate_row(
     return output
 
 
-def run_evaluation(
-    openai_config: AzureOpenAIModelConfiguration,
-    testdata_path: Path,
-    results_dir: Path,
-    target_url: str,
-    passing_rate: int,
-    max_workers: int,
-    target_parameters: dict,
-    requested_metrics: list,
-    num_questions: int = None,
-):
-    """Run evaluation on the provided test data."""
-    logger.info("Running evaluation using data from %s", testdata_path)
-    testdata = load_jsonl(testdata_path)
-    if num_questions:
-        logger.info("Limiting evaluation to %s questions", num_questions)
-        testdata = testdata[:num_questions]
+def get_models(target_url: str) -> list:
+    """send request to /getmodels to determine whether the chosen model names are valid"""
+    try:
+        r = requests.get(target_url)
+        r.encoding = "utf-8"
+        r.raise_for_status()
 
-    logger.info("Starting evaluation...")
-    for metric in requested_metrics:
-        if metric not in metrics_by_name:
-            logger.error(f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}")
-            return False
-
-    requested_metrics = [
-        metrics_by_name[metric_name] for metric_name in requested_metrics if metric_name in metrics_by_name
-    ]
-
-    questions_with_ratings = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {
-            executor.submit(evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters): row
-            for row in testdata
-        }
-        for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
-            row_result = future.result()
-            questions_with_ratings.append(row_result)
-
-    logger.info("Evaluation calls have completed. Calculating overall metrics now...")
-    results_dir.mkdir(parents=True, exist_ok=True)
-
-    with open(results_dir / "eval_results.jsonl", "w", encoding="utf-8") as results_file:
-        for row in questions_with_ratings:
-            results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-    summarize_results_and_plot(questions_with_ratings, requested_metrics, results_dir, passing_rate)
-    return True
+        try:
+            response_list = r.json()
+        except json.JSONDecodeError:
+            raise ValueError(f"Response is not valid JSON:\n\n{r.text} \n")
+    except Exception as e:
+        raise e
+    return response_list
 
 
 def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
@@ -154,29 +128,76 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
 
     openai_config = service_setup.get_openai_config()
     testdata_path = working_dir / config["testdata_path"]
-
-    evaluation_run_complete = run_evaluation(
-        openai_config=openai_config,
-        testdata_path=testdata_path,
-        results_dir=results_dir,
-        target_url=os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url,
-        target_parameters=config.get("target_parameters", {}),
-        passing_rate=config.get("passing_rate", 3),
-        max_workers=config.get("max_workers", 4),
-        num_questions=num_questions,
-        requested_metrics=config.get(
-            "requested_metrics",
-            [
-                "gpt_groundedness",
-                "gpt_relevance",
-                "gpt_coherence",
-                "answer_length",
-                "latency",
-            ],
-        ),
+    max_workers = config.get("max_workers", 4)
+    passing_rate = config.get("passing_rate", 3)
+    target_parameters = config.get("target_parameters", {})
+    requested_metrics = config.get(
+        "requested_metrics",
+        [
+            "gpt_groundedness",
+            "gpt_relevance",
+            "gpt_coherence",
+            "answer_length",
+            "latency",
+        ],
     )
+    get_model_url = os.environ.get("BACKEND_URI") + "/getmodels" if target_url is None else target_url
+    compared_models = config.get("compared_models")
+    all_models = get_models(get_model_url)
+    for elem in compared_models:
+        if elem not in all_models:
+            logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
+        return False
 
-    if evaluation_run_complete:
+    target_url = os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url
+
+    try:
+        logger.info("Running evaluation using data from %s", testdata_path)
+        testdata = load_jsonl(testdata_path)
+        if num_questions:
+            logger.info("Limiting evaluation to %s questions", num_questions)
+            testdata = testdata[:num_questions]
+
+        logger.info("Starting evaluation...")
+
+        questions_with_ratings_dict = {}
+        requested_metrics_list = requested_metrics
+        for model in compared_models:
+            target_parameters["overrides"]["set_model"] = model
+            for metric in requested_metrics_list:
+                if metric not in metrics_by_name:
+                    logger.error(
+                        f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}"
+                    )
+                    return False
+
+            requested_metrics = [
+                metrics_by_name[metric_name] for metric_name in requested_metrics_list if metric_name in metrics_by_name
+            ]
+
+            questions_per_model_with_ratings = []
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(
+                        evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters
+                    ): row
+                    for row in testdata
+                }
+                for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
+                    row_result = future.result()
+                    questions_per_model_with_ratings.append(row_result)
+
+            logger.info("Evaluation calls have completed. Calculating overall metrics now...")
+            results_dir.mkdir(parents=True, exist_ok=True)
+
+            with open(results_dir / "eval_results.jsonl", "a", encoding="utf-8") as results_file:
+                for row in questions_per_model_with_ratings:
+                    results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+            questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
+        dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
+        plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
+
         results_config_path = results_dir / "config.json"
         logger.info("Saving original config file back to %s", results_config_path)
 
@@ -187,88 +208,148 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
         # Add extra params to original config
         config["target_url"] = target_url
         config["evaluation_gpt_model"] = openai_config.model
+        config["models"] = compared_models
 
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
-    else:
+    except Exception as e:
         logger.error("Evaluation was terminated early due to an error ⬆")
+        raise e
 
 
-def summarize_results_and_plot(
-    questions_with_ratings: list, requested_metrics: list, results_dir: Path, passing_rate: int
-):
-    """Summarize the evaluation results and plot them."""
-    df = pd.DataFrame(questions_with_ratings)
-    summary = {}
-    metric_list, metric_name = [], []
-    pass_rate, mean_rate = [], []
-    min_list, mean_list, max_list = [], [], []
-    for metric in requested_metrics:
-        metric_result = metric.get_aggregate_stats(df, passing_rate)
-        summary[metric.METRIC_NAME] = metric_result
-        if (
-            metric.METRIC_NAME == "gpt_groundedness"
-            or metric.METRIC_NAME == "gpt_relevance"
-            or metric.METRIC_NAME == "gpt_coherence"
-            or metric.METRIC_NAME == "gpt_similarity"
-            or metric.METRIC_NAME == "gpt_fluency"
-        ):
-            metric_list.append(metric.METRIC_NAME)
-            pass_rate.append(metric_result.get("pass_rate"))
-            mean_rate.append(metric_result.get("mean_rating"))
-        if metric.METRIC_NAME == "latency" or metric.METRIC_NAME == "f1_score" or metric.METRIC_NAME == "answer_length":
-            metric_name.append(metric.METRIC_NAME)
-            max = metric_result.get("max")
-            min = metric_result.get("min")
-            mean = metric_result.get("mean")
-            max_list.append(max)
-            min_list.append(min)
-            mean_list.append(mean)
+def dump_summary(rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
+    """Save the summary to a file."""
 
-    # Summary statistics
-    with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
-        summary_file.write(json.dumps(summary, indent=4))
+    for key in rated_questions_for_models:
+        rated_questions = rated_questions_for_models[key]
+        summary = {}
+        summary["model_name"] = key
+        rated_questions_df = pd.DataFrame(rated_questions)
+        results_per_model = {}
+        for metric in requested_metrics:
+            metric_result = metric.get_aggregate_stats(rated_questions_df, passing_rate)
+            results_per_model[metric.METRIC_NAME] = metric_result
+        summary["model_result"] = results_per_model
+
+        with open(results_dir / "summary.json", "a", encoding="utf-8") as summary_file:
+            summary_file.write(json.dumps(summary, indent=4))
+            summary_file.write("\n")
     logger.info("Evaluation results saved in %s", results_dir)
 
-    # Draw the chart for the results
-    fig, ax1 = plt.subplots()
-    ax1.bar(metric_list, pass_rate)
 
-    ax1.set_ylabel("passing rate")
-    ax1.set_title("Passing rate of evaluation metrics")
-    plt.savefig(results_dir / "passing_rate.png")
-    plt.close(fig)
+def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, passing_rate: int, results_dir: Path):
+    """Summarize the evaluation results and plot them."""
+    rating_stat_data = {}
+    stat_metric_data = {}
+    for key in questions_with_ratings_dict:
+        rating_stat_data[key] = {"pass_count": {}, "pass_rate": {}, "mean_rating": {}}
+        stat_metric_data[key] = {"latency": {}, "f1_score": {}, "answer_length": {}}
+    requested_gpt_metrics, requested_stat_metrics = {}, {}
+    gpt_metric_data_points, stat_metric_data_points = {}, {}
 
-    fig, ax2 = plt.subplots()
-    ax2.bar(metric_list, mean_rate)
+    width = 0.4  # the width of the bars
 
-    ax2.set_ylabel("mean score")
-    ax2.set_title("Mean score of evaluation metrics")
-    plt.savefig(results_dir / "mean_score.png")
-    plt.close(fig)
+    for model, metrics_list in questions_with_ratings_dict.items():
+        data_per_model = []
+        for metrics in metrics_list:
+            data_per_model.append(metrics)
+            df = pd.DataFrame(data_per_model)
+            data_dict_gpt = {}
+            data_dict_stat = {}
+            for metric in requested_metrics:
+                metric_name = metric.METRIC_NAME
+                short_name = metric.SHORT_NAME
+                data = df[metric_name].dropna()
 
-    means = {
-        "Max": tuple(max_list),
-        "Min": tuple(min_list),
-        "Mean": tuple(mean_list),
+                metric_result = metric.get_aggregate_stats(df, passing_rate)
+                if issubclass(metric, BuiltinRatingMetric):  # If it's a GPT Rating metric
+                    requested_gpt_metrics[metric_name] = metric
+                    if len(data) > 0:
+                        data_dict_gpt[short_name] = data.tolist()
+                    for stat, value in metric_result.items():
+                        rating_stat_data[model][stat][short_name] = value
+                else:
+                    requested_stat_metrics[metric_name] = metric
+                    if len(data) > 0:
+                        data_dict_stat[short_name] = data.tolist()
+                    stat_metric_data[model][short_name] = metric_result
+            gpt_metric_data_points[model] = data_dict_gpt
+            stat_metric_data_points[model] = data_dict_stat
+    display_stats_name = {
+        "pass_count": "Pass Count",
+        "pass_rate": "Pass Rate",
+        "mean_rating": "Average Rating",
     }
 
-    x = np.arange(len(metric_name))  # the label locations
-    width = 0.25  # the width of the bars
-    multiplier = 0
-    fig, ax3 = plt.subplots(layout="constrained")
+    stats_y_labels = {
+        "pass_count": "Number of Questions",
+        "pass_rate": "Percentage",
+        "mean_rating": "Rating Score",
+    }
 
-    for attribute, measurement in means.items():
-        offset = width * multiplier
-        rects = ax3.bar(x + offset, measurement, width, label=attribute)
-        ax3.bar_label(rects, padding=3)
-        multiplier += 1
+    stats_y_lim = {
+        "pass_count": len(questions_with_ratings_dict[next(iter(questions_with_ratings_dict))]),
+        "pass_rate": 1.0,
+        "mean_rating": 5.0,
+    }
+    # Draw the chart for the results
+    data = {}
+    for key in questions_with_ratings_dict:
+        data_per_model = [data for _, data in rating_stat_data[key].items()]
+        data[key] = data_per_model
+        titles = [display_stats_name[mn] for mn in rating_stat_data[key].keys()]
+        y_labels = [stats_y_labels[mn] for mn in rating_stat_data[key].keys()]
+        y_lims = [stats_y_lim[mn] for mn in rating_stat_data[key].keys()]
+        layout = (
+            int(np.ceil(len(rating_stat_data[key]) / 3)),
+            3 if len(rating_stat_data[key]) > 3 else len(rating_stat_data[key]),
+        )
 
-    # Add some text for labels, title and custom x-axis tick labels, etc.
-    ax3.set_title("Evaluation results")
-    ax3.set_xticks(x + width, tuple(metric_name))
-    ax3.legend(loc="upper left", ncols=3)
-    ax3.set_ylim(0, 250)
+    plot_bar_charts(
+        layout,
+        data,
+        titles,
+        y_labels,
+        y_lims,
+        width,
+        results_dir / "evaluation_results.png",
+    )
 
-    plt.savefig(results_dir / "eval.png")
-    plt.close(fig)
+    gpt_metric_avg_ratings = {}
+    data_for_single_box = {}
+    data_for_multi_box = {}
+    for key in questions_with_ratings_dict:
+        gpt_metric_avg_ratings[key] = [val for _, val in rating_stat_data[key]["mean_rating"].items()]
+        data_for_single_box[key] = [data for _, data in gpt_metric_data_points[key].items()]
+        data_for_multi_box[key] = [data for _, data in stat_metric_data_points[key].items()]
+        label_for_single_box = list(gpt_metric_data_points[key].keys())
+        titles_for_multi_box = list(stat_metric_data_points[key].keys())
+        layout = (
+            int(np.ceil(len(stat_metric_data_points[key]) / 3)),
+            3 if len(stat_metric_data_points[key]) > 3 else len(stat_metric_data_points[key]),
+        )
+    gpt_metric_short_names = [m.SHORT_NAME for _, m in requested_gpt_metrics.items()]
+    plot_radar_chart(
+        gpt_metric_short_names,
+        gpt_metric_avg_ratings,
+        "GPT Rating Metrics Results",
+        results_dir / "evaluation_gpt_radar.png",
+    )
+    plot_single_box_chart(
+        data_for_single_box,
+        "GPT Ratings",
+        label_for_single_box,
+        "Rating Score",
+        [0.0, 5.0],
+        results_dir / "evaluation_gpt_boxplot.png",
+    )
+
+    y_labels = [metric.NOTE for _, metric in requested_stat_metrics.items()]
+
+    plot_multiple_box_charts(
+        layout,
+        data_for_multi_box,
+        titles_for_multi_box,
+        y_labels,
+        results_dir / "evaluation_stat_boxplot.png",
+    )
