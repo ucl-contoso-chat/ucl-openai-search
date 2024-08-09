@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.patches import RegularPolygon
 from matplotlib.path import Path as MatPath
 from matplotlib.projections import register_projection
@@ -13,7 +14,7 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 
 
-def save_figures(fig, output_path: Path, format="pdf"):
+def save_figures(fig: Figure, output_path: Path, format: str = "pdf"):
     """Save the current figure to the provided output path."""
 
     if not isinstance(output_path, Path):
@@ -22,11 +23,8 @@ def save_figures(fig, output_path: Path, format="pdf"):
     if not output_path.parent.exists():
         os.mkdir(output_path.parent)
 
-    if output_path.suffix != f".{format}":
-        output_path = output_path.with_suffix(f".{format}")
-
     plt.savefig(output_path, bbox_inches="tight", format=format)
-    plt.close()
+    plt.close(fig)
 
 
 def plot_bar_charts(
@@ -34,9 +32,9 @@ def plot_bar_charts(
     data: List[Dict[str, any]],
     titles: List[str],
     y_labels: List[str],
+    output_path: Path,
     y_max_lim: List[float] = None,
     width=0.4,
-    output_path: Path = Path("evaluation_results.pdf"),
 ):
     """Plot bar charts for the provided data."""
     if layout[0] * layout[1] != len(data):
@@ -99,8 +97,8 @@ def plot_single_box_chart(
     title: str,
     x_labels: List[str],
     y_label: str,
+    output_path: Path,
     y_lim: Tuple[float, float] = None,
-    output_path: Path = Path("boxplot.png"),
 ):
     """Plot a box chart for the provided data."""
     fig, ax = plt.subplots(figsize=(10, 6))
