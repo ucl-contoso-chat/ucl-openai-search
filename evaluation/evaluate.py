@@ -104,6 +104,22 @@ def evaluate_row(
     return output
 
 
+def get_models(target_url: str) -> list:
+    """send request to /getmodels to determine whether the chosen model names are valid"""
+    try:
+        r = requests.get(target_url)
+        r.encoding = "utf-8"
+        r.raise_for_status()
+
+        try:
+            response_list = r.json()
+        except json.JSONDecodeError:
+            raise ValueError(f"Response is not valid JSON:\n\n{r.text} \n")
+    except Exception as e:
+        raise e
+    return response_list
+
+
 def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
     """Run evaluation using the provided configuration file."""
     timestamp = int(time.time())
@@ -125,9 +141,14 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
             "latency",
         ],
     )
+    get_model_url = os.environ.get("BACKEND_URI") + "/getmodels" if target_url is None else target_url
     compared_models = config.get("compared_models")
-    print(compared_models)
-    print(1)
+    all_models = get_models(get_model_url)
+    for elem in compared_models:
+        if elem not in all_models:
+            logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
+        return False
+
     target_url = os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url
 
     try:
@@ -144,7 +165,6 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
         for model in compared_models:
             target_parameters["overrides"]["set_model"] = model
             for metric in requested_metrics_list:
-                print(metric)
                 if metric not in metrics_by_name:
                     logger.error(
                         f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}"
@@ -322,8 +342,6 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         "GPT Rating Metrics Results",
         results_dir / "evaluation_gpt_radar.png",
     )
-    print("label_for_single_box:")
-    print(label_for_single_box)
     plot_single_box_chart(
         data_for_single_box,
         "GPT Ratings",

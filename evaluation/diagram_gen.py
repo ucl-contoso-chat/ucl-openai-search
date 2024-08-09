@@ -92,8 +92,16 @@ def plot_multiple_box_charts(
     if not isinstance(axs, np.ndarray):
         axs = np.array([axs])
 
-    for i, (ax, (key, values)) in enumerate(zip(axs.flat, data.items())):
-        ax.boxplot(values)
+    # positions = range(1, len(x_labels) + 1)
+
+    offset = 0.2
+
+    for i, ax in enumerate(axs.flat):
+        current_positions = []
+        ax = axs.flat[i]
+        for j, (key, values) in enumerate(data.items()):
+            current_positions = [j + offset]
+            ax.boxplot(values[i], positions=current_positions)
         ax.set_title(titles[i])
         ax.set_ylabel(y_labels[i])
 
@@ -110,8 +118,6 @@ def plot_single_box_chart(
     output_path: Path = Path("boxplot.png"),
 ):
     """Plot a box chart for the provided data."""
-    print("data:")
-    print(data)
 
     plt.figure(figsize=(10, 6))
 
@@ -121,7 +127,9 @@ def plot_single_box_chart(
     box_positions = []
 
     for i, (key, values) in enumerate(data.items()):
-        current_positions = [p + i * offset - (offset * (len(data) - 1) / 2) for p in positions]
+        current_positions = []
+        for p in positions:
+            current_positions.append(p + i * offset - (offset * (len(data) - 1) / 2))
         box_positions.append(current_positions)
 
         plt.boxplot(
@@ -134,8 +142,10 @@ def plot_single_box_chart(
             whiskerprops=dict(color=f"C{i}"),
             capprops=dict(color=f"C{i}"),
             flierprops=dict(marker="o", color=f"C{i}", alpha=0.5),
+            # label={i}
         )
-
+        plt.plot([], [], color=f"C{i}", label=key)
+    plt.legend()
     plt.title(title)
     plt.ylabel(y_label)
     plt.xticks(positions, x_labels)
@@ -143,7 +153,7 @@ def plot_single_box_chart(
     if y_lim:
         plt.ylim(y_lim)
 
-    plt.legend(data.keys(), loc="upper right")
+    # plt.legend(data.keys(), loc="upper right")
 
     plt.savefig(output_path)
     plt.close()
