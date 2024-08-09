@@ -239,18 +239,11 @@ def dump_summary(rated_questions_for_models: dict, requested_metrics: list, pass
 
 def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, passing_rate: int, results_dir: Path):
     """Summarize the evaluation results and plot them."""
-    # df = pd.DataFrame(questions_with_ratings_dict)
-    rating_stat_data_per_model = {
-        "pass_count": {},
-        "pass_rate": {},
-        "mean_rating": {},
-    }
-    stat_metric_data_per_model = {"latency": {}, "f1_score": {}, "answer_length": {}}
     rating_stat_data = {}
     stat_metric_data = {}
     for key in questions_with_ratings_dict:
-        rating_stat_data[key] = rating_stat_data_per_model
-        stat_metric_data[key] = stat_metric_data_per_model
+        rating_stat_data[key] = {"pass_count": {}, "pass_rate": {}, "mean_rating": {}}
+        stat_metric_data[key] = {"latency": {}, "f1_score": {}, "answer_length": {}}
     requested_gpt_metrics, requested_stat_metrics = {}, {}
     gpt_metric_data_points, stat_metric_data_points = {}, {}
 
@@ -269,6 +262,8 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
                 data = df[metric_name].dropna()
 
                 metric_result = metric.get_aggregate_stats(df, passing_rate)
+                print("metric_result:")
+                print(metric_result)
                 if issubclass(metric, BuiltinRatingMetric):  # If it's a GPT Rating metric
                     requested_gpt_metrics[metric_name] = metric
                     if len(data) > 0:
@@ -325,6 +320,8 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
     gpt_metric_avg_ratings = {}
     data_for_single_box = {}
     data_for_multi_box = {}
+    print("rating_stat_data:")
+    print(rating_stat_data)
     for key in questions_with_ratings_dict:
         gpt_metric_avg_ratings[key] = [val for _, val in rating_stat_data[key]["mean_rating"].items()]
         data_for_single_box[key] = [data for _, data in gpt_metric_data_points[key].items()]

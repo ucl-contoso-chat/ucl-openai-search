@@ -58,7 +58,7 @@ def plot_bar_charts(
             bars = ax.bar(pos_list, height, width=bar_width, color=color, label=label)
             for bar in bars:
                 yval = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 2), ha="center", va="bottom", fontsize=8)
+                ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 1), ha="center", va="bottom", fontsize=8)
 
         if y_max_lim is not None and len(y_max_lim) > i and y_max_lim[i] is not None:
             ax.set_ylim(0, y_max_lim[i])
@@ -92,8 +92,7 @@ def plot_multiple_box_charts(
     if not isinstance(axs, np.ndarray):
         axs = np.array([axs])
 
-    # positions = range(1, len(x_labels) + 1)
-
+    positions = range(0, len(data.keys()))
     offset = 0.2
 
     for i, ax in enumerate(axs.flat):
@@ -101,9 +100,20 @@ def plot_multiple_box_charts(
         ax = axs.flat[i]
         for j, (key, values) in enumerate(data.items()):
             current_positions = [j + offset]
-            ax.boxplot(values[i], positions=current_positions)
+            ax.boxplot(
+                values[i],
+                positions=current_positions,
+                boxprops=dict(facecolor=f"C{j}"),
+                medianprops=dict(color="red"),
+                whiskerprops=dict(color=f"C{j}"),
+                capprops=dict(color=f"C{j}"),
+            )
+            ax.plot([], [], color=f"C{j}", label=key)
+        ax.legend()
         ax.set_title(titles[i])
         ax.set_ylabel(y_labels[i])
+        ax.set_xticks(positions)
+        ax.set_xticklabels(data.keys())
 
     plt.savefig(output_path)
     plt.close(fig)
@@ -153,8 +163,6 @@ def plot_single_box_chart(
     if y_lim:
         plt.ylim(y_lim)
 
-    # plt.legend(data.keys(), loc="upper right")
-
     plt.savefig(output_path)
     plt.close()
 
@@ -167,14 +175,13 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
     colors = ["b", "r", "g", "m", "c", "y"]
 
     ax.set_title(title, weight="bold", size="large", horizontalalignment="center", verticalalignment="center", pad=20)
-    # ax.plot(theta, data, color=color)
-    # ax.fill(theta, data, facecolor=color, alpha=0.25, label="_nolegend_")
 
     for idx, (label, data) in enumerate(data.items()):
         color = colors[idx % len(colors)]
         ax.plot(theta, data, color=color, label=label)
         ax.fill(theta, data, facecolor=color, alpha=0.25)
-
+        ax.plot([], [], color=color, label=label)
+    ax.legend()
     ax.tick_params(pad=15)
     ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
     ax.set_varlabels(metric_label_list)
