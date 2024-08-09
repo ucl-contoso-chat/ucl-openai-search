@@ -4,6 +4,7 @@ import json
 import logging
 import mimetypes
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Union, cast
@@ -94,10 +95,21 @@ from prepdocslib.filestrategy import UploadUserFileStrategy
 from prepdocslib.listfilestrategy import File
 from templates.supported_models import get_supported_models
 
+# Bring your packages onto the path
+# FIXME: This is a workaround for the evaluation package not in the backend directory
+rootpath = os.path.join(os.getcwd(), "../..")
+sys.path.append(rootpath)
+
+from evaluation.evaluate import run_evaluation_by_request
+from evaluation.utils import load_config, save_config, save_jsonl
+
 bp = Blueprint("routes", __name__, static_folder="static")
 # Fix Windows registry issue with mimetypes
 mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
+
+BACKEND_DIR = Path(__file__).parent
+EVALUATION_DIR = BACKEND_DIR / "evaluation"
 
 
 @bp.route("/")
@@ -334,6 +346,51 @@ async def speech():
     except Exception as e:
         logging.exception("Exception in /speech")
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/evaluate", methods=["POST"])
+@authenticated
+async def evaluate(auth_claims: dict[str, Any]):
+    request_form = await request.form
+    request_files = await request.files
+    if "input_data" not in request_files:
+        return jsonify({"message": "No input_data part in the request", "status": "failed"}), 400
+    if "config" not in request_form:
+        return jsonify({"message": "No application setting config part in the request", "status": "failed"}), 400
+
+    input_data_file = request_files.get("input_data")
+    num_questions = int(request_form.get("num_questions"))
+    config = json.loads(request_form.get("config"))
+
+    input_data = [json.loads(line) for line in input_data_file.readlines()]
+    save_jsonl(input_data, Path("./evaluation/input/input_temp.jsonl"))
+    config["testdata_path"] = "input/input_temp.jsonl"
+    config["results_dir"] = "results"
+
+    temp_config_path = Path("config_temp.json")
+
+    save_config(config, "evaluation" / temp_config_path)
+    result_file = run_evaluation_by_request(
+        EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions
+    )
+
+    # if evaluation failed
+    if result_file is str:
+        return error_response(result_file, "/evaluate")
+
+    # TODO: return pdf report after we have it
+    try:
+        # Save the file in memory and remove the orignal file
+        return_data = io.BytesIO()
+        with open(result_file, "rb") as fo:
+            return_data.write(fo.read())
+        return_data.seek(0)
+        os.remove(result_file)
+        result = await send_file(return_data, as_attachment=True, mimetype="application/zip")
+        return result
+    except Exception as e:
+        os.remove(result_file)
+        return error_response(e, "/evaluate")
 
 
 @bp.post("/upload")

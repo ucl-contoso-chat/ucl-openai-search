@@ -133,3 +133,18 @@ export async function listUploadedFilesApi(idToken: string): Promise<string[]> {
     const dataResponse: string[] = await response.json();
     return dataResponse;
 }
+
+export async function evaluateApi(request: FormData, idToken: string | undefined): Promise<Blob> {
+    const response = await fetch(`${BACKEND_URI}/evaluate`, {
+        method: "POST",
+        headers: await getHeaders(idToken),
+        body: request
+    });
+
+    if (!response.ok) {
+        throw new Error(`Evaluate failed: ${response.statusText}`);
+    }
+
+    const dataResponse: Blob = await response.blob();
+    return dataResponse;
+}

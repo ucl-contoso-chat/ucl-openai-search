@@ -1,0 +1,40 @@
+.container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.evaluateButton {
+    display: flex;
+    align-items: center;
+    gap: 0.375em;
+    cursor: pointer;
+    padding: 1.65rem;
+    background-color: rgba(115, 118, 225, 1);
+    color: white;
+    font-weight: 600;
+}
+
+.evaluateButton:hover {
+    background-color: rgba(115, 118, 225, 1);
+    color: white;
+    outline: 0.125rem solid #999999;
+}
+
+.evaluateButton:disabled {
+    background-color: rgba(115, 118, 225, 0.5);
+    color: white;
+    cursor: not-allowed;
+}
+
+.progressContainer {
+    display: flex;
+    padding: 0.5rem;
+}
+
+.progressContainer > div {
+    display: flex;
+    align-items: center;
+    margin: 0.5rem;
+}

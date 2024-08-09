@@ -11,6 +11,13 @@ done <<EOF
 $(azd env get-values)
 EOF
 
+cd ../evaluation
+while IFS='=' read -r key value; do
+    [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
+    value=$(echo "$value" | sed 's/^"//' | sed 's/"$//')
+    export "$key=$value";
+done < .env
+
 if [ $? -ne 0 ]; then
     echo "Failed to load environment variables from azd environment"
     exit $?

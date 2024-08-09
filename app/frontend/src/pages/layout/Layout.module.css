@@ -121,6 +121,7 @@
         border-bottom: none;
         padding: 0;
         display: block;
+        margin-left: 0.5rem;
     }
 
     .headerNavPageLink:hover {
