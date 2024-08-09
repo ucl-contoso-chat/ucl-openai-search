@@ -76,6 +76,7 @@
     "message": {
         "content": "The capital of France is Paris. [Benefit_Options-2.pdf].",
         "function_call": null,
+        "refusal": null,
         "role": "assistant",
         "tool_calls": null
     },
