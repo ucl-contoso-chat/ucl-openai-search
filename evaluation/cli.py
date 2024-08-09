@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -8,7 +9,7 @@ import typer
 from rich.logging import RichHandler
 
 from evaluation import service_setup
-from evaluation.evaluate import run_evaluation_from_config
+from evaluation.evaluate import get_models, run_evaluation_from_config
 from evaluation.generate import generate_test_qa_answer, generate_test_qa_data
 from evaluation.red_teaming import run_red_teaming
 from evaluation.utils import load_config
@@ -33,6 +34,8 @@ logger.setLevel(logging.INFO)
 
 dotenv.load_dotenv(override=True)
 
+get_model_url = os.environ.get("BACKEND_URI") + "/getmodels"
+
 
 def int_or_none(raw: str) -> Optional[int]:
     return None if raw == "None" else int(raw)
@@ -48,7 +51,30 @@ def evaluate(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Path to the configuration JSON file.",
+        help=f"Path to the configuration JSON file. The name of the model to be evaluated should be specified in the JSON file. The available models that you can choose from are: {', '.join(get_models(get_model_url))}",
+        default=DEFAULT_CONFIG_PATH,
+    ),
+    numquestions: Optional[int] = typer.Option(
+        help="Number of questions to evaluate (defaults to all if not specified).",
+        default=None,
+        parser=int_or_none,
+    ),
+    targeturl: Optional[str] = typer.Option(
+        help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
+        default=None,
+        parser=str_or_none,
+    ),
+):
+    run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl)
+
+
+@app.command()
+def compare(
+    config: Path = typer.Option(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help=f"Path to the configuration JSON file.The name of the models to be compared should be specified in the JSON file. The available models that you can choose from are: {', '.join(get_models(get_model_url))}",
         default=DEFAULT_CONFIG_PATH,
     ),
     numquestions: Optional[int] = typer.Option(
