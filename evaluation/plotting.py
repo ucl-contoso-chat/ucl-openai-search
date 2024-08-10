@@ -25,7 +25,7 @@ def plot_bar_charts(
     y_labels: List[str],
     output_path: Path,
     y_max_lim: List[float] = None,
-    width=0.4,
+    width: float = 0.4,
 ):
     """Plot bar charts for the provided data."""
     if layout[0] * layout[1] != len(data):
