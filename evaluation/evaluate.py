@@ -202,8 +202,7 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
 
 
 def dump_summary(rated_questions: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
-    """Save the summary to a file."""
-
+    """Save evaluation summary to a file."""
     summary = {}
     rated_questions_df = pd.DataFrame(rated_questions)
 
