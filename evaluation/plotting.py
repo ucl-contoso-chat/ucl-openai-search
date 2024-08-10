@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -13,15 +12,9 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 
 
-def save_figures(output_path: Path, format: str = "pdf"):
+def save_figure(output_path: Path, format: str = "pdf"):
     """Save the current figure to the provided output path."""
-
-    if not isinstance(output_path, Path):
-        output_path = Path(output_path)
-
-    if not output_path.parent.exists():
-        os.mkdir(output_path.parent)
-
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, bbox_inches="tight", format=format)
 
 
@@ -66,7 +59,7 @@ def plot_bar_charts(
         for j, v in enumerate(y_data):
             ax.text(j, v * 1.02, str(round(v, 2)), ha="center")
 
-    save_figures(output_path)
+    save_figure(output_path)
     plt.close(fig)
 
 
@@ -88,7 +81,7 @@ def plot_multiple_box_charts(
         ax.set_title(titles[i])
         ax.set_ylabel(y_labels[i])
 
-    save_figures(output_path)
+    save_figure(output_path)
     plt.close(fig)
 
 
@@ -108,7 +101,7 @@ def plot_single_box_chart(
     ax.set_ylabel(y_label)
     if y_lim is not None:
         ax.set_ylim(y_lim[0], y_lim[1])
-    save_figures(output_path)
+    save_figure(output_path)
     plt.close(fig)
 
 
@@ -126,7 +119,7 @@ def plot_radar_chart(metric_label_list: List[str], data: List, title: str, _rang
     ax.set_rgrids(range(_range + 1), angle=10)
     ax.set_varlabels(metric_label_list)
 
-    save_figures(output_path)
+    save_figure(output_path)
     plt.close(fig)
 
 
