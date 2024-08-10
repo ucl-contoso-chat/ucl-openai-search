@@ -17,9 +17,9 @@ from evaluation.evaluate_metrics import metrics_by_name
 from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
 from evaluation.plotting import (
     plot_bar_charts,
-    plot_multiple_box_charts,
+    plot_box_chart,
+    plot_box_charts_grid,
     plot_radar_chart,
-    plot_single_box_chart,
 )
 from evaluation.utils import load_jsonl
 
@@ -284,7 +284,7 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
 
     data = [data for _, data in gpt_metric_data_points.items()]
     labels = list(gpt_metric_data_points.keys())
-    plot_single_box_chart(
+    plot_box_chart(
         data,
         "GPT Ratings",
         labels,
@@ -301,7 +301,7 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
         3 if len(stat_metric_data_points) > 3 else len(stat_metric_data_points),
     )
 
-    plot_multiple_box_charts(
+    plot_box_charts_grid(
         layout,
         data,
         titles,

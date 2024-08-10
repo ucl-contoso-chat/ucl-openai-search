@@ -63,10 +63,10 @@ def plot_bar_charts(
     plt.close(fig)
 
 
-def plot_multiple_box_charts(
+def plot_box_charts_grid(
     layout: Tuple[int, int], data: List[List[float]], titles: List[str], y_labels: List[str], output_path: Path
 ):
-    """Plot box charts for the provided data."""
+    """Plot box charts for the provided data in a single figure."""
     if layout[0] * layout[1] != len(data):
         raise ValueError("Number of data points must match the layout")
 
@@ -85,7 +85,7 @@ def plot_multiple_box_charts(
     plt.close(fig)
 
 
-def plot_single_box_chart(
+def plot_box_chart(
     data: List[float],
     title: str,
     x_labels: List[str],
