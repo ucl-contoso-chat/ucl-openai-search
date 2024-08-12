@@ -1,15 +1,23 @@
+import inspect
 from abc import ABC
 from typing import List
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI
 from openai.types import CreateEmbeddingResponse
-from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
+from openai.types.chat import ChatCompletion
 
 
 class OpenAIClient(ABC):
 
     def __init__(self):
         self._client = None
+
+    @property
+    def allowed_chat_completion_params(self) -> List[str]:
+        params = list(inspect.signature(self.client.chat.completions.create).parameters.keys())
+        if "messages" in params:
+            params.remove("messages")
+        return params
 
     @property
     def client(self):
@@ -24,9 +32,6 @@ class OpenAIClient(ABC):
 
     async def create_embeddings(self, *args, **kwargs) -> CreateEmbeddingResponse:
         return await self.client.embeddings.create(*args, **kwargs)
-
-    def format_message(self, message: List[ChatCompletionMessageParam]) -> List[ChatCompletionMessageParam]:
-        return message
 
 
 class LocalOpenAIClient(OpenAIClient):

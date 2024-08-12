@@ -13,14 +13,14 @@ from promptflow.core import AzureOpenAIModelConfiguration
 from rich.progress import track
 
 from evaluation import service_setup
-from evaluation.diagram_gen import (
-    plot_bar_charts,
-    plot_multiple_box_charts,
-    plot_radar_chart,
-    plot_single_box_chart,
-)
 from evaluation.evaluate_metrics import metrics_by_name
 from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
+from evaluation.plotting import (
+    plot_bar_charts,
+    plot_box_chart,
+    plot_box_charts_grid,
+    plot_radar_chart,
+)
 from evaluation.report_generator import generate_eval_report
 from evaluation.utils import load_jsonl
 
@@ -207,10 +207,8 @@ def run_evaluation_from_config(
         generate_eval_report(output_path=report_output)
         logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
-
 def dump_summary(rated_questions: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
-    """Save the summary to a file."""
-
+    """Save evaluation summary to a file."""
     summary = {}
     rated_questions_df = pd.DataFrame(rated_questions)
 
@@ -277,13 +275,7 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
     layout = (int(np.ceil(len(rating_stat_data) / 3)), 3 if len(rating_stat_data) > 3 else len(rating_stat_data))
 
     plot_bar_charts(
-        layout,
-        data,
-        titles,
-        y_labels,
-        y_lims,
-        width,
-        results_dir / "evaluation_results.png",
+        layout, data, titles, y_labels, results_dir / "evaluation_results.pdf", y_max_lim=y_lims, width=width
     )
 
     gpt_metric_avg_ratings = [val for _, val in rating_stat_data["mean_rating"].items()]
@@ -292,13 +284,19 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
         gpt_metric_short_names,
         gpt_metric_avg_ratings,
         "GPT Rating Metrics Results",
-        results_dir / "evaluation_gpt_radar.png",
+        5,
+        results_dir / "evaluation_gpt_radar.pdf",
     )
 
     data = [data for _, data in gpt_metric_data_points.items()]
     labels = list(gpt_metric_data_points.keys())
-    plot_single_box_chart(
-        data, "GPT Ratings", labels, "Rating Score", [0.0, 5.0], results_dir / "evaluation_gpt_boxplot.png"
+    plot_box_chart(
+        data,
+        "GPT Ratings",
+        labels,
+        "Rating Score",
+        results_dir / "evaluation_gpt_boxplot.pdf",
+        y_lim=(0.0, 5.0),
     )
 
     data = [data for _, data in stat_metric_data_points.items()]
@@ -309,10 +307,10 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
         3 if len(stat_metric_data_points) > 3 else len(stat_metric_data_points),
     )
 
-    plot_multiple_box_charts(
+    plot_box_charts_grid(
         layout,
         data,
         titles,
         y_labels,
-        results_dir / "evaluation_stat_boxplot.png",
+        results_dir / "evaluation_stat_boxplot.pdf",
     )

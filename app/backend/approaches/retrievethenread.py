@@ -1,13 +1,15 @@
+import ast
 from typing import Any, Optional
 
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
 from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
-from openai_messages_token_helper import build_messages, get_token_limit
+from promptflow.core import Prompty  # type: ignore
 
 from api_wrappers import LLMClient
 from approaches.approach import Approach, ThoughtStep
 from core.authentication import AuthenticationHelper
+from templates.supported_models import ModelConfig
 
 
 class RetrieveThenReadApproach(Approach):
@@ -43,11 +45,10 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         *,
         search_client: SearchClient,
         auth_helper: AuthenticationHelper,
-        llm_client: LLMClient,
+        llm_clients: dict[str, LLMClient],
         emb_client: LLMClient,
-        hf_model: Optional[str],  # Not needed for OpenAI
-        chatgpt_model: str,
-        chatgpt_deployment: Optional[str],  # Not needed for non-Azure OpenAI
+        current_model: str,
+        available_models: dict[str, ModelConfig],
         embedding_model: str,
         embedding_deployment: Optional[str],  # Not needed for non-Azure OpenAI or for retrieval_mode="text"
         embedding_dimensions: int,
@@ -57,21 +58,18 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         query_speller: str,
     ):
         self.search_client = search_client
-        self.chatgpt_deployment = chatgpt_deployment
-        self.llm_client = llm_client
+        self.llm_clients = llm_clients
         self.emb_client = emb_client
-        self.hf_model = hf_model
+        self.current_model = current_model
+        self.available_models = available_models
         self.auth_helper = auth_helper
-        self.chatgpt_model = chatgpt_model
         self.embedding_model = embedding_model
         self.embedding_dimensions = embedding_dimensions
-        self.chatgpt_deployment = chatgpt_deployment
         self.embedding_deployment = embedding_deployment
         self.sourcepage_field = sourcepage_field
         self.content_field = content_field
         self.query_language = query_language
         self.query_speller = query_speller
-        self.chatgpt_token_limit = get_token_limit(chatgpt_model)
 
     async def run(
         self,
@@ -83,7 +81,6 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         if not isinstance(q, str):
             raise ValueError("The most recent message content must be a string.")
         overrides = context.get("overrides", {})
-        seed = overrides.get("seed", None)
         auth_claims = context.get("auth_claims", {})
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
@@ -94,6 +91,15 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
         filter = self.build_filter(overrides, auth_claims)
 
+        if overrides.get("set_model") is not None:
+            self.current_model = overrides.get("set_model")
+
+        model_config = self.available_models.get(self.current_model)
+        if not model_config:
+            raise ValueError(f"Model {self.current_model} is not supported. Please create a template for this model.")
+
+        prompty_path = model_config.template_path
+        current_api = self.llm_clients[model_config.type]
         # If retrieval mode includes vectors, compute an embedding for the query
         vectors: list[VectorQuery] = []
         if use_vector_search:
@@ -115,33 +121,36 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         # Process results
         sources_content = self.get_sources_content(results, use_semantic_captions, use_image_citation=False)
 
-        # Append user message
-        content = "\n".join(sources_content)
-        user_content = q + "\n" + f"Sources:\n {content}"
+        # Load the Prompty object
 
-        response_token_limit = 1024
-        updated_messages = build_messages(
-            model=self.chatgpt_model,
-            system_prompt=overrides.get("prompt_template", self.system_chat_template),
-            few_shots=[{"role": "user", "content": self.question}, {"role": "assistant", "content": self.answer}],
-            new_user_content=user_content,
-            max_tokens=self.chatgpt_token_limit - response_token_limit,
+        if prompty_path:
+            ask_prompty = Prompty.load(source=prompty_path / "ask.prompty")
+        else:
+            raise ValueError(f"Model {self.current_model} is not supported. Please create a template for this model.")
+
+        # If the parameters are overridden via the API request, use that value.
+        # Otherwise, use the default value from the model configuration.
+        ask_prompty._model.parameters.update(
+            {
+                param: overrides[param]
+                for param in current_api.allowed_chat_completion_params
+                if overrides.get(param) is not None
+            }
         )
 
-        chat_completion = await self.llm_client.chat_completion(
-            # Azure OpenAI takes the deployment name as the model name
-            model=(
-                self.hf_model
-                if self.hf_model
-                else self.chatgpt_deployment if self.chatgpt_deployment else self.chatgpt_model
-            ),
-            messages=self.llm_client.format_message(updated_messages),
-            temperature=overrides.get("temperature", 0.3),
-            max_tokens=response_token_limit,
+        updated_messages = ask_prompty.render(
+            system_message=overrides.get("prompt_template", self.system_chat_template),
+            question=q,
+            sources=sources_content,
+        )
+        updated_messages = ast.literal_eval(updated_messages)
+
+        chat_completion = await current_api.chat_completion(
+            model=(model_config.identifier),
+            messages=updated_messages,
+            **ask_prompty._model.parameters,
             n=1,
-            seed=seed,
         )
-
         final_result = chat_completion.model_dump() if hasattr(chat_completion, "model_dump") else chat_completion
 
         data_points = {"text": sources_content}
@@ -167,15 +176,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                 ThoughtStep(
                     "Prompt to generate answer",
                     [str(message) for message in updated_messages],
-                    (
-                        {"model": self.hf_model}
-                        if self.hf_model
-                        else (
-                            {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
-                            if self.chatgpt_deployment
-                            else {"model": self.chatgpt_model}
-                        )
-                    ),
+                    ({"model": self.current_model}),
                 ),
             ],
         }

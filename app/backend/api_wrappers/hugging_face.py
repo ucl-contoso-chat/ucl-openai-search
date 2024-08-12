@@ -1,3 +1,4 @@
+import inspect
 from typing import AsyncIterable, Dict, Iterable, List, Optional, Union
 
 from huggingface_hub import AsyncInferenceClient  # type: ignore
@@ -25,6 +26,13 @@ class HuggingFaceClient:
         cookies: Optional[Dict[str, str]] = None,
     ):
         self.client = AsyncInferenceClient(model=model, token=token, timeout=timeout, headers=headers, cookies=cookies)
+
+    @property
+    def allowed_chat_completion_params(self) -> List[str]:
+        params = list(inspect.signature(self.client.chat_completion).parameters.keys())
+        if "messages" in params:
+            params.remove("messages")
+        return params
 
     async def chat_completion(
         self,
@@ -68,33 +76,6 @@ class HuggingFaceClient:
 
     async def create_embeddings(self, *args, **kwargs) -> CreateEmbeddingResponse:
         raise NotImplementedError
-
-    def format_message(self, message: List[ChatCompletionMessageParam]) -> List[ChatCompletionMessageParam]:
-        formatted_messages = []
-        if message:
-            # Handle the initial 'system' message by embedding it within the first 'user' message
-            first_message = message[0]
-            if first_message["role"] == "system":
-                system_content = first_message["content"]
-                message = message[1:]  # Remove the 'system' message from the list
-            else:
-                system_content = ""
-
-            if system_content and message and message[0]["role"] == "user":
-                content = system_content + "\n\n" + self._extract_content_as_string(message[0]["content"])
-                message[0]["content"] = content
-
-            last_role = None
-            for msg in message:
-                if last_role == msg["role"]:
-                    raise ValueError("Messages must alternate roles between user and assistant.")
-                formatted_messages.append(msg)
-                last_role = msg["role"]
-
-            # Ensure the first message is from the user
-            if formatted_messages[0]["role"] != "user":
-                raise ValueError("The first message must be from the user.")
-        return formatted_messages
 
     def _extract_content_as_string(
         self,
