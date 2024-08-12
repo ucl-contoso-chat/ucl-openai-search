@@ -30,8 +30,6 @@ async def run_red_teaming(
     compare: bool,
 ):
     """Run red teaming attack with provided scorers using Red Teaming Orchestrator."""
-    print("red teaming:")
-    print(prompt_target.target_parameters)
     prompt_target_list = []
     if compare:
         compared_models = config.get("compared_models")
@@ -107,8 +105,8 @@ def save_score(results: dict, results_dir: Path):
     """Save score results to a JSON file."""
     output_path = results_dir / "scores.json"
     logger.info("Saving score results to '%s'", output_path)
+    output = {}
     for model_name, model_result in results.items():
-        output = {}
         output_data = [
             {
                 "scorer_class_identifier": (
@@ -121,8 +119,8 @@ def save_score(results: dict, results_dir: Path):
             for res in model_result
         ]
         output[model_name] = output_data
-        with open(output_path, "a") as f:
-            json.dump(output, f, indent=4)
+    with open(output_path, "a") as f:
+        json.dump(output, f, indent=4)
 
 
 def map_score_to_readable_data(results: dict):
@@ -151,7 +149,7 @@ def map_score_to_readable_data(results: dict):
     }
 
     values_for_all_models = {}
-    for model_name, model_result in results:
+    for model_name, model_result in results.items():
         values = []
         labels = []
         for res in model_result:
@@ -167,4 +165,4 @@ def map_score_to_readable_data(results: dict):
 def plot_graph(results: dict, output_path: Path):
     """Plot the graph of the results."""
     labels, values = map_score_to_readable_data(results)
-    plot_radar_chart(labels, values, "Red Teaming Evaluation Results", 1, output_path / "red_teaming_results.pdf")
+    plot_radar_chart(labels, values, "Red Teaming Evaluation Results", output_path / "red_teaming_results.png")

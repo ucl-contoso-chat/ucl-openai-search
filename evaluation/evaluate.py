@@ -12,19 +12,13 @@ import requests
 from rich.progress import track
 
 from evaluation import service_setup
-from evaluation.diagram_gen import (
-    plot_bar_charts,
-    plot_multiple_box_charts,
-    plot_radar_chart,
-    plot_single_box_chart,
-)
 from evaluation.evaluate_metrics import metrics_by_name
 from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
 from evaluation.plotting import (
     plot_bar_charts,
-    plot_box_chart,
-    plot_box_charts_grid,
+    plot_multiple_box_charts,
     plot_radar_chart,
+    plot_single_box_chart,
 )
 from evaluation.utils import load_jsonl
 
@@ -153,7 +147,7 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     for elem in compared_models:
         if elem not in all_models:
             logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
-        return False
+            return False
 
     target_url = os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url
 
@@ -292,9 +286,6 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         "pass_rate": "Percentage",
         "mean_rating": "Rating Score",
     }
-    stat_metric_data = {"latency": {}, "f1_score": {}, "answer_length": {}}
-    requested_gpt_metrics, requested_stat_metrics = {}, {}
-    gpt_metric_data_points, stat_metric_data_points = {}, {}
 
     stats_y_lim = {
         "pass_count": len(questions_with_ratings_dict[next(iter(questions_with_ratings_dict))]),
