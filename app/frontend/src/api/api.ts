@@ -148,3 +148,18 @@ export async function evaluateApi(request: FormData, idToken: string | undefined
     const dataResponse: Blob = await response.blob();
     return dataResponse;
 }
+
+export async function generateApi(request: FormData, idToken: string | undefined): Promise<Blob> {
+    const response = await fetch(`${BACKEND_URI}/generate`, {
+        method: "POST",
+        headers: await getHeaders(idToken),
+        body: request
+    });
+
+    if (!response.ok) {
+        throw new Error(`Generate failed: ${response.statusText}`);
+    }
+
+    const dataResponse: Blob = await response.blob();
+    return dataResponse;
+}

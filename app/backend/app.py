@@ -95,13 +95,15 @@ from prepdocslib.filestrategy import UploadUserFileStrategy
 from prepdocslib.listfilestrategy import File
 from templates.supported_models import get_supported_models
 
-# Bring your packages onto the path
-# FIXME: This is a workaround for the evaluation package not in the backend directory
+# Bring evaluation packages onto the path
+# FIXME: This is a workaround for the evaluation package not in the backend directory, may need to restructure
 rootpath = os.path.join(os.getcwd(), "../..")
 sys.path.append(rootpath)
 
-from evaluation.evaluate import run_evaluation_by_request
-from evaluation.utils import load_config, save_config, save_jsonl
+from evaluation.evaluate import run_evaluation_by_request  # noqa E402
+from evaluation.generate import generate_test_qa_data  # noqa E402
+from evaluation.service_setup import get_openai_config_dict, get_search_client  # noqa E402
+from evaluation.utils import load_config, save_config, save_jsonl  # noqa E402
 
 bp = Blueprint("routes", __name__, static_folder="static")
 # Fix Windows registry issue with mimetypes
@@ -391,6 +393,36 @@ async def evaluate(auth_claims: dict[str, Any]):
     except Exception as e:
         os.remove(result_file)
         return error_response(e, "/evaluate")
+
+
+@bp.route("/generate", methods=["POST"])
+@authenticated
+async def generate_qa(auth_claims: dict[str, Any]):
+    request_form = await request.form
+    num_questions = int(request_form.get("num_questions"))
+    per_source = int(request_form.get("per_source"))
+    output_file = EVALUATION_DIR / "input" / " input_temp.jsonl"
+
+    generate_test_qa_data(
+        openai_config=get_openai_config_dict(),
+        search_client=get_search_client(),
+        num_questions_total=num_questions,
+        num_questions_per_source=per_source,
+        output_file=output_file,
+    )
+
+    try:
+        # Save the file in memory and remove the orignal file
+        return_data = io.BytesIO()
+        with open(output_file, "rb") as fo:
+            return_data.write(fo.read())
+        return_data.seek(0)
+        os.remove(output_file)
+        result = await send_file(return_data, as_attachment=True, mimetype="application/jsonl")
+        return result
+    except Exception as e:
+        os.remove(output_file)
+        return error_response(e, "/generate")
 
 
 @bp.post("/upload")

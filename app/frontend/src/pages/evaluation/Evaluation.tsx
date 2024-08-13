@@ -4,10 +4,9 @@ import styles from "./Evaluation.module.css";
 import { useId } from "@fluentui/react-hooks";
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, AccordionToggleEventHandler, Card, CardHeader, Text } from "@fluentui/react-components";
 
-import { Checkbox, ICheckboxProps, ITextFieldProps, Link, TextField } from "@fluentui/react";
+import { Checkbox, ICheckboxProps, ITextFieldProps, Link, Pivot, PivotItem, TextField } from "@fluentui/react";
 import { ErrorCircle24Regular, NumberCircle132Filled, NumberCircle232Filled, NumberCircle332Filled } from "@fluentui/react-icons";
-import { UploadEvaluationFile } from "../../components/UploadEvaluationFile/UploadEvaluationFile";
-import { configApi, RetrievalMode, VectorFieldOptions, GPT4VInput, SimpleAPIResponse, evaluateApi } from "../../api";
+import { configApi, RetrievalMode, VectorFieldOptions, GPT4VInput, SimpleAPIResponse, evaluateApi, generateApi } from "../../api";
 import { useLogin, getToken, requireAccessControl } from "../../authConfig";
 import { HelpCallout } from "../../components/HelpCallout";
 import { toolTipText } from "../../i18n/tooltips.js";
@@ -19,12 +18,12 @@ import { LoginContext } from "../../loginContext";
 import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { EvaluateButton } from "../../components/EvaluateButton";
 import { EvaluationMetricList } from "../../components/EvaluationMetric";
+import { EvaluationDataPanel } from "../../components/EvaluationDataPanel";
 
 export function Component(): JSX.Element {
     const [openItems, setOpenItems] = useState(["1"]);
     const [evalData, setEvalData] = useState<File | null>(null);
-    const [evalDataNum, setEvalDataNum] = useState<number>(0);
-    const [numQuestions, setNumQuestions] = useState<number>(2);
+    const [numQuestions, setNumQuestions] = useState<number>(0);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [selectedMetrics, setSelectedMetrics] = useState<{}[]>([]);
     const [evalResiltDownloadUrl, setEvalResultDownloadUrl] = useState<string>("");
@@ -208,26 +207,26 @@ export function Component(): JSX.Element {
                 <Accordion collapsible multiple openItems={openItems} onToggle={handleToggle} className={styles.evaluationCollapseList}>
                     <AccordionItem value="1" className={styles.evaluationCollapseItem}>
                         <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle132Filled primaryFill="rgba(115, 118, 225, 1)" />}>
-                            {"Upload Your Test Data"}
+                            {"Choose Your Test Data"}
                         </AccordionHeader>
                         <AccordionPanel>
+                            <EvaluationDataPanel
+                                isUploading={isUploading}
+                                setIsUploading={setIsUploading}
+                                evalFile={evalData}
+                                setEvalFile={setEvalData}
+                                numberOfLines={numQuestions}
+                                setNumberOfLines={setNumQuestions}
+                            />
                             <div>
-                                <UploadEvaluationFile
-                                    isUploading={isUploading}
-                                    setIsUploading={setIsUploading}
-                                    uploadedFile={evalData}
-                                    setUploadedFile={setEvalData}
-                                    numberOfLines={evalDataNum}
-                                    setNumberOfLines={setEvalDataNum}
-                                />
                                 {evalData !== null && (
                                     <TextField
                                         id={numQuestionsFieldId}
-                                        className={styles.chatSettingsSeparator}
+                                        className={styles.evaluateSettingsSeparator}
                                         label="Number of questions you want to evaluate"
                                         type="number"
                                         min={1}
-                                        max={evalDataNum}
+                                        max={numQuestions}
                                         defaultValue={numQuestions.toString()}
                                         onChange={onNumQuestionsChange}
                                         aria-labelledby={numQuestionsId}
@@ -236,6 +235,7 @@ export function Component(): JSX.Element {
                             </div>
                         </AccordionPanel>
                     </AccordionItem>
+
                     <AccordionItem value="2" className={styles.evaluationCollapseItem}>
                         <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle232Filled primaryFill="rgba(115, 118, 225, 1)" />}>
                             {"Select Evaluation Metrics"}
@@ -246,6 +246,7 @@ export function Component(): JSX.Element {
                             </div>
                         </AccordionPanel>
                     </AccordionItem>
+
                     <AccordionItem value="3" className={styles.evaluationCollapseItem}>
                         <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle332Filled primaryFill="rgba(115, 118, 225, 1)" />}>
                             {"Application Settings"}
@@ -254,7 +255,7 @@ export function Component(): JSX.Element {
                             <div>
                                 <TextField
                                     id={temperatureFieldId}
-                                    className={styles.chatSettingsSeparator}
+                                    className={styles.evaluateSettingsSeparator}
                                     label="Temperature"
                                     type="number"
                                     min={0}
@@ -275,7 +276,7 @@ export function Component(): JSX.Element {
 
                                 <TextField
                                     id={searchScoreFieldId}
-                                    className={styles.chatSettingsSeparator}
+                                    className={styles.evaluateSettingsSeparator}
                                     label="Minimum search score"
                                     type="number"
                                     min={0}
@@ -296,7 +297,7 @@ export function Component(): JSX.Element {
                                 {showSemanticRankerOption && (
                                     <TextField
                                         id={rerankerScoreFieldId}
-                                        className={styles.chatSettingsSeparator}
+                                        className={styles.evaluateSettingsSeparator}
                                         label="Minimum reranker score"
                                         type="number"
                                         min={1}
@@ -318,7 +319,7 @@ export function Component(): JSX.Element {
 
                                 <TextField
                                     id={retrieveCountFieldId}
-                                    className={styles.chatSettingsSeparator}
+                                    className={styles.evaluateSettingsSeparator}
                                     label="Retrieve this many search results:"
                                     type="number"
                                     min={1}
@@ -340,7 +341,7 @@ export function Component(): JSX.Element {
                                     <>
                                         <Checkbox
                                             id={semanticRankerFieldId}
-                                            className={styles.chatSettingsSeparator}
+                                            className={styles.evaluateSettingsSeparator}
                                             checked={useSemanticRanker}
                                             label="Use semantic ranker for retrieval"
                                             onChange={onUseSemanticRankerChange}
@@ -357,7 +358,7 @@ export function Component(): JSX.Element {
 
                                         <Checkbox
                                             id={semanticCaptionsFieldId}
-                                            className={styles.chatSettingsSeparator}
+                                            className={styles.evaluateSettingsSeparator}
                                             checked={useSemanticCaptions}
                                             label="Use semantic captions"
                                             onChange={onUseSemanticCaptionsChange}
@@ -377,7 +378,7 @@ export function Component(): JSX.Element {
 
                                 <Checkbox
                                     id={suggestFollowupQuestionsFieldId}
-                                    className={styles.chatSettingsSeparator}
+                                    className={styles.evaluateSettingsSeparator}
                                     checked={useSuggestFollowupQuestions}
                                     label="Suggest follow-up questions"
                                     onChange={onUseSuggestFollowupQuestionsChange}
@@ -416,7 +417,7 @@ export function Component(): JSX.Element {
                                     <>
                                         <Checkbox
                                             id={useOidSecurityFilterFieldId}
-                                            className={styles.chatSettingsSeparator}
+                                            className={styles.evaluateSettingsSeparator}
                                             checked={useOidSecurityFilter || requireAccessControl}
                                             label="Use oid security filter"
                                             disabled={!loggedIn || requireAccessControl}
@@ -433,7 +434,7 @@ export function Component(): JSX.Element {
                                         />
                                         <Checkbox
                                             id={useGroupsSecurityFilterFieldId}
-                                            className={styles.chatSettingsSeparator}
+                                            className={styles.evaluateSettingsSeparator}
                                             checked={useGroupsSecurityFilter || requireAccessControl}
                                             label="Use groups security filter"
                                             disabled={!loggedIn || requireAccessControl}
@@ -453,7 +454,7 @@ export function Component(): JSX.Element {
 
                                 <Checkbox
                                     id={shouldStreamFieldId}
-                                    className={styles.chatSettingsSeparator}
+                                    className={styles.evaluateSettingsSeparator}
                                     checked={shouldStream}
                                     label="Stream chat completion responses"
                                     onChange={onShouldStreamChange}

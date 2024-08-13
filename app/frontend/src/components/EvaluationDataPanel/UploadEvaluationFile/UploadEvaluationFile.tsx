@@ -1,7 +1,6 @@
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { Label, Text } from "@fluentui/react";
+import { Label, Text, Pivot, PivotItem, TextField, DefaultButton } from "@fluentui/react";
 
-import { useLogin, getToken } from "../../authConfig";
 import styles from "./UploadEvaluationFile.module.css";
 
 interface Props {
@@ -28,7 +27,11 @@ export const UploadEvaluationFile: React.FC<Props> = ({
 
     // Handler for the form submission (file upload)
     const handleUploadFile = async (e: ChangeEvent<HTMLInputElement>) => {
-        setIsUploading(true); // Start the loading state
+        setIsUploading(true);
+        // Reset the uploaded file and file content
+        setUploadedFile(null);
+        setFileContent([]);
+
         e.preventDefault();
         const reader = new FileReader();
         if (!e.target.files || e.target.files.length === 0) {
@@ -36,9 +39,14 @@ export const UploadEvaluationFile: React.FC<Props> = ({
             return;
         }
         const file: File = e.target.files[0];
-        reader.readAsText(e.target.files[0], "UTF-8");
+        console.log(file);
+        if (file.name.split(".").pop() !== "jsonl" && file.name.split(".").pop() !== "jsonl") {
+            setUploadedFileError(`The file must be a JSON or JSONL file.`);
+            setIsUploading(false);
+            return;
+        }
+        reader.readAsText(file, "UTF-8");
         reader.onload = async e => {
-            console.log("File loaded");
             const content = e.target?.result;
             if (typeof content === "string") {
                 const lines = content.split("\n");
@@ -50,9 +58,11 @@ export const UploadEvaluationFile: React.FC<Props> = ({
                             jsonObjects.push(jsonObject);
                         } catch (err) {
                             setUploadedFileError(`Error parsing line ${index + 1}`);
+                            setIsUploading(false);
                         }
                     }
                 });
+                setUploadedFileError(undefined);
                 setFileContent(jsonObjects);
                 setNumberOfLines(jsonObjects.length);
             }
@@ -72,10 +82,8 @@ export const UploadEvaluationFile: React.FC<Props> = ({
                 </form>
 
                 {/* Show a loading message while files are being uploaded */}
-                {isUploading && <Text>{"Uploading files..."}</Text>}
-                {!isUploading && uploadedFile === null && <Text>No files uploaded yet</Text>}
-                {!isUploading && uploadedFileError && <Text>{uploadedFileError}</Text>}
-                {uploadedFile !== null && numberOfLines > 0 && <Text>{`This file contains ${numberOfLines} lines of data.`}</Text>}
+                {isUploading && <Text block={true}>{"Uploading files..."}</Text>}
+                {!isUploading && uploadedFile === null && <Text block={true}>No files uploaded yet</Text>}
             </div>
         </div>
     );

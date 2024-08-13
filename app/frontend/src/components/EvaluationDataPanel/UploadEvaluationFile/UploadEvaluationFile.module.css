@@ -1,10 +1,9 @@
 .container {
     display: flex;
-    align-items: center;
     gap: 0.375em;
     cursor: pointer;
-    padding: 0.5rem;
-    justify-content: center;
+    padding: 0 1rem;
+    flex-direction: column;
 }
 
 .callout {

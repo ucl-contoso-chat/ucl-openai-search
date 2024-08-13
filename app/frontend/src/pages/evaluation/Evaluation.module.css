@@ -48,6 +48,12 @@
     align-self: left;
 }
 
+.evaluateSettingsSeparator {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.9375rem;
+}
+
 .submitButton {
     margin-top: 1.25rem;
 }
