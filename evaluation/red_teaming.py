@@ -1,3 +1,4 @@
+import copy
 import glob
 import json
 import logging
@@ -34,8 +35,10 @@ async def run_red_teaming(
     if compare:
         compared_models = config.get("compared_models")
         for compare_model in compared_models:
-            prompt_target.target_parameters["overrides"]["set_model"] = compare_model
-            prompt_target_list.append(prompt_target)
+            prompt_target_copy = copy.copy(prompt_target)
+            prompt_target_copy.target_parameters = copy.deepcopy(prompt_target.target_parameters)
+            prompt_target_copy.target_parameters["overrides"]["set_model"] = compare_model
+            prompt_target_list.append(prompt_target_copy)
     else:
         prompt_target_list.append(prompt_target)
     logger.info("Running red teaming attack, with scorers from '%s'", scorer_dir)
@@ -165,4 +168,4 @@ def map_score_to_readable_data(results: dict):
 def plot_graph(results: dict, output_path: Path):
     """Plot the graph of the results."""
     labels, values = map_score_to_readable_data(results)
-    plot_radar_chart(labels, values, "Red Teaming Evaluation Results", output_path / "red_teaming_results.png")
+    plot_radar_chart(labels, values, "Red Teaming Evaluation Results", output_path / "red_teaming_results.png", 1)

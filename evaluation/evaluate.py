@@ -334,6 +334,7 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         gpt_metric_avg_ratings,
         "GPT Rating Metrics Results",
         results_dir / "evaluation_gpt_radar.png",
+        5,
     )
     plot_single_box_chart(
         data_for_single_box,

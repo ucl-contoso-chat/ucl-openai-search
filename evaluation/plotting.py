@@ -166,7 +166,7 @@ def plot_single_box_chart(
     plt.close()
 
 
-def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title: str, output_path: Path):
+def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title: str, output_path: Path, num: int):
     theta = radar_factory(num_vars=len(metric_label_list))
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection="radar"))
     fig.subplots_adjust(wspace=0.5, hspace=0.20, top=0.85, bottom=0.05)
@@ -179,11 +179,11 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
         color = colors[idx % len(colors)]
         ax.plot(theta, data, color=color, label=label)
         ax.fill(theta, data, facecolor=color, alpha=0.25)
-        # ax.plot([], [], color=color, label=label)
-    # ax.legend()
     ax.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
     ax.tick_params(pad=15)
-    ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
+    r_values = np.linspace(0, num, num + 1)
+    ax.set_rgrids(r_values, angle=10)
+    # ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
     ax.set_varlabels(metric_label_list)
 
     plt.savefig(output_path)
