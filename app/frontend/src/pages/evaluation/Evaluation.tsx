@@ -160,6 +160,9 @@ export function Component(): JSX.Element {
         } else {
             requestData.append("num_questions", numQuestions.toString());
         }
+
+        setEvalResultDownloadUrl("");
+
         const config = {
             requested_metrics: selectedMetrics,
             target_parameters: {
@@ -482,10 +485,10 @@ export function Component(): JSX.Element {
                         </div>
                     ) : null}
 
-                    <EvaluateButton inProgress={inProgress} onClick={makeEvaluationRequest}></EvaluateButton>
+                    <EvaluateButton inProgress={inProgress} onClick={makeEvaluationRequest} evalResDownloadUrl={evalResiltDownloadUrl}></EvaluateButton>
                     {evalResiltDownloadUrl && (
-                        <Link href={evalResiltDownloadUrl} download="evaluation-result.zip">
-                            {"Download the evaluation result"}
+                        <Link className={styles.rerunLink} onClick={makeEvaluationRequest}>
+                            {"Re-Run Evaluation"}
                         </Link>
                     )}
                 </div>

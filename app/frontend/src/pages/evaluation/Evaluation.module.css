@@ -63,6 +63,10 @@
     margin-bottom: 2rem;
 }
 
+.rerunLink {
+    margin-left: 6em;
+}
+
 @media (min-width: 992px) {
     .evaluationContainer {
         padding-left: 0;

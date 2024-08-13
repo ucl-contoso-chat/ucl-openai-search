@@ -1,0 +1,42 @@
+{
+    "gpt_groundedness": {
+        "pass_count": 1,
+        "pass_rate": 0.5,
+        "mean_rating": 3.0
+    },
+    "gpt_relevance": {
+        "pass_count": 2,
+        "pass_rate": 1.0,
+        "mean_rating": 5.0
+    },
+    "gpt_coherence": {
+        "pass_count": 2,
+        "pass_rate": 1.0,
+        "mean_rating": 5.0
+    },
+    "gpt_similarity": {
+        "pass_count": 2,
+        "pass_rate": 1.0,
+        "mean_rating": 5.0
+    },
+    "gpt_fluency": {
+        "pass_count": 2,
+        "pass_rate": 1.0,
+        "mean_rating": 4.0
+    },
+    "f1_score": {
+        "mean": 0.83,
+        "max": 0.96,
+        "min": 0.69
+    },
+    "answer_length": {
+        "mean": 660.5,
+        "max": 1116,
+        "min": 205
+    },
+    "latency": {
+        "mean": 7.16,
+        "max": 10,
+        "min": 4
+    }
+}

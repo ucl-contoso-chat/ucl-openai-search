@@ -1,0 +1,337 @@
+<!DOCTYPE document SYSTEM "rml.dtd">
+<document filename="eval_report.pdf">
+
+    <template pageSize="a4" leftMargin="20mm" rightMargin="20mm" topMargin="20mm" bottomMargin="10mm" showBoundary="0">
+        <pageTemplate id="main">
+            <frame id="first" x1="24" y1="36" width="520" height="780"/>
+        </pageTemplate>
+    </template>
+
+    <stylesheet>
+    </stylesheet>
+
+    <!-- The story starts below this comment -->
+
+    
+
+    <story>
+        <h1> Evaluation Report </h1>
+
+        <h5><i>Generated on 2024-08-13 12:57:34.222260</i></h5>
+
+
+        <!-- <para>
+            This is the "story". This is the part of the RML document where
+            your text is placed.
+        </para>
+        <para>
+            It should be enclosed in "para" and "/para" tags to turn it into
+            paragraphs.
+        </para> -->
+        <h2>GPT Rating Data Summary</h2>
+        <blockTable rowHeight="1cm" colWidths="6cm,4cm,4cm,4cm" >
+            <tr>
+                <td>
+                    <para></para>
+                </td>
+                <td>
+                    <para><b>Pass Count</b></para>
+                </td>
+                <td>
+                    <para><b>Pass Rate</b></para>
+                </td>
+                <td>
+                    <para><b>Mean Rating</b></para>
+                </td>
+            </tr>
+            
+                <tr>
+                    <td>
+                        <para><b>GPT Groundedness Rating</b></para>
+                    </td>
+                    <td>
+                        <para>1 (/ total of 2)</para>
+                    </td>
+                    <td>
+                        <para>50.00%</para>
+                    </td>
+                    <td>
+                        <para>3.0 / 5.0</para>
+                    </td>
+                </tr>
+            
+                <tr>
+                    <td>
+                        <para><b>GPT Relevance Rating</b></para>
+                    </td>
+                    <td>
+                        <para>2 (/ total of 2)</para>
+                    </td>
+                    <td>
+                        <para>100.00%</para>
+                    </td>
+                    <td>
+                        <para>4.0 / 5.0</para>
+                    </td>
+                </tr>
+            
+                <tr>
+                    <td>
+                        <para><b>GPT Coherence Rating</b></para>
+                    </td>
+                    <td>
+                        <para>2 (/ total of 2)</para>
+                    </td>
+                    <td>
+                        <para>100.00%</para>
+                    </td>
+                    <td>
+                        <para>5.0 / 5.0</para>
+                    </td>
+                </tr>
+            
+                <tr>
+                    <td>
+                        <para><b>GPT Similarity Rating</b></para>
+                    </td>
+                    <td>
+                        <para>2 (/ total of 2)</para>
+                    </td>
+                    <td>
+                        <para>100.00%</para>
+                    </td>
+                    <td>
+                        <para>5.0 / 5.0</para>
+                    </td>
+                </tr>
+            
+                <tr>
+                    <td>
+                        <para><b>GPT Fluency Rating</b></para>
+                    </td>
+                    <td>
+                        <para>2 (/ total of 2)</para>
+                    </td>
+                    <td>
+                        <para>100.00%</para>
+                    </td>
+                    <td>
+                        <para>5.0 / 5.0</para>
+                    </td>
+                </tr>
+            
+        </blockTable>
+
+
+        <h2>Statistical Data Summary</h2>
+        <blockTable rowHeight="1cm" colWidths="6cm,4cm,4cm,4cm" >
+            <tr>
+                <td></td>
+                <td>
+                    <para><b>Mean</b></para>
+                </td>
+                <td>
+                    <para><b>Max</b></para>
+                </td>
+                <td>
+                    <para><b>Min</b></para>
+                </td>
+            </tr>
+            
+                <tr>
+                    <td>
+                        <para><b>F1 Score</b></para>
+                    </td>
+                    <td>
+                        <para>0.78</para>
+                    </td>
+                    <td>
+                        <para>0.92</para>
+                    </td>
+                    <td>
+                        <para>0.65</para>
+                    </td>
+                </tr>
+            
+                <tr>
+                    <td>
+                        <para><b>Answer Length</b></para>
+                    </td>
+                    <td>
+                        <para>397.0</para>
+                    </td>
+                    <td>
+                        <para>525</para>
+                    </td>
+                    <td>
+                        <para>269</para>
+                    </td>
+                </tr>
+            
+                <tr>
+                    <td>
+                        <para><b>Response Latency (seconds)</b></para>
+                    </td>
+                    <td>
+                        <para>2.59</para>
+                    </td>
+                    <td>
+                        <para>2</para>
+                    </td>
+                    <td>
+                        <para>2</para>
+                    </td>
+                </tr>
+            
+        </blockTable>
+
+    <h2>Diagrams</h2>
+
+    <illustration width="600" height="300">
+        <image file="evaluation/results/gpt_evaluation/experiment-1723553839/evaluation_results.png" preserveAspectRatio="1" x="10" y="0" width="525" height="140" />
+        <image file="evaluation/results/gpt_evaluation/experiment-1723553839/evaluation_stat_boxplot.png" preserveAspectRatio="1" x="10" y="150" width="525" height="140" />
+    </illustration>
+
+    <illustration width="600" height="360">
+        <image file="evaluation/results/gpt_evaluation/experiment-1723553839/evaluation_gpt_boxplot.png" preserveAspectRatio="1" x="30" y="0" width="480" height="360" />
+    </illustration>
+
+    <illustration width="480" height="360">
+        <image file="evaluation/results/gpt_evaluation/experiment-1723553839/evaluation_gpt_radar.png" preserveAspectRatio="1" x="30" y="0" width="480" height="360" />
+    </illustration>
+
+    <para spaceAfter="5.0cm"></para>
+
+    <h2>Conversation Log</h2>
+    
+        <h3> Question 1  </h3>
+        <para spaceAfter="0.5cm">
+            <b><i>Question: </i></b>
+            What does the coverage for hospice care services include under Northwind Health Plus?
+        </para>
+        <para spaceAfter="0.5cm">
+            <b><i>Ground Truth: </i></b>
+            The coverage for hospice care services under Northwind Health Plus includes care provided by a hospice care team, medications, medical supplies, equipment used in the treatment of the terminal illness, counseling services, inpatient and respite care, and grief counseling and bereavement services. It also covers the costs of services related to the member's terminal illness, such as medical equipment and supplies, home health care, homemaker services, physical therapy, and speech-language pathology.[Northwind_Health_Plus_Benefits_Details.pdf#page=33]
+        </para>
+        <para spaceAfter="0.5cm">
+            <b><i>Answer: </i></b>
+            Answer:
+According to the Northwind Health Plus Benefits Details, the coverage for hospice care services includes:
+
+- Care provided by a hospice care team that includes a doctor, nurse, social worker, chaplain, hospice aide, and volunteer
+- Medications, medical supplies, and equipment used in the treatment of the terminal illness
+- Counseling services for the member and their family members
+- Inpatient and respite care
+- Grief counseling and bereavement services
+
+Source: Northwind_Health_Plus_Benefits_Details.pdf#page=33
+        </para>
+        
+            <para>
+                Response Latency (seconds): <i><b>2.53</b></i> <i>seconds</i>
+            </para>
+        
+            <para>
+                GPT Groundedness Rating: <i><b>5.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                GPT Relevance Rating: <i><b>5.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                GPT Coherence Rating: <i><b>5.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                GPT Similarity Rating: <i><b>5.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                GPT Fluency Rating: <i><b>5.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                F1 Score: <i><b>0.65</b></i> 
+            </para>
+        
+            <para>
+                Answer Length: <i><b>525</b></i> <i>words</i>
+            </para>
+        
+    
+        <h3> Question 2  </h3>
+        <para spaceAfter="0.5cm">
+            <b><i>Question: </i></b>
+            What services are not covered by Northwind Health Plus related to the member's terminal illness?
+        </para>
+        <para spaceAfter="0.5cm">
+            <b><i>Ground Truth: </i></b>
+            Northwind Health Plus does not cover services related to treatment that is intended to cure the member's terminal illness. This includes treatments such as chemotherapy, radiation therapy, and surgery.[Northwind_Health_Plus_Benefits_Details.pdf#page=33]
+        </para>
+        <para spaceAfter="0.5cm">
+            <b><i>Answer: </i></b>
+            Answer:
+Northwind Health Plus does not cover services related to treatment that is intended to cure the member's terminal illness. This includes treatments such as chemotherapy, radiation therapy, and surgery.
+
+Source: Northwind_Health_Plus_Benefits_Details.pdf#page=18
+        </para>
+        
+            <para>
+                Response Latency (seconds): <i><b>2.64</b></i> <i>seconds</i>
+            </para>
+        
+            <para>
+                GPT Groundedness Rating: <i><b>1.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                GPT Relevance Rating: <i><b>3.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                GPT Coherence Rating: <i><b>5.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                GPT Similarity Rating: <i><b>5.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                GPT Fluency Rating: <i><b>5.0</b></i> <i> / 5.0</i>
+            </para>
+        
+            <para>
+                F1 Score: <i><b>0.92</b></i> 
+            </para>
+        
+            <para>
+                Answer Length: <i><b>269</b></i> <i>words</i>
+            </para>
+        
+    
+
+    <h2>Contexts</h2>
+    
+        <h5> Northwind_Health_Plus_Benefits_Details.pdf#page=33: </h5>
+        <para>
+            · Make sure to keep all receipts and documentation related to the item you are considering, as this will be important if you need to file a claim for coverage. . If you have any questions about the coverage of a particular item, make sure to contact the Northwind Health Plus customer service team for more information. By following these tips, you can be sure that the items you are considering are covered under the Northwind Health Plus plan. With this coverage, you can get the medical equipment, prosthetics, orthotics, and supplies you need to maintain your health and wellbeing. Hospice Care COVERED SERVICES - HOSPICE CARE Northwind Health Plus provides coverage for hospice care services to members who are terminally ill and are expected to have a life expectancy of six months or less if their illness runs its normal course. Hospice care services are designed to provide comfort and support to terminally ill members and their families. Under Northwind Health Plus, coverage for hospice care services includes: · Care provided by a hospice care team that includes a doctor, nurse, social worker, chaplain,
+        </para>
+    
+        <h5> Northwind_Health_Plus_Benefits_Details.pdf#page=34: </h5>
+        <para>
+            It is important to talk to your doctor about your options and what services are covered under Northwind Health Plus. It is also important to be aware of the types of services that are not covered under Northwind Health Plus. Be sure to ask your doctor about any treatments that are not covered and make sure that you understand the implications of not receiving these treatments. It is also important to talk to your doctor about any medications and medical supplies that you may need that are not covered under Northwind Health Plus. You may be able to get these medications and supplies from another provider or through a private insurance plan. In addition, it is important to talk to your doctor about the types of services that are available through hospice care providers. Different hospice care providers offer different services, so it is important to understand what services are offered and what is covered by Northwind Health Plus. Finally, it is important to talk to your doctor about any other services that may be available to you and your family through hospice care.
+        </para>
+    
+        <h5> Northwind_Health_Plus_Benefits_Details.pdf#page=18: </h5>
+        <para>
+            These services may be covered when provided by an appropriate acupuncturest as part of a treatment plan approved by your primary care physician. Northwind Health Plus does not cover services that are experimental, investigational, or for cosmetic purposes. Services for nutritional counseling, massage therapy, and physical therapy are also not covered. Northwind Health Plus also does not cover acupuncture services that are provided in a hospital or a skilled nursing facility. If you have any questions about acupuncture services covered by Northwind Health Plus, contact the Member Services department at Northwind Health. They are available to answer any questions you may have about coverage and eligibility. Allergy Testing and Treatment COVERED SERVICES: Allergy Testing and Treatment At Contoso, we understand that allergies can be a major source of discomfort and inconvenience for our employees. That's why we are proud to offer coverage for allergy testing and treatment through Northwind Health Plus. Allergy testing and treatment services are covered under the plan, with some exceptions.
+        </para>
+    
+        <h5> Northwind_Health_Plus_Benefits_Details.pdf#page=75: </h5>
+        <para>
+            Through our Chronic Condition Management Program, we provide members with access to an interdisciplinary team of healthcare professionals who can provide personalized care and support. We also offer a variety of resources and programs to help members manage their chronic conditions. With Northwind Health Plus, you can rest assured that you'll have the support and resources you need to stay healthy and active. EXCLUSIONS EXCLUSIONS Although Northwind Health Plus provides comprehensive coverage for medical, vision, and dental services, there are certain services and treatments that are excluded from the plan. It is important to understand these exclusions so that you can plan your care accordingly. Services Not Covered: Northwind Health Plus does not cover services that are not medically necessary, such as cosmetic surgery or elective procedures. Additionally, services or treatments that are experimental or investigational are not covered under this plan. Prescriptions Not Covered: The plan does not cover prescriptions that are not medically necessary, certain over-the-counter medications, or prescription medications that are used to enhance performance in athletics.
+        </para>
+    
+    </story>
+</document>

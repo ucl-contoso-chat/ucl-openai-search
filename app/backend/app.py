@@ -100,7 +100,7 @@ from templates.supported_models import get_supported_models
 rootpath = os.path.join(os.getcwd(), "../..")
 sys.path.append(rootpath)
 
-from evaluation.evaluate import run_evaluation_by_request
+from evaluation.evaluate import run_evaluation_from_config
 from evaluation.utils import load_config, save_config, save_jsonl
 
 bp = Blueprint("routes", __name__, static_folder="static")
@@ -370,8 +370,8 @@ async def evaluate(auth_claims: dict[str, Any]):
     temp_config_path = Path("config_temp.json")
 
     save_config(config, "evaluation" / temp_config_path)
-    result_file = run_evaluation_by_request(
-        EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions
+    result_file = run_evaluation_from_config(
+        EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, report_output='./evaluation/report/eval_report.pdf'
     )
 
     # if evaluation failed
@@ -386,7 +386,7 @@ async def evaluate(auth_claims: dict[str, Any]):
             return_data.write(fo.read())
         return_data.seek(0)
         os.remove(result_file)
-        result = await send_file(return_data, as_attachment=True, mimetype="application/zip")
+        result = await send_file(return_data, as_attachment=True, mimetype="application/pdf")
         return result
     except Exception as e:
         os.remove(result_file)

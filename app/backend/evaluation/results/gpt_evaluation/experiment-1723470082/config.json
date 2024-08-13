@@ -1,0 +1,35 @@
+{
+    "requested_metrics": [
+        "gpt_groundedness",
+        "gpt_relevance",
+        "gpt_coherence",
+        "gpt_similarity",
+        "gpt_fluency",
+        "f1_score",
+        "answer_length",
+        "latency"
+    ],
+    "target_parameters": {
+        "overrides": {
+            "top": 3,
+            "temperature": 0.3,
+            "minimum_reranker_score": 0,
+            "minimum_search_score": 0,
+            "retrieval_mode": "hybrid",
+            "semantic_ranker": true,
+            "semantic_captions": false,
+            "suggest_followup_questions": false,
+            "use_oid_security_filter": false,
+            "use_groups_security_filter": false,
+            "vector_fields": [
+                "embedding"
+            ],
+            "use_gpt4v": false,
+            "gpt4v_input": "textAndImages"
+        }
+    },
+    "testdata_path": "/workspaces/ucl-openai-search/app/backend/evaluation/input/input_temp.jsonl",
+    "results_dir": "/workspaces/ucl-openai-search/app/backend/evaluation/results/gpt_evaluation/experiment-1723470082",
+    "target_url": null,
+    "evaluation_gpt_model": "gpt-35-turbo"
+}
