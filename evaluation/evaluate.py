@@ -1,7 +1,6 @@
 import concurrent.futures
 import json
 import logging
-import math
 import os
 import shutil
 import time
@@ -202,6 +201,7 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     else:
         logger.error("Evaluation was terminated early due to an error ⬆")
 
+
 def run_evaluation_by_request(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
     """Run evaluation using the provided configuration file."""
     timestamp = int(time.time())
@@ -254,6 +254,7 @@ def run_evaluation_by_request(working_dir: Path, config: dict, num_questions: in
         shutil.rmtree(results_dir)
         logger.error("Evaluation was terminated early due to an error ⬆")
         return "Evaluation was terminated early"
+
 
 def dump_summary(rated_questions: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
     """Save evaluation summary to a file."""
