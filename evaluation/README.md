@@ -212,7 +212,6 @@ python -m evaluation red-teaming-comparison \
 
 You can specify the model names to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
 
-
 ### View red teaming evaluation results
 
 The results of each red teaming experiment are stored in the specified results directory, in a timestamped

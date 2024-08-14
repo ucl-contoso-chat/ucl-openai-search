@@ -215,6 +215,7 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     except Exception as e:
         logger.error("Evaluation was terminated early due to an error ⬆")
         raise e
+    return True
 
 
 def dump_summary(rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
