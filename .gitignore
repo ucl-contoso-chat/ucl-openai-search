@@ -7,7 +7,7 @@ evaluation/results
 
 # Evaluation datasets
 evaluation/input
-evaluation/output
+app/backend/evaluation/input
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
