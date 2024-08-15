@@ -158,9 +158,9 @@ data/**/*.md5
 
 # Generated Report
 evaluation/report
-backend/evaluation/report
+app/backend/evaluation/report
 evaluation/results
-backend/evaluation/results
+app/backend/evaluation/results
 
 # VS Code
 .vscode/

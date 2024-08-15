@@ -158,6 +158,7 @@ export function Component(): JSX.Element {
             setError("Please enter the number of questions you want to evaluate");
             return;
         } else {
+            setError(null);
             requestData.append("num_questions", numQuestionsToEval.toString());
         }
 

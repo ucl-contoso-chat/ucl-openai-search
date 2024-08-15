@@ -257,7 +257,7 @@ def run_evaluation_by_request(
             output_config.write(json.dumps(config, indent=4))
 
         result_file_name = shutil.make_archive(results_dir, "zip", results_dir)
-        shutil.rmtree(results_dir)
+        # shutil.rmtree(results_dir)
 
         if report_output is not None and report_output != "":
             generate_eval_report(output_path=report_output)
