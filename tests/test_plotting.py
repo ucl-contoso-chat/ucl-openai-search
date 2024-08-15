@@ -6,9 +6,9 @@ import pytest
 
 from evaluation.plotting import (
     plot_bar_charts,
-    plot_multiple_box_charts,
+    plot_box_chart,
+    plot_box_charts_grid,
     plot_radar_chart,
-    plot_single_box_chart,
 )
 
 
@@ -46,7 +46,7 @@ def test_plot_multiple_box_charts(mock_savefig):
     y_labels = ["Y Label 1", "Y Label 2"]
 
     output_path = Path("test_multiple_box_charts.png")
-    plot_multiple_box_charts(layout, data, titles, y_labels, output_path=output_path)
+    plot_box_charts_grid(layout, data, titles, y_labels, output_path=output_path)
 
     mock_savefig.assert_called_once_with(output_path)
     plt.close("all")
@@ -65,7 +65,7 @@ def test_plot_single_box_chart(mock_savefig):
     y_label = "Y Label"
 
     output_path = Path("test_single_box_chart.png")
-    plot_single_box_chart(data, title, x_labels, y_label, output_path=output_path)
+    plot_box_chart(data, title, x_labels, y_label, output_path=output_path)
 
     mock_savefig.assert_called_once_with(output_path)
     plt.close("all")
