@@ -29,7 +29,7 @@ def test_plot_bar_charts(mock_savefig):
     output_path = Path("test_bar_chart.png")
     plot_bar_charts(layout, data, titles, y_labels, output_path=output_path)
 
-    mock_savefig.assert_called_once_with(output_path)
+    mock_savefig.assert_called_once_with(output_path, bbox_inches="tight", format="png")
     plt.close("all")
 
 
@@ -48,7 +48,7 @@ def test_plot_multiple_box_charts(mock_savefig):
     output_path = Path("test_multiple_box_charts.png")
     plot_box_charts_grid(layout, data, titles, y_labels, output_path=output_path)
 
-    mock_savefig.assert_called_once_with(output_path)
+    mock_savefig.assert_called_once_with(output_path, bbox_inches="tight", format="png")
     plt.close("all")
 
 
@@ -67,7 +67,7 @@ def test_plot_single_box_chart(mock_savefig):
     output_path = Path("test_single_box_chart.png")
     plot_box_chart(data, title, x_labels, y_label, output_path=output_path)
 
-    mock_savefig.assert_called_once_with(output_path)
+    mock_savefig.assert_called_once_with(output_path, bbox_inches="tight", format="png")
     plt.close("all")
 
 
@@ -86,7 +86,7 @@ def test_plot_radar_chart(mock_savefig):
     output_path = Path("test_radar_chart.png")
     plot_radar_chart(metric_label_list, data, title, output_path, num)
 
-    mock_savefig.assert_called_once_with(output_path)
+    mock_savefig.assert_called_once_with(output_path, bbox_inches="tight", format="png")
     plt.close("all")
 
 
