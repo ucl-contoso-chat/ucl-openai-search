@@ -16,9 +16,9 @@ from evaluation.evaluate_metrics import metrics_by_name
 from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
 from evaluation.plotting import (
     plot_bar_charts,
-    plot_multiple_box_charts,
+    plot_box_chart,
+    plot_box_charts_grid,
     plot_radar_chart,
-    plot_single_box_chart,
 )
 from evaluation.utils import load_jsonl
 
@@ -141,7 +141,7 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
             "latency",
         ],
     )
-    get_model_url = os.environ.get("BACKEND_URI") + "/getmodels" if target_url is None else target_url
+    get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
     compared_models = config.get("compared_models")
     all_models = get_models(get_model_url)
     for elem in compared_models:
@@ -149,7 +149,7 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
             logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
             return False
 
-    target_url = os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url
+    target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
 
     try:
         logger.info("Running evaluation using data from %s", testdata_path)
@@ -311,9 +311,9 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         data,
         titles,
         y_labels,
+        results_dir / "evaluation_results.png",
         y_lims,
         width,
-        results_dir / "evaluation_results.png",
     )
 
     gpt_metric_avg_ratings = {}
@@ -337,18 +337,18 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         results_dir / "evaluation_gpt_radar.png",
         5,
     )
-    plot_single_box_chart(
+    plot_box_chart(
         data_for_single_box,
         "GPT Ratings",
         label_for_single_box,
         "Rating Score",
-        [0.0, 5.0],
         results_dir / "evaluation_gpt_boxplot.png",
+        [0.0, 5.0],
     )
 
     y_labels = [metric.NOTE for _, metric in requested_stat_metrics.items()]
 
-    plot_multiple_box_charts(
+    plot_box_charts_grid(
         layout,
         data_for_multi_box,
         titles_for_multi_box,

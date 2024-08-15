@@ -12,14 +12,20 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 
 
+def save_figure(output_path: Path, format: str = "png"):
+    """Save the current figure to the provided output path."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_path, bbox_inches="tight", format=format)
+
+
 def plot_bar_charts(
     layout: Tuple[int, int],
     data: Dict[str, List[Dict[str, any]]],
     titles: List[str],
     y_labels: List[str],
+    output_path: Path = Path("evaluation_results.png"),
     y_max_lim: List[float] = None,
     width=0.4,
-    output_path: Path = Path("evaluation_results.png"),
 ):
     """Plot bar charts for the provided data."""
     if layout[0] * layout[1] != len(data):
@@ -71,11 +77,11 @@ def plot_bar_charts(
         ax.set_xticklabels(all_x_data)
         ax.legend()
 
-    plt.savefig(output_path)
+    save_figure(output_path)
     plt.close(fig)
 
 
-def plot_multiple_box_charts(
+def plot_box_charts_grid(
     layout: Tuple[int, int],
     data: Dict[str, List[List[float]]],
     titles: List[str],
@@ -115,17 +121,17 @@ def plot_multiple_box_charts(
         ax.set_xticks(positions)
         ax.set_xticklabels(data.keys())
 
-    plt.savefig(output_path)
+    save_figure(output_path)
     plt.close(fig)
 
 
-def plot_single_box_chart(
+def plot_box_chart(
     data: Dict[str, List[List[float]]],
     title: str,
     x_labels: List[str],
     y_label: str,
+    output_path: Path,
     y_lim: Tuple[float, float] = None,
-    output_path: Path = Path("boxplot.png"),
 ):
     """Plot a box chart for the provided data."""
 
@@ -162,7 +168,7 @@ def plot_single_box_chart(
     if y_lim:
         plt.ylim(y_lim)
 
-    plt.savefig(output_path)
+    save_figure(output_path)
     plt.close()
 
 
@@ -186,7 +192,7 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
     # ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
     ax.set_varlabels(metric_label_list)
 
-    plt.savefig(output_path)
+    save_figure(output_path)
     plt.close(fig)
 
 
