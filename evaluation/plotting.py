@@ -12,7 +12,7 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 
 
-def save_figure(output_path: Path, format: str = "pdf"):
+def save_figure(output_path: Path, format: str = "png"):
     """Save the current figure to the provided output path."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, bbox_inches="tight", format=format)

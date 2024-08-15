@@ -22,6 +22,7 @@ from evaluation.plotting import (
     plot_box_charts_grid,
     plot_radar_chart,
 )
+from evaluation.report_generator import generate_eval_report
 from evaluation.utils import load_jsonl
 
 EVALUATION_RESULTS_DIR = "gpt_evaluation"
@@ -154,7 +155,9 @@ def run_evaluation(
     return True
 
 
-def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
+def run_evaluation_from_config(
+    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, report_output: Path = None
+):
     """Run evaluation using the provided configuration file."""
     timestamp = int(time.time())
     results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
@@ -201,9 +204,15 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
     else:
         logger.error("Evaluation was terminated early due to an error ⬆")
 
+    if report_output is not None and report_output != "":
+        generate_eval_report(output_path=report_output)
+        logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
-def run_evaluation_by_request(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
-    """Run evaluation using the provided configuration file."""
+
+def run_evaluation_by_request(
+    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, report_output: Path = None
+):
+    """Run evaluation from a backend request"""
     timestamp = int(time.time())
     results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -249,6 +258,11 @@ def run_evaluation_by_request(working_dir: Path, config: dict, num_questions: in
 
         result_file_name = shutil.make_archive(results_dir, "zip", results_dir)
         shutil.rmtree(results_dir)
+
+        if report_output is not None and report_output != "":
+            generate_eval_report(output_path=report_output)
+            logger.info("PDF Report generated at %s", os.path.abspath(report_output))
+
         return working_dir / result_file_name
     else:
         shutil.rmtree(results_dir)
@@ -324,7 +338,7 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
     layout = (int(np.ceil(len(rating_stat_data) / 3)), 3 if len(rating_stat_data) > 3 else len(rating_stat_data))
 
     plot_bar_charts(
-        layout, data, titles, y_labels, results_dir / "evaluation_results.pdf", y_max_lim=y_lims, width=width
+        layout, data, titles, y_labels, results_dir / "evaluation_results.png", y_max_lim=y_lims, width=width
     )
 
     gpt_metric_avg_ratings = [val for _, val in rating_stat_data["mean_rating"].items()]
@@ -334,7 +348,7 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
         gpt_metric_avg_ratings,
         "GPT Rating Metrics Results",
         5,
-        results_dir / "evaluation_gpt_radar.pdf",
+        results_dir / "evaluation_gpt_radar.png",
     )
 
     data = [data for _, data in gpt_metric_data_points.items()]
@@ -344,7 +358,7 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
         "GPT Ratings",
         labels,
         "Rating Score",
-        results_dir / "evaluation_gpt_boxplot.pdf",
+        results_dir / "evaluation_gpt_boxplot.png",
         y_lim=(0.0, 5.0),
     )
 
@@ -361,5 +375,5 @@ def plot_diagrams(questions_with_ratings: list, requested_metrics: list, passing
         data,
         titles,
         y_labels,
-        results_dir / "evaluation_stat_boxplot.pdf",
+        results_dir / "evaluation_stat_boxplot.png",
     )

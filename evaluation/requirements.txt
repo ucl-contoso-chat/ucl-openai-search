@@ -687,7 +687,6 @@ pexpect==4.9.0
 pillow==10.4.0
     # via
     #   matplotlib
-    #   openai-messages-token-helper
     #   promptflow-devkit
 pkginfo==1.11.1
     # via azureml-core
