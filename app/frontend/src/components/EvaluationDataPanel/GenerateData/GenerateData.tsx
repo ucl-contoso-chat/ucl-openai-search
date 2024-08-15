@@ -5,7 +5,7 @@ import styles from "./GenerateData.module.css";
 
 import { DefaultButton, TextField, Text, Spinner, SpinnerSize, Label, Link } from "@fluentui/react";
 import { useMsal } from "@azure/msal-react";
-import { generateApi } from "../../../api";
+import { GenerateDataRequest, generateApi } from "../../../api";
 import { ErrorCircle24Regular } from "@fluentui/react-icons";
 
 interface Props {
@@ -42,21 +42,21 @@ export const GenerateData: React.FC<Props> = ({
 
     const makeGenerateRequest = async () => {
         setInProgress(true);
-        const requestData: FormData = new FormData();
         if (numQuestions === 0) {
             setGenerateError("Please enter the number of questions you want to generate");
             setInProgress(false);
             return;
-        } else {
-            requestData.append("num_questions", numQuestions.toString());
         }
         if (perSource === 0) {
             setGenerateError("Please enter the number of questions per source");
             setInProgress(false);
             return;
-        } else {
-            requestData.append("per_source", perSource.toString());
         }
+
+        const requestData: GenerateDataRequest = {
+            num_questions: numQuestions,
+            per_source: perSource
+        };
 
         const token = client ? await getToken(client) : undefined;
         try {

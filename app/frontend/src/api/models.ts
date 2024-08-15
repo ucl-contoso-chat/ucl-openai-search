@@ -91,6 +91,11 @@ export type Config = {
     currentModel: string;
 };
 
+export type GenerateDataRequest = {
+    num_questions: number;
+    per_source: number;
+};
+
 export type SimpleAPIResponse = {
     message?: string;
 };

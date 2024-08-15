@@ -1,6 +1,6 @@
 const BACKEND_URI = "";
 
-import { ChatAppResponse, ChatAppResponseOrError, ChatAppRequest, Config, SimpleAPIResponse } from "./models";
+import { ChatAppResponse, ChatAppResponseOrError, ChatAppRequest, Config, SimpleAPIResponse, GenerateDataRequest } from "./models";
 import { useLogin, getToken, isUsingAppServicesLogin } from "../authConfig";
 import { List } from "@fluentui/react";
 
@@ -149,11 +149,12 @@ export async function evaluateApi(request: FormData, idToken: string | undefined
     return dataResponse;
 }
 
-export async function generateApi(request: FormData, idToken: string | undefined): Promise<Blob> {
+export async function generateApi(request: GenerateDataRequest, idToken: string | undefined): Promise<Blob> {
+    const headers = await getHeaders(idToken);
     const response = await fetch(`${BACKEND_URI}/generate`, {
         method: "POST",
-        headers: await getHeaders(idToken),
-        body: request
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(request)
     });
 
     if (!response.ok) {

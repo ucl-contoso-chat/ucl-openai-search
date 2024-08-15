@@ -24,6 +24,7 @@ export function Component(): JSX.Element {
     const [openItems, setOpenItems] = useState(["1"]);
     const [evalData, setEvalData] = useState<File | null>(null);
     const [numQuestions, setNumQuestions] = useState<number>(0);
+    const [numQuestionsToEval, setNumQuestionsToEval] = useState<number>(1);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [selectedMetrics, setSelectedMetrics] = useState<{}[]>([]);
     const [evalResiltDownloadUrl, setEvalResultDownloadUrl] = useState<string>("");
@@ -46,8 +47,8 @@ export function Component(): JSX.Element {
     const [inProgress, setInProgress] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
 
-    const onNumQuestionsChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
-        setNumQuestions(parseInt(newValue || "2"));
+    const onNumQuestionsToEvalChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
+        setNumQuestionsToEval(parseInt(newValue || "2"));
     };
 
     const onTemperatureChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
@@ -152,12 +153,12 @@ export function Component(): JSX.Element {
             setError("Please select at least one metric to evaluate");
             return;
         }
-        if (numQuestions === 0) {
+        if (numQuestionsToEval === 0) {
             setInProgress(false);
             setError("Please enter the number of questions you want to evaluate");
             return;
         } else {
-            requestData.append("num_questions", numQuestions.toString());
+            requestData.append("num_questions", numQuestionsToEval.toString());
         }
         const config = {
             requested_metrics: selectedMetrics,
@@ -227,8 +228,8 @@ export function Component(): JSX.Element {
                                         type="number"
                                         min={1}
                                         max={numQuestions}
-                                        defaultValue={numQuestions.toString()}
-                                        onChange={onNumQuestionsChange}
+                                        defaultValue={numQuestionsToEval.toString()}
+                                        onChange={onNumQuestionsToEvalChange}
                                         aria-labelledby={numQuestionsId}
                                     />
                                 )}

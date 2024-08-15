@@ -361,10 +361,11 @@ async def evaluate(auth_claims: dict[str, Any]):
         return jsonify({"message": "No application setting config part in the request", "status": "failed"}), 400
 
     input_data_file = request_files.get("input_data")
-    num_questions = int(request_form.get("num_questions"))
-    config = json.loads(request_form.get("config"))
+    num_questions = int(request_form.get("num_questions", 0))
+    config = json.loads(request_form.get("config", "{}"))
 
-    input_data = [json.loads(line) for line in input_data_file.readlines()]
+    if input_data_file is not None:
+        input_data = [json.loads(line) for line in input_data_file.readlines()]
     save_jsonl(input_data, Path("./evaluation/input/input_temp.jsonl"))
     config["testdata_path"] = "input/input_temp.jsonl"
     config["results_dir"] = "results"
@@ -398,9 +399,12 @@ async def evaluate(auth_claims: dict[str, Any]):
 @bp.route("/generate", methods=["POST"])
 @authenticated
 async def generate_qa(auth_claims: dict[str, Any]):
-    request_form = await request.form
-    num_questions = int(request_form.get("num_questions"))
-    per_source = int(request_form.get("per_source"))
+    if not request.is_json:
+        return jsonify({"error": "request must be json"}), 415
+    request_json = await request.get_json()
+
+    num_questions = request_json.get("num_questions")
+    per_source = request_json.get("per_source")
     output_file = EVALUATION_DIR / "input" / " input_temp.jsonl"
 
     generate_test_qa_data(
