@@ -58,6 +58,7 @@ param speechServiceSkuName string // Set in main.parameters.json
 param useGPT4V bool = false
 param huggingFaceApiKey string = ''
 param defaultModel string = ''
+param useInjectionProtection bool = false
 
 @description('Location for the OpenAI resource group')
 @allowed([ 'canadaeast', 'eastus', 'eastus2', 'francecentral', 'switzerlandnorth', 'uksouth', 'japaneast', 'northcentralus', 'australiaeast', 'swedencentral' ])
@@ -328,6 +329,7 @@ module backend 'core/host/appservice.bicep' = {
       AZURE_AUTHENTICATION_ISSUER_URI: authenticationIssuerUri
       HUGGINGFACE_API_KEY: huggingFaceApiKey
       DEFAULT_MODEL: defaultModel
+      USE_INJECTION_PROTECTION: useInjectionProtection
       // CORS support, for frontends on other hosts
       ALLOWED_ORIGIN: allowedOrigin
       USE_VECTORS: useVectors

@@ -28,6 +28,8 @@ from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
 from core.messageshelper import build_past_messages
+from core.promptprotection import PromptProtection, PromptProtectionConfig
+from error import PromptProtectionError
 from templates.supported_models import ModelConfig
 
 
@@ -47,6 +49,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         emb_client: LLMClient,
         current_model: str,
         available_models: dict[str, ModelConfig],
+        protection_config: PromptProtectionConfig,
         embedding_deployment: Optional[str],  # Not needed for non-Azure OpenAI or for retrieval_mode="text"
         embedding_model: str,
         embedding_dimensions: int,
@@ -61,6 +64,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         self.auth_helper = auth_helper
         self.current_model = current_model
         self.available_models = available_models
+        self.prompt_protection_config = protection_config
         self.embedding_deployment = embedding_deployment
         self.embedding_model = embedding_model
         self.embedding_dimensions = embedding_dimensions
@@ -135,8 +139,22 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             raise ValueError(f"Model {self.current_model} is not supported. Please create a template for this model.")
 
         current_api = self.llm_clients[model_config.type]
-
         original_user_query = messages[-1]["content"]
+
+        prompt_protection_overrides = overrides.get("prompt_protection")
+        if prompt_protection_overrides:
+            for protection_name, config in prompt_protection_overrides.items():
+                self.prompt_protection_config.setProtectionBool(protection_name, config.get("use"))
+
+        if not self.prompt_protection_config.empty_check():
+            prompt_protection_instance = PromptProtection(self.prompt_protection_config)
+            if isinstance(original_user_query, str):
+                if not await prompt_protection_instance.check_for_all_exploits(
+                    message=original_user_query, llm_client=self.llm_clients["hf"]
+                ):
+                    raise PromptProtectionError(
+                        message="Prompt contains an exploit, the application has terminated.", code="content_filter"
+                    )
 
         if not isinstance(original_user_query, str):
             raise ValueError("The most recent message content must be a string.")

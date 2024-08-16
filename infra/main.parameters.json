@@ -158,6 +158,9 @@
     "defaultModel": {
       "value": "${DEFAULT_MODEL}"
     },
+    "useInjectionProtection": {
+      "value": "${USE_INJECTION_PROTECTION}"
+    },
     "useSpeechInputBrowser": {
       "value": "${USE_SPEECH_INPUT_BROWSER=false}"
     },

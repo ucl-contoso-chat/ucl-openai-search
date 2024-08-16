@@ -4,7 +4,18 @@ import { useId } from "@fluentui/react-hooks";
 
 import styles from "./Ask.module.css";
 
-import { askApi, configApi, getSpeechApi, ChatAppResponse, ChatAppRequest, RetrievalMode, VectorFieldOptions, GPT4VInput, getSupportedModels } from "../../api";
+import {
+    askApi,
+    configApi,
+    getSpeechApi,
+    ChatAppResponse,
+    ChatAppRequest,
+    RetrievalMode,
+    VectorFieldOptions,
+    GPT4VInput,
+    getSupportedModels,
+    ProtectionConfig
+} from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -21,6 +32,7 @@ import { useMsal } from "@azure/msal-react";
 import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { LoginContext } from "../../loginContext";
 import { ModelChoice } from "../../components/ModelChoice";
+import { ProtectionOptions } from "../../components/ProtectionOptions";
 
 export function Component(): JSX.Element {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -54,6 +66,8 @@ export function Component(): JSX.Element {
 
     const lastQuestionRef = useRef<string>("");
 
+    const [protectionConfig, setProtectionConfig] = useState<Record<string, ProtectionConfig>>({});
+
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
     const [answer, setAnswer] = useState<ChatAppResponse>();
@@ -64,6 +78,16 @@ export function Component(): JSX.Element {
 
     const client = useLogin ? useMsal().instance : undefined;
     const { loggedIn } = useContext(LoginContext);
+
+    const updateProtectionConfig = (name: string, use: boolean) => {
+        setProtectionConfig(prevConfig => ({
+            ...prevConfig,
+            [name]: {
+                ...prevConfig[name],
+                use: use
+            }
+        }));
+    };
 
     const getConfig = async () => {
         configApi().then(config => {
@@ -79,6 +103,9 @@ export function Component(): JSX.Element {
             setShowSpeechOutputBrowser(config.showSpeechOutputBrowser);
             setShowSpeechOutputAzure(config.showSpeechOutputAzure);
             setModel(config.currentModel);
+
+            const protectionOptions = config.protectionConfig || {};
+            setProtectionConfig(protectionOptions);
         });
     };
 
@@ -140,6 +167,7 @@ export function Component(): JSX.Element {
                         vector_fields: vectorFieldList,
                         use_gpt4v: useGPT4V,
                         gpt4v_input: gpt4vInput,
+                        prompt_protection: protectionConfig,
                         ...(seed !== null ? { seed: seed } : {})
                     }
                 },
@@ -447,6 +475,8 @@ export function Component(): JSX.Element {
                         />
                     </>
                 )}
+
+                <ProtectionOptions updateProtectionConfig={updateProtectionConfig} protectionConfig={protectionConfig} />
 
                 {showGPT4VOptions && (
                     <GPT4VSettings

@@ -16,6 +16,11 @@ export const enum VectorFieldOptions {
     Both = "both"
 }
 
+export interface ProtectionConfig {
+    model_name: string;
+    use: boolean;
+}
+
 export type ChatAppRequestOverrides = {
     retrieval_mode?: RetrievalMode;
     semantic_ranker?: boolean;
@@ -36,6 +41,7 @@ export type ChatAppRequestOverrides = {
     use_gpt4v?: boolean;
     gpt4v_input?: GPT4VInput;
     vector_fields: VectorFieldOptions[];
+    prompt_protection?: Record<string, ProtectionConfig>;
 };
 
 export type ResponseMessage = {
@@ -89,6 +95,7 @@ export type Config = {
     showSpeechOutputBrowser: boolean;
     showSpeechOutputAzure: boolean;
     currentModel: string;
+    protectionConfig: Record<string, ProtectionConfig> | null;
 };
 
 export type SimpleAPIResponse = {

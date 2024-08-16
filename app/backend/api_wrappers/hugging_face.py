@@ -5,6 +5,7 @@ from huggingface_hub import AsyncInferenceClient  # type: ignore
 from huggingface_hub.inference._generated.types import (  # type: ignore
     ChatCompletionOutput,
     ChatCompletionStreamOutput,
+    TextClassificationOutputElement,
 )
 from openai.types import CreateEmbeddingResponse
 from openai.types.chat import (
@@ -73,6 +74,11 @@ class HuggingFaceClient:
             top_logprobs=top_logprobs,
             top_p=top_p,
         )
+
+    async def text_classification(
+        self, text: str, model: Optional[str] = None
+    ) -> List[TextClassificationOutputElement]:
+        return await self.client.text_classification(text=text, model=model)
 
     async def create_embeddings(self, *args, **kwargs) -> CreateEmbeddingResponse:
         raise NotImplementedError
