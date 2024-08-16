@@ -1,6 +1,8 @@
 .container {
     display: flex;
     align-items: center;
+    justify-content: center;
+    justify-items: center;
     cursor: pointer;
     padding: 0.5rem;
 }
@@ -31,10 +33,26 @@
 .progressContainer {
     display: flex;
     padding: 0.5rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-around;
+    align-items: center;
 }
 
 .progressContainer > div {
     display: flex;
     align-items: center;
     margin: 0.5rem;
+}
+
+.buttonTextContainer {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.icon {
+    margin: 0.5em;
 }

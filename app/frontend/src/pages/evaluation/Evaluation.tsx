@@ -10,7 +10,7 @@ import { configApi, RetrievalMode, VectorFieldOptions, GPT4VInput, SimpleAPIResp
 import { useLogin, getToken, requireAccessControl } from "../../authConfig";
 import { HelpCallout } from "../../components/HelpCallout";
 import { toolTipText } from "../../i18n/tooltips.js";
-import { metrics } from "../../i18n/metrics";
+import { gpt_metrics, stats_metrics } from "../../i18n/metrics";
 import { GPT4VSettings } from "../../components/GPT4VSettings";
 import { VectorSettings } from "../../components/VectorSettings";
 import { useMsal } from "@azure/msal-react";
@@ -26,7 +26,8 @@ export function Component(): JSX.Element {
     const [numQuestions, setNumQuestions] = useState<number>(0);
     const [numQuestionsToEval, setNumQuestionsToEval] = useState<number>(1);
     const [isUploading, setIsUploading] = useState<boolean>(false);
-    const [selectedMetrics, setSelectedMetrics] = useState<{}[]>([]);
+    const [selectedGPTMetrics, setSelectedGPTMetrics] = useState<{}[]>(gpt_metrics.map(metric => metric.name));
+    const [selectedStatsMetrics, setSelectedStatsMetrics] = useState<{}[]>(stats_metrics.map(metric => metric.name));
     const [evalResiltDownloadUrl, setEvalResultDownloadUrl] = useState<string>("");
 
     const [temperature, setTemperature] = useState<number>(0.3);
@@ -148,9 +149,14 @@ export function Component(): JSX.Element {
         } else {
             requestData.append("input_data", evalData);
         }
-        if (selectedMetrics.length === 0) {
+        if (selectedGPTMetrics.length === 0) {
             setInProgress(false);
-            setError("Please select at least one metric to evaluate");
+            setError("Please select at least one RAG Evaluation metric to evaluate");
+            return;
+        }
+        if (selectedStatsMetrics.length === 0) {
+            setInProgress(false);
+            setError("Please select at least one Statistical metric to evaluate");
             return;
         }
         if (numQuestionsToEval === 0) {
@@ -163,6 +169,8 @@ export function Component(): JSX.Element {
         }
 
         setEvalResultDownloadUrl("");
+
+        const selectedMetrics = selectedGPTMetrics.concat(selectedStatsMetrics);
 
         const config = {
             requested_metrics: selectedMetrics,
@@ -246,8 +254,27 @@ export function Component(): JSX.Element {
                             {"Select Evaluation Metrics"}
                         </AccordionHeader>
                         <AccordionPanel>
-                            <div className={styles.evaluationMetricContainer}>
-                                <EvaluationMetricList metrics={metrics} selectedMetrics={selectedMetrics} setSelectedMetrics={setSelectedMetrics} />
+                            <div>
+                                <h3>RAG Evaluation Metrics</h3>
+                                <hr />
+                                <br />
+                                <div className={styles.evaluationMetricContainer}>
+                                    <EvaluationMetricList
+                                        metrics={gpt_metrics}
+                                        selectedMetrics={selectedGPTMetrics}
+                                        setSelectedMetrics={setSelectedGPTMetrics}
+                                    />
+                                </div>
+                                <h3>Statistical Metrics</h3>
+                                <hr />
+                                <br />
+                                <div className={styles.evaluationMetricContainer}>
+                                    <EvaluationMetricList
+                                        metrics={stats_metrics}
+                                        selectedMetrics={selectedStatsMetrics}
+                                        setSelectedMetrics={setSelectedStatsMetrics}
+                                    />
+                                </div>
                             </div>
                         </AccordionPanel>
                     </AccordionItem>
@@ -483,7 +510,7 @@ export function Component(): JSX.Element {
                 <div className={styles.evaluationFooter}>
                     {error ? (
                         <div className={styles.errorContainer}>
-                            <ErrorCircle24Regular aria-hidden="true" aria-label="Error icon" primaryFill="red" />
+                            <ErrorCircle24Regular aria-hidden="true" aria-label="Error icon" primaryFill="red" className={styles.icon} />
                             {error.toString()}
                         </div>
                     ) : null}
@@ -491,7 +518,7 @@ export function Component(): JSX.Element {
                     <EvaluateButton inProgress={inProgress} onClick={makeEvaluationRequest} evalResDownloadUrl={evalResiltDownloadUrl}></EvaluateButton>
                     {evalResiltDownloadUrl && (
                         <Link className={styles.rerunLink} onClick={makeEvaluationRequest}>
-                            {"Re-Run Evaluation"}
+                            {"Run Evaluation Again"}
                         </Link>
                     )}
                 </div>

@@ -59,6 +59,11 @@
 }
 
 .errorContainer {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+
     max-width: 50rem;
     margin: 0.5rem;
     padding: 1rem;
@@ -71,6 +76,10 @@
 
 .rerunLink {
     margin-left: 6em;
+}
+
+.icon {
+    margin: 0.5em;
 }
 
 @media (min-width: 992px) {

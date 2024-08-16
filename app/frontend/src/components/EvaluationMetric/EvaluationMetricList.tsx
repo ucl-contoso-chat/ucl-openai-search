@@ -1,5 +1,3 @@
-import { metrics } from "../../i18n/metrics";
-
 import { EvaluationMetric } from "./EvaluationMetric";
 
 import styles from "./EvaluationMetric.module.css";

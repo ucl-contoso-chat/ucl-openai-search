@@ -1,4 +1,4 @@
-export const metrics = [
+export const gpt_metrics = [
     {
         name: "gpt_groundedness",
         display_name: "Groundedness",
@@ -25,7 +25,10 @@ export const metrics = [
         name: "gpt_fluency",
         display_name: "Fluency",
         description: "Fluency measures the grammatical proficiency of a generative AI's predicted answer."
-    },
+    }
+];
+
+export const stats_metrics = [
     {
         name: "f1_score",
         display_name: "F1 Score",

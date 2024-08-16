@@ -24,12 +24,12 @@ export const EvaluateButton = ({ className, inProgress, onClick, evalResDownload
                 <DefaultButton className={styles.evaluateButton} onClick={onClick} disabled={inProgress}>
                     {(inProgress && (
                         <div className={styles.progressContainer}>
-                            <Spinner size={SpinnerSize.medium} />
-                            <Label> {" Running Evaluation... "}</Label>
+                            <Spinner size={SpinnerSize.medium} className={styles.icon} />
+                            {" Running Evaluation... "}
                         </div>
                     )) || (
-                        <div>
-                            <CheckmarkCircleSquare24Regular />
+                        <div className={styles.buttonTextContainer}>
+                            <CheckmarkCircleSquare24Regular className={styles.icon} />
                             {"Run Evaluation "}
                         </div>
                     )}

@@ -108,12 +108,12 @@ export const EvaluationDataPanel: React.FC<Props> = ({ isUploading, setIsUploadi
                 <div>
                     <Text className={styles.fileText} block={true} variant="mediumPlus">
                         {" "}
-                        Data Overview{" "}
+                        Data Preview ({evalDataList.length > 10 && <i>Only showing the first 10 lines</i>})
                     </Text>
 
                     <DetailsList
                         className={styles.evalDataList}
-                        items={evalDataList.slice(0, 3)}
+                        items={evalDataList.slice(0, Math.min(10, evalDataList.length))}
                         columns={evalDataColumns}
                         selectionMode={SelectionMode.none}
                         layoutMode={DetailsListLayoutMode.justified}

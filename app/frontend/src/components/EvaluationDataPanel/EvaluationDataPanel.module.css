@@ -20,4 +20,11 @@
 
 .evalDataList {
     overflow: scroll;
+    max-height: 15rem;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.evalDataList::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
 }
