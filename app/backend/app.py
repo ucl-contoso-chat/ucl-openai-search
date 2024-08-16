@@ -4,6 +4,7 @@ import json
 import logging
 import mimetypes
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Union, cast
@@ -94,10 +95,23 @@ from prepdocslib.filestrategy import UploadUserFileStrategy
 from prepdocslib.listfilestrategy import File
 from templates.supported_models import get_supported_models
 
+# Bring evaluation packages onto the path
+# FIXME: This is a workaround for the evaluation package not in the backend directory, may need to restructure
+rootpath = os.path.join(os.getcwd(), "../..")
+sys.path.append(rootpath)
+
+from evaluation.evaluate import run_evaluation_by_request  # noqa E402
+from evaluation.generate import generate_test_qa_data  # noqa E402
+from evaluation.service_setup import get_openai_config_dict, get_search_client  # noqa E402
+from evaluation.utils import load_config, save_config, save_jsonl  # noqa E402
+
 bp = Blueprint("routes", __name__, static_folder="static")
 # Fix Windows registry issue with mimetypes
 mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
+
+BACKEND_DIR = Path(__file__).parent
+EVALUATION_DIR = BACKEND_DIR / "evaluation"
 
 
 @bp.route("/")
@@ -334,6 +348,86 @@ async def speech():
     except Exception as e:
         logging.exception("Exception in /speech")
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/evaluate", methods=["POST"])
+@authenticated
+async def evaluate(auth_claims: dict[str, Any]):
+    request_form = await request.form
+    request_files = await request.files
+    if "input_data" not in request_files:
+        return jsonify({"message": "No input_data part in the request", "status": "failed"}), 400
+    if "config" not in request_form:
+        return jsonify({"message": "No application setting config part in the request", "status": "failed"}), 400
+
+    input_data_file = request_files.get("input_data")
+    num_questions = int(request_form.get("num_questions", 0))
+    config = json.loads(request_form.get("config", "{}"))
+
+    if input_data_file is not None:
+        input_data = [json.loads(line) for line in input_data_file.readlines()]
+    save_jsonl(input_data, Path("./evaluation/input/input_temp.jsonl"))
+    config["testdata_path"] = "input/input_temp.jsonl"
+    config["results_dir"] = "results"
+
+    temp_config_path = Path("config_temp.json")
+
+    save_config(config, "evaluation" / temp_config_path)
+    report_path = "evaluation/report/eval_report.pdf"
+    raw_result_data = run_evaluation_by_request(
+        EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, report_output=report_path
+    )
+
+    # if evaluation failed
+    if raw_result_data is str:
+        return error_response(raw_result_data, "/evaluate")
+
+    # TODO: return pdf report after we have it
+    try:
+        # Save the file in memory and remove the orignal file
+        return_data = io.BytesIO()
+        with open(report_path, "rb") as fo:
+            return_data.write(fo.read())
+        return_data.seek(0)
+        os.remove(raw_result_data)
+        result = await send_file(return_data, as_attachment=True, mimetype="application/pdf")
+        return result
+    except Exception as e:
+        os.remove(raw_result_data)
+        return error_response(e, "/evaluate")
+
+
+@bp.route("/generate", methods=["POST"])
+@authenticated
+async def generate_qa(auth_claims: dict[str, Any]):
+    if not request.is_json:
+        return jsonify({"error": "request must be json"}), 415
+    request_json = await request.get_json()
+
+    num_questions = request_json.get("num_questions")
+    per_source = request_json.get("per_source")
+    output_file = EVALUATION_DIR / "input" / " input_temp.jsonl"
+
+    generate_test_qa_data(
+        openai_config=get_openai_config_dict(),
+        search_client=get_search_client(),
+        num_questions_total=num_questions,
+        num_questions_per_source=per_source,
+        output_file=output_file,
+    )
+
+    try:
+        # Save the file in memory and remove the orignal file
+        return_data = io.BytesIO()
+        with open(output_file, "rb") as fo:
+            return_data.write(fo.read())
+        return_data.seek(0)
+        os.remove(output_file)
+        result = await send_file(return_data, as_attachment=True, mimetype="application/jsonl")
+        return result
+    except Exception as e:
+        os.remove(output_file)
+        return error_response(e, "/generate")
 
 
 @bp.post("/upload")

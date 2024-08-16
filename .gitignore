@@ -7,7 +7,7 @@ evaluation/results
 
 # Evaluation datasets
 evaluation/input
-evaluation/output
+app/backend/evaluation/input
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -153,6 +153,17 @@ npm-debug.log*
 node_modules
 static/
 
+# Hash files
 data/**/*.md5
 
+# Generated Report
+evaluation/report
+app/backend/evaluation/report
+evaluation/results
+app/backend/evaluation/results
+
+# VS Code
+.vscode/
+
+# macOS
 .DS_Store

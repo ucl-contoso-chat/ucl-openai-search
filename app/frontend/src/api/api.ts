@@ -1,6 +1,6 @@
 const BACKEND_URI = "";
 
-import { ChatAppResponse, ChatAppResponseOrError, ChatAppRequest, Config, SimpleAPIResponse } from "./models";
+import { ChatAppResponse, ChatAppResponseOrError, ChatAppRequest, Config, SimpleAPIResponse, GenerateDataRequest } from "./models";
 import { useLogin, getToken, isUsingAppServicesLogin } from "../authConfig";
 import { List } from "@fluentui/react";
 
@@ -131,5 +131,36 @@ export async function listUploadedFilesApi(idToken: string): Promise<string[]> {
     }
 
     const dataResponse: string[] = await response.json();
+    return dataResponse;
+}
+
+export async function evaluateApi(request: FormData, idToken: string | undefined): Promise<Blob> {
+    const response = await fetch(`${BACKEND_URI}/evaluate`, {
+        method: "POST",
+        headers: await getHeaders(idToken),
+        body: request
+    });
+
+    if (!response.ok) {
+        throw new Error(`Evaluate failed: ${response.statusText}`);
+    }
+
+    const dataResponse: Blob = await response.blob();
+    return dataResponse;
+}
+
+export async function generateApi(request: GenerateDataRequest, idToken: string | undefined): Promise<Blob> {
+    const headers = await getHeaders(idToken);
+    const response = await fetch(`${BACKEND_URI}/generate`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+        throw new Error(`Generate failed: ${response.statusText}`);
+    }
+
+    const dataResponse: Blob = await response.blob();
     return dataResponse;
 }
