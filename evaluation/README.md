@@ -107,11 +107,19 @@ python -m evaluation generate-answers \
 
 You can run the evaluation script with the following command, specifying the path to the configuration file
 (the provided [evaluation/config.json](./config.json) will be used by default; feel free to edit it or provide your
-own), as well as the number of questions considered (by default, all questions found in the input file will be
+own. You should specify the only one model you want to run evaluation on in the configuration file, you can view available models names with the '--help' option), as well as the number of questions considered (by default, all questions found in the input file will be
 consumed).
 
 ```shell
 python -m evaluation evaluate \
+  --config=evaluation/config.json \
+  --numquestions=2
+```
+
+You can run the evaluation script on different models to compare between them. To do this, you need to specify the names of the models to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
+
+```shell
+python -m evaluation compare \
   --config=evaluation/config.json \
   --numquestions=2
 ```
@@ -142,9 +150,10 @@ The results of each evaluation are stored in the specified results directory, in
 
 - `config.json`: The original config used for the run. This is useful for reproducing the run.
 - `eval_results.jsonl`: Each question and answer, along with the GPT metrics for each QA pair.
-- `eval.png`: The chart for the evaluation results corresponding to answer length and latency.
-- `mean_score.png`: The chart for the mean score of evaluation metrics.
-- `passing_rate.png`: The chart for the passing rate of evaluation metrics.
+- `evaluation_gpt_boxplot.png`: The box chart for the evaluation results of evaluation metrics.
+- `evaluation_gpt_radar.png`: The radar chart for the mean score of evaluation metrics.
+- `evaluation_results.png`: The bar charts for the pass count, pass rate and average rating of evaluation metrics.
+- `evaluation_stat_boxplot`:  The box charts for the evaluation results corresponding to the answer length, latency and F1 score.
 - `summary.json`: The overall results, e.g. average GPT metrics.
 
 ## Run red teaming evaluation
@@ -191,7 +200,19 @@ python -m evaluation red-teaming \
   --config=evaluation/config.json
 ```
 
+### Run the red teaming comparison between different models
+
+When running the red teaming comparison, it is to run against the entire application:
+
+```shell
+python -m evaluation red-teaming-comparison \
+  --scorer-dir=evaluation/scorer_definitions \
+  --config=evaluation/config.json
+```
+
+You can specify the model names to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
+
 ### View red teaming evaluation results
 
 The results of each red teaming experiment are stored in the specified results directory, in a timestamped
-`red_teaming/experiment-XXXXXXXXXX` subdirectory that contains a `scores.json` file with the result.
+`red_teaming/experiment-XXXXXXXXXX` subdirectory that contains a `scores.json` file with the result and a `red_teaming_results.png` containing the radar graph of the result.

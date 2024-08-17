@@ -39,27 +39,34 @@ def generate_eval_report(results_dir: str = "", output_path: str = ""):
     with open(path.join(results_dir, "summary.json")) as eval_json_file:
         summary = json.load(eval_json_file)
 
-    gpt_summary = {}
-    stat_summary = {}
-    for key, value in summary.items():
-        if key in metrics_by_name:
-            metric = metrics_by_name[key]
-            value["title"] = metric.DISPLAY_NAME
-            value = condJSONSafe(value)
-            if issubclass(metric, BuiltinRatingMetric):
-                gpt_summary[key] = value
-            else:
-                stat_summary[key] = value
+    model_summaries = []
+    for model in summary:
+        gpt_summary = {}
+        stat_summary = {}
+        for key, value in model["model_result"].items():
+            if key in metrics_by_name:
+                metric = metrics_by_name[key]
+                value["title"] = metric.DISPLAY_NAME
+                value = condJSONSafe(value)
+                if issubclass(metric, BuiltinRatingMetric):
+                    gpt_summary[key] = value
+                else:
+                    stat_summary[key] = value
 
-    gpt_summary = condJSONSafe(gpt_summary)
-    stat_summary = condJSONSafe(stat_summary)
+        gpt_summary = condJSONSafe(gpt_summary)
+        stat_summary = condJSONSafe(stat_summary)
+        model_summaries.append(
+            condJSONSafe({"model_name": model["model_name"], "gpt_summary": gpt_summary, "stat_summary": stat_summary})
+        )
 
     eval_results = load_jsonl(path.join(results_dir, "eval_results.jsonl"))
-    conversation_results = [{} for _ in range(len(eval_results))]
+    conversation_results = {}
 
     for i in range(len(eval_results)):
         res = eval_results[i]
         metric_values = []
+        model_name = res["model_name"]
+        conversasion_data = {}
         for key, value in res.items():
             if key in metrics_by_name:
                 metric_value = {}
@@ -79,10 +86,15 @@ def generate_eval_report(results_dir: str = "", output_path: str = ""):
                 metric_value["value"] = value
                 metric_values.append(condJSONSafe(metric_value))
             else:
-                conversation_results[i][key] = value
-        conversation_results[i]["metrics"] = condJSONSafe(metric_values)
+                conversasion_data[key] = value
+        conversasion_data["metrics"] = condJSONSafe(metric_values)
+        if model_name not in conversation_results:
+            conversation_results[model_name] = []
+        conversation_results[model_name].append(condJSONSafe(conversasion_data))
 
     conversation_results = condJSONSafe(conversation_results)
+
+    num_questions = len(list(conversation_results.values())[0])
 
     diagrams = condJSONSafe(
         {
@@ -106,9 +118,9 @@ def generate_eval_report(results_dir: str = "", output_path: str = ""):
     contexts = condJSONSafe(contexts)
 
     passin_data = dict(
-        gpt_summary=gpt_summary,
-        stat_summary=stat_summary,
-        conversations=conversation_results,
+        total_questions=num_questions,
+        summary=model_summaries,
+        conversation_logs=conversation_results,
         diagrams=diagrams,
         contexts=contexts,
     )

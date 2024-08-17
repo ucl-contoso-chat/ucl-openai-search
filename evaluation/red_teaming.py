@@ -1,3 +1,5 @@
+import copy
+import distutils
 import glob
 import json
 import logging
@@ -27,38 +29,52 @@ async def run_red_teaming(
     config: dict,
     red_teaming_llm: PromptChatTarget,
     prompt_target: PromptChatTarget,
+    compare: bool,
 ):
     """Run red teaming attack with provided scorers using Red Teaming Orchestrator."""
+    prompt_target_list = []
+    if compare:
+        compared_models = config.get("compared_models")
+        for compare_model in compared_models:
+            prompt_target_copy = copy.copy(prompt_target)
+            prompt_target_copy.target_parameters = copy.deepcopy(prompt_target.target_parameters)
+            prompt_target_copy.target_parameters["overrides"]["set_model"] = compare_model
+            prompt_target_list.append(prompt_target_copy)
+    else:
+        prompt_target_list.append(prompt_target)
     logger.info("Running red teaming attack, with scorers from '%s'", scorer_dir)
     scorers = [Path(scorer_file) for scorer_file in glob.glob(os.path.join(scorer_dir, "*.yaml"))]
     # Add built-in scorers
     scorers.extend([path.value for path in TrueFalseQuestionPaths])
-    results = []
 
-    for scorer_path in scorers:
-        logger.info("Runing red teaming with scorer YAML: %s", scorer_path)
-        try:
-            scorer_data = validate_scorer_yaml(scorer_path)
-        except ValueError as e:
-            logger.error(f"Invalid scorer YAML: {e}")
-            continue
+    results_for_all_models = {}
+    for prompt_target in prompt_target_list:
+        model_name = prompt_target.target_parameters["overrides"]["set_model"]
+        results_per_model = []
+        for scorer_path in scorers:
+            logger.info("Runing red teaming with scorer YAML: %s", scorer_path)
+            try:
+                scorer_data = validate_scorer_yaml(scorer_path)
+            except ValueError as e:
+                logger.error(f"Invalid scorer YAML: {e}")
+                continue
 
-        scorer = SelfAskTrueFalseScorer(chat_target=red_teaming_llm, true_false_question_path=scorer_path)
-        attack_strategy = AttackStrategy(
-            strategy=text_generation_strategy_path,
-            conversation_objective=scorer_data.get("conversation_objective", ""),
-        )
-
-        with RedTeamingOrchestrator(
-            attack_strategy=attack_strategy,
-            red_teaming_chat=red_teaming_llm,
-            prompt_target=prompt_target,
-            initial_red_teaming_prompt="how can I help you?",
-            scorer=scorer,
-            verbose=True,
-        ) as red_teaming_orchestrator:
-            score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
-            results.append(score)
+            scorer = SelfAskTrueFalseScorer(chat_target=red_teaming_llm, true_false_question_path=scorer_path)
+            attack_strategy = AttackStrategy(
+                strategy=text_generation_strategy_path,
+                conversation_objective=scorer_data.get("conversation_objective", ""),
+            )
+            with RedTeamingOrchestrator(
+                attack_strategy=attack_strategy,
+                red_teaming_chat=red_teaming_llm,
+                prompt_target=prompt_target,
+                initial_red_teaming_prompt="how can I help you?",
+                scorer=scorer,
+                verbose=True,
+            ) as red_teaming_orchestrator:
+                score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
+                results_per_model.append(score)
+        results_for_all_models[model_name] = results_per_model
 
     results_dir = working_dir / Path(config["results_dir"]) / RED_TEAMING_RESULTS_DIR
 
@@ -66,9 +82,9 @@ async def run_red_teaming(
     experiment_dir = results_dir / f"experiment-{timestamp}"
     experiment_dir.mkdir(parents=True, exist_ok=True)
 
-    save_score(results, experiment_dir)
-    plot_graph(results, experiment_dir)
-    return results
+    save_score(results_for_all_models, experiment_dir)
+    plot_graph(results_for_all_models, experiment_dir)
+    return results_for_all_models
 
 
 def validate_scorer_yaml(scorer_path: Path):
@@ -89,26 +105,29 @@ def validate_scorer_yaml(scorer_path: Path):
     return data
 
 
-def save_score(results: list, results_dir: Path):
+def save_score(results: dict, results_dir: Path):
     """Save score results to a JSON file."""
     output_path = results_dir / "scores.json"
     logger.info("Saving score results to '%s'", output_path)
-
-    output = [
-        {
-            "scorer_class_identifier": res.scorer_class_identifier["__type__"] if res.scorer_class_identifier else "",
-            "score_category": res.score_category,
-            "score_value": res.score_value,
-            "score_rationale": res.score_rationale,
-        }
-        for res in results
-    ]
-
-    with open(output_path, "w") as f:
+    output = {}
+    for model_name, model_result in results.items():
+        output_data = [
+            {
+                "scorer_class_identifier": (
+                    res.scorer_class_identifier["__type__"] if res.scorer_class_identifier else ""
+                ),
+                "score_category": res.score_category,
+                "score_value": res.score_value,
+                "score_rationale": res.score_rationale,
+            }
+            for res in model_result
+        ]
+        output[model_name] = output_data
+    with open(output_path, "a") as f:
         json.dump(output, f, indent=4)
 
 
-def map_score_to_readable_data(results: list):
+def map_score_to_readable_data(results: dict):
     """Map the score results to a graph."""
 
     DISPLAY_LABEL_MAP = {
@@ -133,19 +152,23 @@ def map_score_to_readable_data(results: list):
         "gandalf": False,
     }
 
-    labels = []
-    values = []
+    values_for_all_models = {}
+    for model_name, model_result in results.items():
+        values = []
+        labels = []
+        for res in model_result:
+            if res.score_category not in DISPLAY_LABEL_MAP or res.score_category not in EXPECTED_VALUE:
+                continue
+            labels.append(DISPLAY_LABEL_MAP[res.score_category])
+            values.append(
+                1 if bool(distutils.util.strtobool(res.score_value)) == EXPECTED_VALUE[res.score_category] else 0
+            )
+        values_for_all_models[model_name] = values
 
-    for res in results:
-        if res.score_category not in DISPLAY_LABEL_MAP or res.score_category not in EXPECTED_VALUE:
-            continue
-        labels.append(DISPLAY_LABEL_MAP[res.score_category])
-        values.append(1 if bool(res.score_value) == EXPECTED_VALUE[res.score_category] else 0)
-
-    return labels, values
+    return labels, values_for_all_models
 
 
-def plot_graph(results: list, output_path: Path):
+def plot_graph(results: dict, output_path: Path):
     """Plot the graph of the results."""
     labels, values = map_score_to_readable_data(results)
-    plot_radar_chart(labels, values, "Red Teaming Evaluation Results", 1, output_path / "red_teaming_results.pdf")
+    plot_radar_chart(labels, values, "Red Teaming Evaluation Results", output_path / "red_teaming_results.png", 1)

@@ -16,7 +16,6 @@
         from datetime import datetime
         from typing import List, Dict, Any
 
-        total_questions = len(conversations)
         now = datetime.now()
     {{endscript}}
 
@@ -34,72 +33,76 @@
             It should be enclosed in "para" and "/para" tags to turn it into
             paragraphs.
         </para> -->
-        <h2>GPT Rating Data Summary</h2>
-        <blockTable rowHeight="1cm" colWidths="6cm,4cm,4cm,4cm" >
-            <tr>
-                <td>
-                    <para></para>
-                </td>
-                <td>
-                    <para><b>Pass Count</b></para>
-                </td>
-                <td>
-                    <para><b>Pass Rate</b></para>
-                </td>
-                <td>
-                    <para><b>Mean Rating</b></para>
-                </td>
-            </tr>
-            {{for _, metric in gpt_summary.items()}}
+            {{for model in summary}}
+            <h2>Model: {{model.model_name}}</h2>
+            <hr width="500"/>
+            <h3>GPT Rating Data Summary</h3>
+            <blockTable rowHeight="1cm" colWidths="6cm,4cm,4cm,4cm" >
                 <tr>
                     <td>
-                        <para><b>{{metric.title}}</b></para>
+                        <para></para>
                     </td>
                     <td>
-                        <para>{{metric.pass_count}} (/ total of {{total_questions}})</para>
+                        <para><b>Pass Count</b></para>
                     </td>
                     <td>
-                        <para>{{"{:.2f}".format(metric.pass_rate*100)}}%</para>
+                        <para><b>Pass Rate</b></para>
                     </td>
                     <td>
-                        <para>{{metric.mean_rating}} / 5.0</para>
+                        <para><b>Mean Rating</b></para>
                     </td>
                 </tr>
-            {{endfor}}
-        </blockTable>
+                {{for _, metric in model.gpt_summary.items()}}
+                    <tr>
+                        <td>
+                            <para><b>{{metric.title}}</b></para>
+                        </td>
+                        <td>
+                            <para>{{metric.pass_count}} (/ total of {{total_questions}})</para>
+                        </td>
+                        <td>
+                            <para>{{"{:.2f}".format(metric.pass_rate*100)}}%</para>
+                        </td>
+                        <td>
+                            <para>{{metric.mean_rating}} / 5.0</para>
+                        </td>
+                    </tr>
+                {{endfor}}
+            </blockTable>
 
 
-        <h2>Statistical Data Summary</h2>
-        <blockTable rowHeight="1cm" colWidths="6cm,4cm,4cm,4cm" >
-            <tr>
-                <td></td>
-                <td>
-                    <para><b>Mean</b></para>
-                </td>
-                <td>
-                    <para><b>Max</b></para>
-                </td>
-                <td>
-                    <para><b>Min</b></para>
-                </td>
-            </tr>
-            {{for _, metric in stat_summary.items()}}
+            <h3>Statistical Data Summary</h3>
+            <blockTable rowHeight="1cm" colWidths="6cm,4cm,4cm,4cm" >
                 <tr>
+                    <td></td>
                     <td>
-                        <para><b>{{metric.title}}</b></para>
+                        <para><b>Mean</b></para>
                     </td>
                     <td>
-                        <para>{{metric.mean}}</para>
+                        <para><b>Max</b></para>
                     </td>
                     <td>
-                        <para>{{metric.max}}</para>
-                    </td>
-                    <td>
-                        <para>{{metric.min}}</para>
+                        <para><b>Min</b></para>
                     </td>
                 </tr>
-            {{endfor}}
-        </blockTable>
+                {{for _, metric in model.stat_summary.items()}}
+                    <tr>
+                        <td>
+                            <para><b>{{metric.title}}</b></para>
+                        </td>
+                        <td>
+                            <para>{{metric.mean}}</para>
+                        </td>
+                        <td>
+                            <para>{{metric.max}}</para>
+                        </td>
+                        <td>
+                            <para>{{metric.min}}</para>
+                        </td>
+                    </tr>
+                {{endfor}}
+            </blockTable>
+        {{endfor}}
 
     <h2>Diagrams</h2>
 
@@ -119,27 +122,30 @@
     <para spaceAfter="5.0cm"></para>
 
     <h2>Conversation Log</h2>
-    {{for i, conversation in enumerate(conversations)}}
-        <h3> Question {{i+1}}  </h3>
-        <para spaceAfter="0.5cm">
-            <b><i>Question: </i></b>
-            {{conversation.question}}
-        </para>
-        <para spaceAfter="0.5cm">
-            <b><i>Ground Truth: </i></b>
-            {{conversation.truth}}
-        </para>
-        <para spaceAfter="0.5cm">
-            <b><i>Answer: </i></b>
-            {{conversation.answer}}
-        </para>
-        {{for metric in conversation.metrics}}
-            <para>
-                {{metric.title}}: <i><b>{{metric.value}}</b></i> {{if metric.unit}}<i>{{metric.unit}}</i>{{endif}}
+    {{for model, conversations in conversation_logs.items()}}
+        <h3>Model: {{model}}</h3>
+        <hr width="500"/>
+        {{for i, conversation in enumerate(conversations)}}
+            <h3> Question {{i+1}}  </h3>
+            <para spaceAfter="0.5cm">
+                <b><i>Question: </i></b>
+                {{conversation.question}}
             </para>
+            <para spaceAfter="0.5cm">
+                <b><i>Ground Truth: </i></b>
+                {{conversation.truth}}
+            </para>
+            <para spaceAfter="0.5cm">
+                <b><i>Answer: </i></b>
+                {{conversation.answer}}
+            </para>
+            {{for metric in conversation.metrics}}
+                <para>
+                    {{metric.title}}: <i><b>{{metric.value}}</b></i> {{if metric.unit}}<i>{{metric.unit}}</i>{{endif}}
+                </para>
+            {{endfor}}
         {{endfor}}
     {{endfor}}
-
     <h2>Contexts</h2>
     {{for title, context in contexts.items()}}
         <h5> {{title}}: </h5>
