@@ -256,6 +256,11 @@ def run_evaluation_from_config(
             generate_eval_report(output_path=report_output)
             logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
+        return True
+    else:
+        logger.error("Evaluation was terminated early due to an error ⬆")
+        return False
+
 
 def run_evaluation_by_request(
     working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, report_output: Path = None
