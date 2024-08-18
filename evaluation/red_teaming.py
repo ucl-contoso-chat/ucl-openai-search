@@ -14,6 +14,7 @@ from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
+from evaluation.app_chat_target import AppChatTarget
 from evaluation.plotting import plot_radar_chart
 
 RED_TEAMING_RESULTS_DIR = "red_teaming"
@@ -29,17 +30,22 @@ async def run_red_teaming(
     config: dict,
     red_teaming_llm: PromptChatTarget,
     prompt_target: PromptChatTarget,
+    max_turns: int,
     compare: bool,
 ):
     """Run red teaming attack with provided scorers using Red Teaming Orchestrator."""
     prompt_target_list = []
-    if compare:
-        compared_models = config.get("compared_models")
+    if compare and isinstance(prompt_target, AppChatTarget):
+        compared_models = config.get("models")
         for compare_model in compared_models:
             prompt_target_copy = copy.copy(prompt_target)
             prompt_target_copy.target_parameters = copy.deepcopy(prompt_target.target_parameters)
             prompt_target_copy.target_parameters["overrides"]["set_model"] = compare_model
             prompt_target_list.append(prompt_target_copy)
+    elif isinstance(prompt_target, AppChatTarget):
+        # Default use the first model in the config
+        prompt_target.target_parameters["overrides"]["set_model"] = config.get("models")[0]
+        prompt_target_list.append(prompt_target)
     else:
         prompt_target_list.append(prompt_target)
     logger.info("Running red teaming attack, with scorers from '%s'", scorer_dir)
@@ -49,7 +55,10 @@ async def run_red_teaming(
 
     results_for_all_models = {}
     for prompt_target in prompt_target_list:
-        model_name = prompt_target.target_parameters["overrides"]["set_model"]
+        if isinstance(prompt_target, AppChatTarget):
+            model_name = prompt_target.target_parameters["overrides"]["set_model"]
+        else:
+            model_name = prompt_target.__class__.__name__
         results_per_model = []
         for scorer_path in scorers:
             logger.info("Runing red teaming with scorer YAML: %s", scorer_path)
@@ -72,7 +81,7 @@ async def run_red_teaming(
                 scorer=scorer,
                 verbose=True,
             ) as red_teaming_orchestrator:
-                score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
+                score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=max_turns)
                 results_per_model.append(score)
         results_for_all_models[model_name] = results_per_model
 
