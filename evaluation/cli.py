@@ -154,13 +154,14 @@ def red_teaming(
     ),
     prompt_target: Optional[str] = typer.Option(
         default="application",
-        help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'.",
+        help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'. use 'application' will use the first model in the config models list.",
     ),
     targeturl: Optional[str] = typer.Option(
         help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
         default=None,
         parser=str_or_none,
     ),
+    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy."),
 ):
     config = load_config(config)
     red_team = service_setup.get_openai_target()
@@ -182,6 +183,7 @@ def red_teaming(
             red_teaming_llm=red_team,
             prompt_target=target,
             compare=False,
+            max_turns=max_turns,
         )
     )
 
@@ -207,6 +209,7 @@ def red_teaming_comparison(
         default=None,
         parser=str_or_none,
     ),
+    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy."),
 ):
     config = load_config(config)
     red_team = service_setup.get_openai_target()
@@ -219,6 +222,7 @@ def red_teaming_comparison(
             red_teaming_llm=red_team,
             prompt_target=target,
             compare=True,
+            max_turns=max_turns,
         )
     )
 
