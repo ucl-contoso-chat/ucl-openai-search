@@ -247,7 +247,7 @@ def run_evaluation_from_config(
         # Add extra params to original config
         config["target_url"] = target_url
         config["evaluation_gpt_model"] = openai_config.model
-        config["models"] = compared_models
+        config["compared_models"] = compared_models
 
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
