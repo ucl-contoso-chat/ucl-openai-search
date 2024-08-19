@@ -27,5 +27,7 @@ export const toolTipText = {
     model: "Selects the model to use for generating responses, to add support of new models, create a template and add the model into list of supported models.",
     streamChat: "Continuously streams the response to the chat UI as it is generated.",
     useOidSecurityFilter: "Filter search results based on the authenticated user's OID.",
-    useGroupsSecurityFilter: "Filter search results based on the authenticated user's groups."
+    useGroupsSecurityFilter: "Filter search results based on the authenticated user's groups.",
+    runRedTeaming:
+        "Enables running the red teaming evaluation on the selected models. The red teaming evaluation is a security evaluation that tests the model's robustness against adversarial attacks. The red teaming evaluation results will be aggregated together in the results report."
 };

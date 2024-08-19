@@ -54,6 +54,10 @@
     margin-top: 0.9375rem;
 }
 
+.evaluationAccordionHeader {
+    margin: 1rem;
+}
+
 .submitButton {
     margin-top: 1.25rem;
 }
@@ -72,6 +76,10 @@
 .evaluationFooter {
     margin-top: 1.25rem;
     margin-bottom: 2rem;
+}
+
+.configPanel {
+    margin: 1rem;
 }
 
 .rerunLink {

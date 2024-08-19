@@ -5,8 +5,8 @@ import { useId } from "@fluentui/react-hooks";
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, AccordionToggleEventHandler, Card, CardHeader, Text } from "@fluentui/react-components";
 
 import { Checkbox, ICheckboxProps, ITextFieldProps, Link, Pivot, PivotItem, TextField } from "@fluentui/react";
-import { ErrorCircle24Regular, NumberCircle132Filled, NumberCircle232Filled, NumberCircle332Filled } from "@fluentui/react-icons";
-import { configApi, RetrievalMode, VectorFieldOptions, GPT4VInput, SimpleAPIResponse, evaluateApi, generateApi } from "../../api";
+import { ErrorCircle24Regular, NumberCircle132Filled, NumberCircle232Filled, NumberCircle332Filled, NumberCircle432Filled } from "@fluentui/react-icons";
+import { configApi, RetrievalMode, VectorFieldOptions, GPT4VInput, SimpleAPIResponse, evaluateApi, generateApi, getSupportedModels } from "../../api";
 import { useLogin, getToken, requireAccessControl } from "../../authConfig";
 import { HelpCallout } from "../../components/HelpCallout";
 import { toolTipText } from "../../i18n/tooltips.js";
@@ -19,6 +19,7 @@ import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { EvaluateButton } from "../../components/EvaluateButton";
 import { EvaluationMetricList } from "../../components/EvaluationMetric";
 import { EvaluationDataPanel } from "../../components/EvaluationDataPanel";
+import { ModelSelectionPanel } from "../../components/ModelSelectionPanel/ModelSelectionPanel";
 
 export function Component(): JSX.Element {
     const [openItems, setOpenItems] = useState(["1"]);
@@ -28,6 +29,8 @@ export function Component(): JSX.Element {
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [selectedGPTMetrics, setSelectedGPTMetrics] = useState<{}[]>(gpt_metrics.map(metric => metric.name));
     const [selectedStatsMetrics, setSelectedStatsMetrics] = useState<{}[]>(stats_metrics.map(metric => metric.name));
+    const [availableModels, setAvailableModels] = useState<string[]>([]);
+    const [selectedModels, setSelectedModels] = useState<string[]>([]);
     const [evalResiltDownloadUrl, setEvalResultDownloadUrl] = useState<string>("");
 
     const [temperature, setTemperature] = useState<number>(0.3);
@@ -44,6 +47,7 @@ export function Component(): JSX.Element {
     const [useGroupsSecurityFilter, setUseGroupsSecurityFilter] = useState<boolean>(false);
     const [gpt4vInput, setGPT4VInput] = useState<GPT4VInput>(GPT4VInput.TextAndImages);
     const [useGPT4V, setUseGPT4V] = useState<boolean>(false);
+    const [runRedTeaming, setRunRedTeaming] = useState<boolean>(true);
 
     const [inProgress, setInProgress] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
@@ -92,6 +96,10 @@ export function Component(): JSX.Element {
         setUseGroupsSecurityFilter(!!checked);
     };
 
+    const onRunRedTeamingChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
+        setRunRedTeaming(!!checked);
+    };
+
     // IDs for form labels and their associated callouts
     const numQuestionsId = useId("numQuestions");
     const numQuestionsFieldId = useId("numQuestionsField");
@@ -115,6 +123,7 @@ export function Component(): JSX.Element {
     const useGroupsSecurityFilterFieldId = useId("useGroupsSecurityFilterField");
     const shouldStreamId = useId("shouldStream");
     const shouldStreamFieldId = useId("shouldStreamField");
+    const runRedTeamingId = useId("runRedTeaming");
 
     const [showGPT4VOptions, setShowGPT4VOptions] = useState<boolean>(false);
     const [showSemanticRankerOption, setShowSemanticRankerOption] = useState<boolean>(false);
@@ -122,6 +131,7 @@ export function Component(): JSX.Element {
 
     useEffect(() => {
         getConfig();
+        getAvailableModels();
     }, []);
 
     const getConfig = async () => {
@@ -130,6 +140,7 @@ export function Component(): JSX.Element {
             setUseSemanticRanker(config.showSemanticRankerOption);
             setShowSemanticRankerOption(config.showSemanticRankerOption);
             setShowVectorOption(config.showVectorOption);
+
             if (!config.showVectorOption) {
                 setRetrievalMode(RetrievalMode.Text);
             }
@@ -138,6 +149,12 @@ export function Component(): JSX.Element {
 
     const client = useLogin ? useMsal().instance : undefined;
     const { loggedIn } = useContext(LoginContext);
+
+    const getAvailableModels = async () => {
+        const models = await getSupportedModels();
+        setAvailableModels(models);
+        setSelectedModels([models[0]]);
+    };
 
     const makeEvaluationRequest = async () => {
         setInProgress(true);
@@ -167,6 +184,11 @@ export function Component(): JSX.Element {
             setError(null);
             requestData.append("num_questions", numQuestionsToEval.toString());
         }
+        if (selectedModels.length === 0) {
+            setInProgress(false);
+            setError("Please select at least one model to evaluate");
+            return;
+        }
 
         setEvalResultDownloadUrl("");
 
@@ -174,6 +196,8 @@ export function Component(): JSX.Element {
 
         const config = {
             requested_metrics: selectedMetrics,
+            compared_models: selectedModels,
+            run_red_teaming: runRedTeaming,
             target_parameters: {
                 overrides: {
                     top: retrieveCount,
@@ -215,12 +239,20 @@ export function Component(): JSX.Element {
     return (
         <div className={styles.evaluationContainer}>
             <div className={styles.evaluationTopSection}>
-                <h1 className={styles.evaluationTitle}>Evaluate the app</h1>
+                <h1 className={styles.evaluationTitle}>Model Evaluator</h1>
                 <h3 className={styles.evaluationInstruction}>Evaluate the application using deployed model</h3>
                 <Accordion collapsible multiple openItems={openItems} onToggle={handleToggle} className={styles.evaluationCollapseList}>
                     <AccordionItem value="1" className={styles.evaluationCollapseItem}>
                         <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle132Filled primaryFill="rgba(115, 118, 225, 1)" />}>
-                            {"Choose Your Test Data"}
+                            <div className={styles.evaluationAccordionHeader}>{"Choose the model you want to evaluate"}</div>
+                        </AccordionHeader>
+                        <AccordionPanel>
+                            <ModelSelectionPanel models={availableModels} selectedModels={selectedModels} setSelectedModels={setSelectedModels} />
+                        </AccordionPanel>
+                    </AccordionItem>
+                    <AccordionItem value="2" className={styles.evaluationCollapseItem}>
+                        <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle232Filled primaryFill="rgba(115, 118, 225, 1)" />}>
+                            <div className={styles.evaluationAccordionHeader}>{"Choose Your Test Data"}</div>
                         </AccordionHeader>
                         <AccordionPanel>
                             <EvaluationDataPanel
@@ -238,7 +270,7 @@ export function Component(): JSX.Element {
                                         className={styles.evaluateSettingsSeparator}
                                         label="Number of questions you want to evaluate"
                                         type="number"
-                                        min={1}
+                                        min={2}
                                         max={numQuestions}
                                         defaultValue={numQuestionsToEval.toString()}
                                         onChange={onNumQuestionsToEvalChange}
@@ -249,9 +281,9 @@ export function Component(): JSX.Element {
                         </AccordionPanel>
                     </AccordionItem>
 
-                    <AccordionItem value="2" className={styles.evaluationCollapseItem}>
-                        <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle232Filled primaryFill="rgba(115, 118, 225, 1)" />}>
-                            {"Select Evaluation Metrics"}
+                    <AccordionItem value="3" className={styles.evaluationCollapseItem}>
+                        <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle332Filled primaryFill="rgba(115, 118, 225, 1)" />}>
+                            <div className={styles.evaluationAccordionHeader}>{"Select Evaluation Metrics"}</div>
                         </AccordionHeader>
                         <AccordionPanel>
                             <div>
@@ -279,12 +311,28 @@ export function Component(): JSX.Element {
                         </AccordionPanel>
                     </AccordionItem>
 
-                    <AccordionItem value="3" className={styles.evaluationCollapseItem}>
-                        <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle332Filled primaryFill="rgba(115, 118, 225, 1)" />}>
-                            {"Application Settings"}
+                    <AccordionItem value="4" className={styles.evaluationCollapseItem}>
+                        <AccordionHeader className={styles.evaluationCollapseTitle} icon={<NumberCircle432Filled primaryFill="rgba(115, 118, 225, 1)" />}>
+                            <div className={styles.evaluationAccordionHeader}>{"Application Settings"}</div>
                         </AccordionHeader>
                         <AccordionPanel>
-                            <div>
+                            <div className={styles.configPanel}>
+                                <Checkbox
+                                    id={runRedTeamingId}
+                                    className={styles.evaluateSettingsSeparator}
+                                    checked={runRedTeaming}
+                                    label="Run red teaming"
+                                    onChange={onRunRedTeamingChange}
+                                    aria-labelledby={runRedTeamingId}
+                                    onRenderLabel={(props: ICheckboxProps | undefined) => (
+                                        <HelpCallout
+                                            labelId={runRedTeamingId}
+                                            fieldId={runRedTeamingId}
+                                            helpText={toolTipText.runRedTeaming}
+                                            label={props?.label}
+                                        />
+                                    )}
+                                />
                                 <TextField
                                     id={temperatureFieldId}
                                     className={styles.evaluateSettingsSeparator}
