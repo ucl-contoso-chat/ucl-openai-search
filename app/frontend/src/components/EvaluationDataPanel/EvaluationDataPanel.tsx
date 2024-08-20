@@ -108,7 +108,7 @@ export const EvaluationDataPanel: React.FC<Props> = ({ isUploading, setIsUploadi
                 <div>
                     <Text className={styles.fileText} block={true} variant="mediumPlus">
                         {" "}
-                        Data Preview ({evalDataList.length > 10 && <i>Only showing the first 10 lines</i>})
+                        Data Preview {evalDataList.length > 10 && <i>(Only showing the first 10 lines)</i>}
                     </Text>
 
                     <DetailsList

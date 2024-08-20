@@ -24,7 +24,6 @@
 
         <h5><i>Generated on {{str(now)}}</i></h5>
 
-
         <!-- <para>
             This is the "story". This is the part of the RML document where
             your text is placed.
@@ -33,6 +32,7 @@
             It should be enclosed in "para" and "/para" tags to turn it into
             paragraphs.
         </para> -->
+
             {{for model in summary}}
             <h2>Model: {{model.model_name}}</h2>
             <hr width="500"/>
@@ -153,5 +153,29 @@
             {{context}}
         </para>
     {{endfor}}
+    {{if redteaming_results}}
+
+        <h2>Red Teaming Results</h2>
+
+        {{for model, redteaming_result in redteaming_results.items()}}
+        <h3>Model: {{model}}</h3>
+        <hr width="500"/>
+            {{for rt_res in redteaming_result}}
+                <para>
+                    <b>{{rt_res.label}}: {{rt_res.value}}</b>
+                </para>
+                <para>
+                    Explaination: {{rt_res.description}}
+                </para>
+                <para spaceAfter="1.0cm"></para>
+            {{endfor}}
+        {{endfor}}
+    {{endif}}
+    {{if diagrams.redteaming_radar_path}}
+    <illustration width="480" height="360">
+        <image file="{{diagrams.redteaming_radar_path}}" preserveAspectRatio="1" x="30" y="0" width="480" height="360" />
+    </illustration>
+    {{endif}}
     </story>
+
 </document>

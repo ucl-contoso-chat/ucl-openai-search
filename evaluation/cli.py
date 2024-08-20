@@ -9,16 +9,18 @@ import typer
 from rich.logging import RichHandler
 
 from evaluation import service_setup
-from evaluation.evaluate import get_models, run_evaluation_from_config
+from evaluation.evaluate import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_SCORER_DIR,
+    DEFAULT_SYNTHETIC_DATA_ANSWERS_DIR,
+    DEFAULT_SYNTHETIC_DATA_DIR,
+    EVALUATION_DIR,
+    get_models,
+    run_evaluation_from_config,
+)
 from evaluation.generate import generate_test_qa_answer, generate_test_qa_data
 from evaluation.red_teaming import run_red_teaming
 from evaluation.utils import load_config
-
-EVALUATION_DIR = Path(__file__).parent
-DEFAULT_CONFIG_PATH = EVALUATION_DIR / "config.json"
-DEFAULT_SCORER_DIR = EVALUATION_DIR / "scorer_definitions"
-DEFAULT_SYNTHETIC_DATA_DIR = EVALUATION_DIR / "input" / "qa.jsonl"
-DEFAULT_SYNTHETIC_DATA_ANSWERS_DIR = EVALUATION_DIR / "output" / "qa.jsonl"
 
 app = typer.Typer(pretty_exceptions_enable=False)
 

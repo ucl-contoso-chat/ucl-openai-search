@@ -100,7 +100,7 @@ from templates.supported_models import get_supported_models
 rootpath = os.path.join(os.getcwd(), "../..")
 sys.path.append(rootpath)
 
-from evaluation.evaluate import run_evaluation_by_request  # noqa E402
+from evaluation.evaluate import run_evaluation_and_redteaming_from_request, run_evaluation_by_request  # noqa E402
 from evaluation.generate import generate_test_qa_data  # noqa E402
 from evaluation.service_setup import get_openai_config_dict, get_search_client  # noqa E402
 from evaluation.utils import load_config, save_config, save_jsonl  # noqa E402
@@ -373,14 +373,23 @@ async def evaluate(auth_claims: dict[str, Any]):
     temp_config_path = Path("config_temp.json")
 
     save_config(config, "evaluation" / temp_config_path)
-    report_path = "evaluation/report/eval_report.pdf"
-    raw_result_data = run_evaluation_by_request(
-        EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, report_output=report_path
-    )
+    run_red_teaming = config.get("run_red_teaming", False)
+    results_dir = None
+    if run_red_teaming:
+        results_dir = await run_evaluation_and_redteaming_from_request(
+            EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions
+        )
+    else:
+        results_dir = run_evaluation_by_request(
+            EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions
+        )
 
     # if evaluation failed
-    if raw_result_data is str:
-        return error_response(raw_result_data, "/evaluate")
+    if results_dir is str:
+        return error_response("Evaluation failed", "/evaluate")
+
+    report_path = results_dir / "evaluation_report.pdf"
+    # result_raw_zip = shutil.make_archive(os.path.dirname(results_dir), "zip", results_dir)
 
     # TODO: return pdf report after we have it
     try:
@@ -389,11 +398,11 @@ async def evaluate(auth_claims: dict[str, Any]):
         with open(report_path, "rb") as fo:
             return_data.write(fo.read())
         return_data.seek(0)
-        os.remove(raw_result_data)
+        # os.remove(raw_result_data)
         result = await send_file(return_data, as_attachment=True, mimetype="application/pdf")
         return result
     except Exception as e:
-        os.remove(raw_result_data)
+        # os.remove(raw_result_data)
         return error_response(e, "/evaluate")
 
 

@@ -25,7 +25,7 @@ export function Component(): JSX.Element {
     const [openItems, setOpenItems] = useState(["1"]);
     const [evalData, setEvalData] = useState<File | null>(null);
     const [numQuestions, setNumQuestions] = useState<number>(0);
-    const [numQuestionsToEval, setNumQuestionsToEval] = useState<number>(1);
+    const [numQuestionsToEval, setNumQuestionsToEval] = useState<number>(2);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [selectedGPTMetrics, setSelectedGPTMetrics] = useState<{}[]>(gpt_metrics.map(metric => metric.name));
     const [selectedStatsMetrics, setSelectedStatsMetrics] = useState<{}[]>(stats_metrics.map(metric => metric.name));

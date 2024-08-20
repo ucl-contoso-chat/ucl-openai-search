@@ -22,10 +22,19 @@ from evaluation.plotting import (
     plot_box_charts_grid,
     plot_radar_chart,
 )
-from evaluation.report_generator import generate_eval_report
+from evaluation.red_teaming import run_red_teaming
+from evaluation.report_generator import (
+    generate_eval_report,
+)
 from evaluation.utils import load_jsonl
 
 EVALUATION_RESULTS_DIR = "gpt_evaluation"
+
+EVALUATION_DIR = Path(__file__).parent
+DEFAULT_CONFIG_PATH = EVALUATION_DIR / "config.json"
+DEFAULT_SCORER_DIR = EVALUATION_DIR / "scorer_definitions"
+DEFAULT_SYNTHETIC_DATA_DIR = EVALUATION_DIR / "input" / "qa.jsonl"
+DEFAULT_SYNTHETIC_DATA_ANSWERS_DIR = EVALUATION_DIR / "output" / "qa.jsonl"
 
 logger = logging.getLogger("evaluation")
 
@@ -123,6 +132,98 @@ def get_models(target_url: str) -> list:
     return response_list
 
 
+async def run_evaluation_and_redteaming_from_request(
+    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None
+):
+    timestamp = int(time.time())
+    results_dir = working_dir / config["results_dir"] / f"experiment-{timestamp}"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    openai_config = service_setup.get_openai_config()
+    testdata_path = working_dir / config["testdata_path"]
+    max_workers = config.get("max_workers", 4)
+    passing_rate = config.get("passing_rate", 3)
+    target_parameters = config.get("target_parameters", {})
+    requested_metrics = config.get(
+        "requested_metrics",
+        [
+            "gpt_groundedness",
+            "gpt_relevance",
+            "gpt_coherence",
+            "answer_length",
+            "latency",
+        ],
+    )
+
+    red_teaming_llm = service_setup.get_openai_target()
+    red_teaming_target = service_setup.get_app_target(config, target_url)
+
+    get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
+    compared_models = config.get("compared_models")
+    all_models = get_models(get_model_url)
+    for elem in compared_models:
+        if elem not in all_models:
+            logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
+            return False
+
+    target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
+
+    summary, question_results = run_evaluation(
+        openai_config=openai_config,
+        testdata_path=testdata_path,
+        results_dir=results_dir,
+        target_url=target_url,
+        passing_rate=passing_rate,
+        max_workers=max_workers,
+        target_parameters=target_parameters,
+        requested_metrics=requested_metrics,
+        compared_models=compared_models,
+        num_questions=num_questions,
+    )
+
+    red_teaming_results = await run_red_teaming(
+        working_dir=working_dir,
+        scorer_dir=DEFAULT_SCORER_DIR,
+        config=config,
+        red_teaming_llm=red_teaming_llm,
+        prompt_target=red_teaming_target,
+        max_turns=3,
+        compare=False,
+        results_dir=results_dir,
+    )
+
+    if summary is not None:
+        results_config_path = results_dir / "config.json"
+        logger.info("Saving original config file back to %s", results_config_path)
+
+        # Replace relative paths with absolute paths in the original config
+        config["testdata_path"] = str(testdata_path)
+        config["results_dir"] = str(results_dir)
+
+        # Add extra params to original config
+        config["target_url"] = target_url
+        config["evaluation_gpt_model"] = openai_config.model
+
+        with open(results_config_path, "w", encoding="utf-8") as output_config:
+            output_config.write(json.dumps(config, indent=4))
+
+        report_output = results_dir / "evaluation_report.pdf"
+        generate_eval_report(
+            summary,
+            question_results,
+            redteaming_result=red_teaming_results,
+            results_dir=results_dir,
+            output_path=report_output,
+        )
+        logger.info("PDF Report generated at %s", os.path.abspath(report_output))
+
+        return results_dir
+    else:
+        shutil.rmtree(results_dir)
+        logger.error("Evaluation was terminated early due to an error ⬆")
+        return "Evaluation was terminated early"
+
+
 def run_evaluation(
     openai_config: AzureOpenAIModelConfiguration,
     testdata_path: Path,
@@ -181,21 +282,27 @@ def run_evaluation(
 
             questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
 
-        dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
+        summary = dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
         plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
     except Exception as e:
         logger.error("Evaluation was terminated early due to an error ⬆")
         raise e
-    return True
+    return (summary, questions_with_ratings_dict)
 
 
 def run_evaluation_from_config(
-    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, report_output: Path = None
+    working_dir: Path,
+    config: dict,
+    num_questions: int = None,
+    target_url: str = None,
+    report_output: Path = None,
+    results_dir: Path = None,
 ):
     """Run evaluation using the provided configuration file."""
-    timestamp = int(time.time())
-    results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
-    results_dir.mkdir(parents=True, exist_ok=True)
+    if results_dir is None:
+        timestamp = int(time.time())
+        results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
+        results_dir.mkdir(parents=True, exist_ok=True)
 
     openai_config = service_setup.get_openai_config()
     testdata_path = working_dir / config["testdata_path"]
@@ -222,7 +329,7 @@ def run_evaluation_from_config(
 
     target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
 
-    evaluation_run_complete = run_evaluation(
+    summary, question_results = run_evaluation(
         openai_config=openai_config,
         testdata_path=testdata_path,
         results_dir=results_dir,
@@ -235,7 +342,7 @@ def run_evaluation_from_config(
         num_questions=num_questions,
     )
 
-    if evaluation_run_complete:
+    if summary is not None:
 
         results_config_path = results_dir / "config.json"
         logger.info("Saving original config file back to %s", results_config_path)
@@ -253,7 +360,7 @@ def run_evaluation_from_config(
             output_config.write(json.dumps(config, indent=4))
 
         if report_output is not None and report_output != "":
-            generate_eval_report(output_path=report_output)
+            generate_eval_report(summary, question_results, output_path=report_output)
             logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
         return True
@@ -263,12 +370,13 @@ def run_evaluation_from_config(
 
 
 def run_evaluation_by_request(
-    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, report_output: Path = None
+    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, results_dir: Path = None
 ):
     """Run evaluation from a backend request"""
-    timestamp = int(time.time())
-    results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
-    results_dir.mkdir(parents=True, exist_ok=True)
+    if results_dir is None:
+        timestamp = int(time.time())
+        results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
+        results_dir.mkdir(parents=True, exist_ok=True)
 
     openai_config = service_setup.get_openai_config()
     testdata_path = working_dir / config["testdata_path"]
@@ -281,7 +389,7 @@ def run_evaluation_by_request(
             logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
             return False
 
-    evaluation_run_complete = run_evaluation(
+    summary, question_results = run_evaluation(
         openai_config=openai_config,
         testdata_path=testdata_path,
         results_dir=results_dir,
@@ -303,7 +411,7 @@ def run_evaluation_by_request(
         num_questions=num_questions,
     )
 
-    if evaluation_run_complete:
+    if summary is not None:
         results_config_path = results_dir / "config.json"
         logger.info("Saving original config file back to %s", results_config_path)
 
@@ -318,14 +426,13 @@ def run_evaluation_by_request(
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
 
-        result_file_name = shutil.make_archive(results_dir, "zip", results_dir)
         # shutil.rmtree(results_dir)
 
-        if report_output is not None and report_output != "":
-            generate_eval_report(output_path=report_output)
-            logger.info("PDF Report generated at %s", os.path.abspath(report_output))
+        report_output = results_dir / "evaluation_report.pdf"
+        generate_eval_report(summary, question_results, results_dir=results_dir, output_path=report_output)
+        logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
-        return working_dir / result_file_name
+        return results_dir
     else:
         shutil.rmtree(results_dir)
         logger.error("Evaluation was terminated early due to an error ⬆")
@@ -351,6 +458,8 @@ def dump_summary(rated_questions_for_models: dict, requested_metrics: list, pass
     with open(results_dir / "summary.json", "a", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summaries, indent=4))
     logger.info("Evaluation results saved in %s", results_dir)
+
+    return summaries
 
 
 def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, passing_rate: int, results_dir: Path):
