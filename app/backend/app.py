@@ -83,7 +83,7 @@ from config import (
     CONFIG_VECTOR_SEARCH_ENABLED,
 )
 from core.authentication import AuthenticationHelper
-from core.promptprotection import PromptProtectionConfig
+from core.promptprotection import PromptProtection
 from decorators import authenticated, authenticated_path
 from error import error_dict, error_response
 from prepdocs import (
@@ -609,15 +609,14 @@ async def setup_clients():
         hf_client = HuggingFaceClient(token=HUGGINGFACE_API_KEY)
 
     llm_clients: dict[str, LLMClient] = {"openai": openai_client, "hf": hf_client}
-    protection_config = PromptProtectionConfig()
 
-    if USE_INJECTION_PROTECTION:
-        protection_config.injection_protection.use = True
+    prompt_protection = PromptProtection(prompt_protection_enabled=USE_INJECTION_PROTECTION)
+    print(prompt_protection)
 
     current_app.config[CONFIG_LLM_CLIENTS] = llm_clients
     current_app.config[CONFIG_SEARCH_CLIENT] = search_client
     current_app.config[CONFIG_CURRENT_MODEL] = current_model
-    current_app.config[CONFIG_PROMPT_PROTECTION] = protection_config
+    current_app.config[CONFIG_PROMPT_PROTECTION] = prompt_protection.config
     current_app.config[CONFIG_AVAILABLE_MODELS] = available_models
     current_app.config[CONFIG_BLOB_CONTAINER_CLIENT] = blob_container_client
     current_app.config[CONFIG_AUTH_CLIENT] = auth_helper
@@ -638,7 +637,7 @@ async def setup_clients():
         auth_helper=auth_helper,
         current_model=current_model,
         available_models=available_models,
-        protection_config=protection_config,
+        prompt_protection=prompt_protection,
         embedding_model=OPENAI_EMB_MODEL,
         embedding_deployment=AZURE_OPENAI_EMB_DEPLOYMENT,
         embedding_dimensions=OPENAI_EMB_DIMENSIONS,
@@ -654,7 +653,7 @@ async def setup_clients():
         auth_helper=auth_helper,
         current_model=current_model,
         available_models=available_models,
-        protection_config=protection_config,
+        prompt_protection=prompt_protection,
         embedding_model=OPENAI_EMB_MODEL,
         embedding_deployment=AZURE_OPENAI_EMB_DEPLOYMENT,
         embedding_dimensions=OPENAI_EMB_DIMENSIONS,

@@ -86,12 +86,12 @@ const Chat = () => {
     const [showSpeechOutputBrowser, setShowSpeechOutputBrowser] = useState<boolean>(false);
     const [showSpeechOutputAzure, setShowSpeechOutputAzure] = useState<boolean>(false);
 
-    const updateProtectionConfig = (name: string, use: boolean) => {
+    const updateProtectionConfig = (name: string, enabled: boolean) => {
         setProtectionConfig(prevConfig => ({
             ...prevConfig,
             [name]: {
                 ...prevConfig[name],
-                use: use
+                use: enabled
             }
         }));
     };

@@ -79,12 +79,12 @@ export function Component(): JSX.Element {
     const client = useLogin ? useMsal().instance : undefined;
     const { loggedIn } = useContext(LoginContext);
 
-    const updateProtectionConfig = (name: string, use: boolean) => {
+    const updateProtectionConfig = (name: string, enabled: boolean) => {
         setProtectionConfig(prevConfig => ({
             ...prevConfig,
             [name]: {
                 ...prevConfig[name],
-                use: use
+                enabled: enabled
             }
         }));
     };

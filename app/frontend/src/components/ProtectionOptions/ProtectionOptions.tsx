@@ -2,10 +2,10 @@ import { Stack } from "@fluentui/react";
 import { Checkbox } from "@fluentui/react";
 import { ProtectionConfig } from "../../api";
 
-type Props = {
+interface Props {
     protectionConfig: Record<string, ProtectionConfig>;
     updateProtectionConfig: (name: string, checked: boolean) => void;
-};
+}
 
 export const ProtectionOptions = ({ updateProtectionConfig, protectionConfig }: Props) => {
     const handleCheckboxChange = (ev?: React.FormEvent<HTMLInputElement | HTMLElement>, checked?: boolean) => {
@@ -27,7 +27,7 @@ export const ProtectionOptions = ({ updateProtectionConfig, protectionConfig }: 
                     key={key}
                     name={key}
                     label={formatOptionName(key)}
-                    checked={protectionConfig[key].use} // Defaults to false if the key doesn't exist
+                    checked={protectionConfig[key].enabled} // Defaults to false if the key doesn't exist
                     onChange={handleCheckboxChange}
                     aria-labelledby={key}
                 />

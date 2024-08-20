@@ -18,7 +18,7 @@ export const enum VectorFieldOptions {
 
 export interface ProtectionConfig {
     model_name: string;
-    use: boolean;
+    enabled: boolean;
 }
 
 export type ChatAppRequestOverrides = {

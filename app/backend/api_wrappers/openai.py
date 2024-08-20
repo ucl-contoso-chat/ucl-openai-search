@@ -34,7 +34,7 @@ class OpenAIClient(ABC):
         return await self.client.embeddings.create(*args, **kwargs)
 
     async def text_classification(self, *args, **kwargs):
-        pass
+        raise NotImplementedError
 
 
 class LocalOpenAIClient(OpenAIClient):
