@@ -91,7 +91,7 @@ const Chat = () => {
             ...prevConfig,
             [name]: {
                 ...prevConfig[name],
-                use: enabled
+                enabled: enabled
             }
         }));
     };

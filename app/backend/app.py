@@ -452,7 +452,7 @@ async def setup_clients():
     HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
     DEFAULT_MODEL = os.getenv("DEFAULT_MODEL")
 
-    USE_INJECTION_PROTECTION = os.getenv("USE_INJECTION_PROTECTION", "false").lower() == "true"
+    USE_INJECTION_PROTECTION = os.getenv("USE_INJECTION_PROTECTION", "").lower() == "true"
 
     USE_GPT4V = os.getenv("USE_GPT4V", "").lower() == "true"
     USE_USER_UPLOAD = os.getenv("USE_USER_UPLOAD", "").lower() == "true"

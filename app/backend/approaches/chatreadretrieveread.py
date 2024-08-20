@@ -149,13 +149,12 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             for protection_name, config in prompt_protection_overrides.items():
                 self.prompt_protection.set_protection_bool(protection_name, config.get("enabled", False))
 
-        if isinstance(original_user_query, str):
-            if not await self.prompt_protection.check_for_all_exploits(
-                message=original_user_query, llm_client=self.llm_clients["hf"]
-            ):
-                raise PromptProtectionError(
-                    message="Prompt contains an exploit, the application has terminated.", code="content_filter"
-                )
+        if not await self.prompt_protection.check_all_exploits(
+            message=original_user_query, llm_client=self.llm_clients["hf"]
+        ):
+            raise PromptProtectionError(
+                message="Prompt contains an exploit, the application has terminated.", code="content_filter"
+            )
 
         # Load the Prompty objects for AI Search query and chat answer generation.
         prompty_path = model_config.template_path

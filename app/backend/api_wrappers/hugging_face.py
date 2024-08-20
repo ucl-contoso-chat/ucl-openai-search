@@ -75,9 +75,7 @@ class HuggingFaceClient:
             top_p=top_p,
         )
 
-    async def text_classification(
-        self, text: str, model: Optional[str] = None
-    ) -> List[TextClassificationOutputElement]:
+    async def text_classification(self, text: str, model: str) -> List[TextClassificationOutputElement]:
         return await self.client.text_classification(text=text, model=model)
 
     async def create_embeddings(self, *args, **kwargs) -> CreateEmbeddingResponse:

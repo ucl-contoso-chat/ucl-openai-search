@@ -111,7 +111,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
                 self.prompt_protection.set_protection_bool(protection_name, config.get("enabled", False))
 
         if isinstance(q, str):
-            if not await self.prompt_protection.check_for_all_exploits(message=q, llm_client=self.llm_clients["hf"]):
+            if not await self.prompt_protection.check_all_exploits(message=q, llm_client=self.llm_clients["hf"]):
                 raise PromptProtectionError(
                     message="Prompt contains an exploit, the application has terminated.", code="content_filter"
                 )
