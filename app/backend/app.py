@@ -610,13 +610,12 @@ async def setup_clients():
 
     llm_clients: dict[str, LLMClient] = {"openai": openai_client, "hf": hf_client}
 
-    prompt_protection = PromptProtection(prompt_protection_enabled=USE_INJECTION_PROTECTION)
-    print(prompt_protection)
+    prompt_protection = PromptProtection(injection_protection_enabled=USE_INJECTION_PROTECTION)
 
     current_app.config[CONFIG_LLM_CLIENTS] = llm_clients
     current_app.config[CONFIG_SEARCH_CLIENT] = search_client
     current_app.config[CONFIG_CURRENT_MODEL] = current_model
-    current_app.config[CONFIG_PROMPT_PROTECTION] = prompt_protection.config
+    current_app.config[CONFIG_PROMPT_PROTECTION] = prompt_protection.protections
     current_app.config[CONFIG_AVAILABLE_MODELS] = available_models
     current_app.config[CONFIG_BLOB_CONTAINER_CLIENT] = blob_container_client
     current_app.config[CONFIG_AUTH_CLIENT] = auth_helper
