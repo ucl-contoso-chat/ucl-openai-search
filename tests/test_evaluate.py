@@ -177,7 +177,7 @@ def test_run_evaluation_from_config():
                                     "results_dir": results_dir,
                                     "passing_rate": 3,
                                     "requested_metrics": ["mock_metric"],
-                                    "compared_models": ["model_name"],
+                                    "models": ["model_name"],
                                     "max_workers": 2,
                                     "target_parameters": {"overrides": {"set_model": ""}},
                                 }
