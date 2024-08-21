@@ -336,7 +336,7 @@ export function Component(): JSX.Element {
             >
                 <TextField
                     id={promptTemplateFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     defaultValue={promptTemplate}
                     label="Override prompt template"
                     multiline
@@ -350,7 +350,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={temperatureFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Temperature"
                     type="number"
                     min={0}
@@ -366,7 +366,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={seedFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Seed"
                     type="text"
                     defaultValue={seed?.toString() || ""}
@@ -379,7 +379,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={searchScoreFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Minimum search score"
                     type="number"
                     min={0}
@@ -395,7 +395,7 @@ export function Component(): JSX.Element {
                 {showSemanticRankerOption && (
                     <TextField
                         id={rerankerScoreFieldId}
-                        className={styles.chatSettingsSeparator}
+                        className={styles.askSettingsSeparator}
                         label="Minimum reranker score"
                         type="number"
                         min={1}
@@ -412,7 +412,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={retrieveCountFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Retrieve this many search results:"
                     type="number"
                     min={1}
@@ -427,7 +427,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={excludeCategoryFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Exclude category"
                     defaultValue={excludeCategory}
                     onChange={onExcludeCategoryChanged}
@@ -441,7 +441,7 @@ export function Component(): JSX.Element {
                     <>
                         <Checkbox
                             id={semanticRankerFieldId}
-                            className={styles.chatSettingsSeparator}
+                            className={styles.askSettingsSeparator}
                             checked={useSemanticRanker}
                             label="Use semantic ranker for retrieval"
                             onChange={onUseSemanticRankerChange}
@@ -458,7 +458,7 @@ export function Component(): JSX.Element {
 
                         <Checkbox
                             id={semanticCaptionsFieldId}
-                            className={styles.chatSettingsSeparator}
+                            className={styles.askSettingsSeparator}
                             checked={useSemanticCaptions}
                             label="Use semantic captions"
                             onChange={onUseSemanticCaptionsChange}
@@ -504,7 +504,7 @@ export function Component(): JSX.Element {
                     <>
                         <Checkbox
                             id={useOidSecurityFilterFieldId}
-                            className={styles.chatSettingsSeparator}
+                            className={styles.askSettingsSeparator}
                             checked={useOidSecurityFilter || requireAccessControl}
                             label="Use oid security filter"
                             disabled={!loggedIn || requireAccessControl}
@@ -521,7 +521,7 @@ export function Component(): JSX.Element {
                         />
                         <Checkbox
                             id={useGroupsSecurityFilterFieldId}
-                            className={styles.chatSettingsSeparator}
+                            className={styles.askSettingsSeparator}
                             checked={useGroupsSecurityFilter || requireAccessControl}
                             label="Use groups security filter"
                             disabled={!loggedIn || requireAccessControl}
