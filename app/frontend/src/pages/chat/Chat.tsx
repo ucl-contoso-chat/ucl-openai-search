@@ -658,7 +658,11 @@ const Chat = () => {
                         )}
                     />
 
-                    <ProtectionOptions updateProtectionConfig={updateProtectionConfig} protectionConfig={protectionConfig} />
+                    <ProtectionOptions
+                        updateProtectionConfig={updateProtectionConfig}
+                        protectionConfig={protectionConfig}
+                        checkboxClassName={styles.chatSettingsSeparator}
+                    />
 
                     {showGPT4VOptions && (
                         <GPT4VSettings

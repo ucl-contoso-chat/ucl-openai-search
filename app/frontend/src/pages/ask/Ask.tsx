@@ -476,7 +476,11 @@ export function Component(): JSX.Element {
                     </>
                 )}
 
-                <ProtectionOptions updateProtectionConfig={updateProtectionConfig} protectionConfig={protectionConfig} />
+                <ProtectionOptions
+                    updateProtectionConfig={updateProtectionConfig}
+                    protectionConfig={protectionConfig}
+                    checkboxClassName={styles.askSettingsSeparator}
+                />
 
                 {showGPT4VOptions && (
                     <GPT4VSettings
