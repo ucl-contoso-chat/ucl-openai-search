@@ -26,21 +26,31 @@ class RetrieveThenReadApproach(Approach):
         + "Use 'you' to refer to the individual asking the questions even if they ask with 'I'. "
         + "Answer the following question using only the data provided in the sources below. "
         + "For tabular information return it as an html table. Do not return markdown format. "
-        + "Each source has a name followed by colon and the actual information, always include the source name for each fact you use in the response. "
-        + "If you cannot answer using the sources below, say you don't know. Use below example to answer"
+        + "Each source has a name followed by colon and the actual information, and you must always include the source name for each fact you use in the response. "
+        + "When you are using the source name it should always be in square brackets."
+        + "If you cannot answer using the sources below, say you don't know."
     )
 
     # shots/sample conversation
-    question = """
-'What is the deductible for the employee plan for a visit to Overlake in Bellevue?'
-
-Sources:
-info1.txt: deductibles depend on whether you are in-network or out-of-network. In-network deductibles are $500 for employee and $1000 for family. Out-of-network deductibles are $1000 for employee and $2000 for family.
-info2.pdf: Overlake is in-network for the employee plan.
-info3.pdf: Overlake is the name of the area that includes a park and ride near Bellevue.
-info4.pdf: In-network institutions include Overlake, Swedish and others in the region
-"""
-    answer = "In-network deductibles are $500 for employee and $1000 for family [info1.txt] and Overlake is in-network for the employee plan [info2.pdf][info4.pdf]."
+    few_shots = [
+        {
+            "role": "user",
+            "content": (
+                "'What is the deductible for the employee plan for a visit to Overlake in Bellevue?'\n\n"
+                "Sources:\n"
+                "info1.txt: deductibles depend on whether you are in-network or out-of-network. "
+                "In-network deductibles are $500 for employee and $1000 for family. "
+                "Out-of-network deductibles are $1000 for employee and $2000 for family.\n"
+                "info2.pdf: Overlake is in-network for the employee plan.\n"
+                "info3.pdf: Overlake is the name of the area that includes a park and ride near Bellevue.\n"
+                "info4.pdf: In-network institutions include Overlake, Swedish and others in the region"
+            ),
+        },
+        {
+            "role": "assistant",
+            "content": "In-network deductibles are $500 for employee and $1000 for family [info1.txt] and Overlake is in-network for the employee plan [info2.pdf][info4.pdf].",
+        },
+    ]
 
     def __init__(
         self,
@@ -156,6 +166,7 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
 
         updated_messages = ask_prompty.render(
             system_message=overrides.get("prompt_template", self.system_chat_template),
+            few_shots=self.few_shots,
             question=q,
             sources=sources_content,
         )
