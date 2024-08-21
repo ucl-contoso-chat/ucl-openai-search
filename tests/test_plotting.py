@@ -2,7 +2,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import matplotlib.pyplot as plt
-import pytest
 
 from evaluation.plotting import (
     plot_bar_charts,
@@ -88,7 +87,3 @@ def test_plot_radar_chart(mock_savefig):
 
     mock_savefig.assert_called_once_with(output_path, bbox_inches="tight", format="png")
     plt.close("all")
-
-
-if __name__ == "__main__":
-    pytest.main()

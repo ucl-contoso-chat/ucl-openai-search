@@ -196,6 +196,10 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
     plt.close(fig)
 
 
+# The following code is adapted from the Matplotlib documentation:
+# https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html
+
+
 def radar_factory(num_vars):
     """
     Create a radar chart with `num_vars` Axes.

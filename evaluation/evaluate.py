@@ -20,6 +20,7 @@ from evaluation.plotting import (
     plot_box_charts_grid,
     plot_radar_chart,
 )
+from evaluation.service_setup import get_models
 from evaluation.utils import load_jsonl
 
 EVALUATION_RESULTS_DIR = "gpt_evaluation"
@@ -39,7 +40,6 @@ def send_question_to_target(question: str, url: str, parameters: dict = {}, rais
 
     try:
         r = requests.post(url, headers=headers, json=body)
-        r.encoding = "utf-8"
         latency = r.elapsed.total_seconds()
 
         r.raise_for_status()
@@ -48,7 +48,7 @@ def send_question_to_target(question: str, url: str, parameters: dict = {}, rais
             response_dict = r.json()
         except json.JSONDecodeError:
             raise ValueError(
-                f"Response from target {url} is not valid JSON:\n\n{r.text} \n"
+                f"Response from target {url} is not valid JSON:\n{r.text}"
                 "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
             )
         try:
@@ -104,22 +104,6 @@ def evaluate_row(
     return output
 
 
-def get_models(target_url: str) -> list:
-    """send request to /getmodels to determine whether the chosen model names are valid"""
-    try:
-        r = requests.get(target_url)
-        r.encoding = "utf-8"
-        r.raise_for_status()
-
-        try:
-            response_list = r.json()
-        except json.JSONDecodeError:
-            raise ValueError(f"Response is not valid JSON:\n\n{r.text} \n")
-    except Exception as e:
-        raise e
-    return response_list
-
-
 def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
     """Run evaluation using the provided configuration file."""
     timestamp = int(time.time())
@@ -142,7 +126,7 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
         ],
     )
     get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
-    compared_models = config.get("compared_models")
+    compared_models = config.get("models")
     all_models = get_models(get_model_url)
     for elem in compared_models:
         if elem not in all_models:
@@ -240,8 +224,7 @@ def dump_summary(rated_questions_for_models: dict, requested_metrics: list, pass
 
 def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, passing_rate: int, results_dir: Path):
     """Summarize the evaluation results and plot them."""
-    rating_stat_data = {}
-    stat_metric_data = {}
+    rating_stat_data, stat_metric_data = {}, {}
     for key in questions_with_ratings_dict:
         rating_stat_data[key] = {"pass_count": {}, "pass_rate": {}, "mean_rating": {}}
         stat_metric_data[key] = {"latency": {}, "f1_score": {}, "answer_length": {}}
@@ -255,8 +238,7 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         for metrics in metrics_list:
             data_per_model.append(metrics)
             df = pd.DataFrame(data_per_model)
-            data_dict_gpt = {}
-            data_dict_stat = {}
+            data_dict_gpt, data_dict_stat = {}, {}
             for metric in requested_metrics:
                 metric_name = metric.METRIC_NAME
                 short_name = metric.SHORT_NAME
@@ -316,13 +298,11 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         width,
     )
 
-    gpt_metric_avg_ratings = {}
-    data_for_single_box = {}
-    data_for_multi_box = {}
+    gpt_metric_avg_ratings, data_for_single_box, data_for_multi_box = {}, {}, {}
     for key in questions_with_ratings_dict:
-        gpt_metric_avg_ratings[key] = [val for _, val in rating_stat_data[key]["mean_rating"].items()]
-        data_for_single_box[key] = [data for _, data in gpt_metric_data_points[key].items()]
-        data_for_multi_box[key] = [data for _, data in stat_metric_data_points[key].items()]
+        gpt_metric_avg_ratings[key] = list(rating_stat_data[key]["mean_rating"].values())
+        data_for_single_box[key] = list(gpt_metric_data_points[key].values())
+        data_for_multi_box[key] = list(stat_metric_data_points[key].values())
         label_for_single_box = list(gpt_metric_data_points[key].keys())
         titles_for_multi_box = list(stat_metric_data_points[key].keys())
         layout = (

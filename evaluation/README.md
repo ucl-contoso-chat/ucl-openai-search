@@ -107,19 +107,11 @@ python -m evaluation generate-answers \
 
 You can run the evaluation script with the following command, specifying the path to the configuration file
 (the provided [evaluation/config.json](./config.json) will be used by default; feel free to edit it or provide your
-own. You should specify the only one model you want to run evaluation on in the configuration file, you can view available models names with the '--help' option), as well as the number of questions considered (by default, all questions found in the input file will be
+own. You should specify the models you want to run evaluation on in the configuration file, more than one models implies running model comparison. You can view available models names with the '--help' option), as well as the number of questions considered (by default, all questions found in the input file will be
 consumed).
 
 ```shell
 python -m evaluation evaluate \
-  --config=evaluation/config.json \
-  --numquestions=2
-```
-
-You can run the evaluation script on different models to compare between them. To do this, you need to specify the names of the models to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
-
-```shell
-python -m evaluation compare \
   --config=evaluation/config.json \
   --numquestions=2
 ```
@@ -178,6 +170,8 @@ python -m evaluation red-teaming \
 - `true_description`
 - `false_description`
 
+When ruuning against the entire application, you can specify the model names to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
+
 ### Run the red teaming script against the target OpenAI model on Azure
 
 You can set the `--prompt-target` to `"azureopenai"` to target an Azure-hosted OpenAI model:
@@ -199,18 +193,6 @@ python -m evaluation red-teaming \
   --scorer-dir=evaluation/scorer_definitions \
   --config=evaluation/config.json
 ```
-
-### Run the red teaming comparison between different models
-
-When running the red teaming comparison, it is to run against the entire application:
-
-```shell
-python -m evaluation red-teaming-comparison \
-  --scorer-dir=evaluation/scorer_definitions \
-  --config=evaluation/config.json
-```
-
-You can specify the model names to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
 
 ### View red teaming evaluation results
 
