@@ -213,19 +213,18 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
 
 def dump_summary(rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
     """Save the summary to a file."""
+    summary = {}
     for key in rated_questions_for_models:
         rated_questions = rated_questions_for_models[key]
-        summary = {}
-        summary["model_name"] = key
         rated_questions_df = pd.DataFrame(rated_questions)
         results_per_model = {}
         for metric in requested_metrics:
             metric_result = metric.get_aggregate_stats(rated_questions_df, passing_rate)
             results_per_model[metric.METRIC_NAME] = metric_result
-        summary["model_result"] = results_per_model
+        summary[key] = results_per_model
 
-        with open(results_dir / "summary.json", "a", encoding="utf-8") as summary_file:
-            summary_file.write(json.dumps(summary, indent=4))
+    with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
+        summary_file.write(json.dumps(summary, indent=4))
     logger.info("Evaluation results saved in %s", results_dir)
 
 
@@ -312,10 +311,14 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         data_for_multi_box[key] = list(stat_metric_data_points[key].values())
         label_for_single_box = list(gpt_metric_data_points[key].keys())
         titles_for_multi_box = list(stat_metric_data_points[key].keys())
-        layout = (
-            int(np.ceil(len(stat_metric_data_points[key]) / 3)),
-            3 if len(stat_metric_data_points[key]) > 3 else len(stat_metric_data_points[key]),
-        )
+    layout = (
+        int(np.ceil(len(stat_metric_data_points[next(iter(stat_metric_data_points))]) / 3)),
+        (
+            3
+            if len(stat_metric_data_points[next(iter(stat_metric_data_points))]) > 3
+            else len(stat_metric_data_points[next(iter(stat_metric_data_points))])
+        ),
+    )
     gpt_metric_short_names = [m.SHORT_NAME for _, m in requested_gpt_metrics.items()]
     plot_radar_chart(
         gpt_metric_short_names,

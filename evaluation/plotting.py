@@ -29,7 +29,7 @@ def plot_bar_charts(
     width: float = 0.4,
 ):
     """Plot bar charts for the provided data."""
-    if layout[0] * layout[1] != len(data):
+    if layout[0] * layout[1] != len(data[next(iter(data))]):
         raise ValueError("Number of data points must match the layout")
 
     font = {"weight": "normal", "size": 9}
@@ -38,6 +38,8 @@ def plot_bar_charts(
 
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
+    all_handles = []
+    all_labels = []
 
     if axs is not np.ndarray:
         axs = np.array([axs])
@@ -66,6 +68,9 @@ def plot_bar_charts(
             for bar in bars:
                 yval = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 1), ha="center", va="bottom", fontsize=8)
+            handle, _ = ax.get_legend_handles_labels()
+            all_handles.append(handle[0])
+            all_labels.append(label)
 
         if y_max_lim is not None and len(y_max_lim) > i and y_max_lim[i] is not None:
             ax.set_ylim(0, y_max_lim[i] * 1.5)
@@ -76,7 +81,8 @@ def plot_bar_charts(
         ax.set_ylabel(y_labels[i])
         ax.set_xticks(x_base)
         ax.set_xticklabels(all_x_data)
-        ax.legend()
+        # ax.legend()
+    fig.legend(all_handles, all_labels, loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=len(data))
 
     save_figure(output_path)
     plt.close(fig)
@@ -212,7 +218,7 @@ def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], 
 
     df = pd.DataFrame(table_data)
 
-    _, ax = plt.subplots(figsize=(10, 2 + len(df) * 0.5))
+    fig, ax = plt.subplots()
 
     ax.axis("tight")
     ax.axis("off")
