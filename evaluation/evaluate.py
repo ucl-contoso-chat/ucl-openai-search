@@ -1,4 +1,4 @@
-import concurrent.futures
+import asyncio
 import json
 import logging
 import os
@@ -7,6 +7,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import aiofiles
+import aiohttp
 import numpy as np
 import pandas as pd
 import requests
@@ -51,16 +53,15 @@ def send_question_to_target(question: str, url: str, parameters: dict = {}, rais
 
     try:
         r = requests.post(url, headers=headers, json=body)
-        r.encoding = "utf-8"
-        latency = r.elapsed.total_seconds()
 
         r.raise_for_status()
+        latency = r.elapsed.total_seconds()
 
         try:
             response_dict = r.json()
-        except json.JSONDecodeError:
+        except aiohttp.ContentTypeError:
             raise ValueError(
-                f"Response from target {url} is not valid JSON:\n\n{r.text} \n"
+                f"Response from target {url} is not valid JSON:\n\n{r.text()} \n"
                 "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
             )
         try:
@@ -168,7 +169,7 @@ async def run_evaluation_and_redteaming_from_request(
 
     target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
 
-    summary, question_results = run_evaluation(
+    summary, question_results = await run_evaluation(
         openai_config=openai_config,
         testdata_path=testdata_path,
         results_dir=results_dir,
@@ -224,7 +225,7 @@ async def run_evaluation_and_redteaming_from_request(
         return "Evaluation was terminated early"
 
 
-def run_evaluation(
+async def run_evaluation(
     openai_config: AzureOpenAIModelConfiguration,
     testdata_path: Path,
     results_dir: Path,
@@ -237,56 +238,62 @@ def run_evaluation(
     num_questions: int = None,
 ):
     """Run evaluation on the provided test data."""
-    try:
-        logger.info("Running evaluation using data from %s", testdata_path)
-        testdata = load_jsonl(testdata_path)
-        if num_questions:
-            logger.info("Limiting evaluation to %s questions", num_questions)
-            testdata = testdata[:num_questions]
+    # try:
+    logger.info("Running evaluation using data from %s", testdata_path)
+    testdata = load_jsonl(testdata_path)
+    if num_questions:
+        logger.info("Limiting evaluation to %s questions", num_questions)
+        testdata = testdata[:num_questions]
 
-        logger.info("Starting evaluation...")
+    logger.info("Starting evaluation...")
 
-        questions_with_ratings_dict = {}
-        requested_metrics_list = requested_metrics
-        for model in compared_models:
-            target_parameters["overrides"]["set_model"] = model
-            for metric in requested_metrics_list:
-                if metric not in metrics_by_name:
-                    logger.error(
-                        f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}"
-                    )
-                    return False
+    questions_with_ratings_dict = {}
+    requested_metrics_list = requested_metrics
+    for model in compared_models:
+        target_parameters["overrides"]["set_model"] = model
+        for metric in requested_metrics_list:
+            if metric not in metrics_by_name:
+                logger.error(f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}")
+                return False
 
-            requested_metrics = [
-                metrics_by_name[metric_name] for metric_name in requested_metrics_list if metric_name in metrics_by_name
+        requested_metrics = [
+            metrics_by_name[metric_name] for metric_name in requested_metrics_list if metric_name in metrics_by_name
+        ]
+
+        questions_per_model_with_ratings = []
+
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            coroutines = [
+                loop.run_in_executor(
+                    executor,
+                    evaluate_row,
+                    row,
+                    target_url,
+                    openai_config,
+                    requested_metrics,
+                    target_parameters,
+                )
+                for row in testdata
             ]
+            for eval_cor in track(asyncio.as_completed(coroutines), description="Processing..."):
+                row_result = await eval_cor
+                questions_per_model_with_ratings.append(row_result)
 
-            questions_per_model_with_ratings = []
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {
-                    executor.submit(
-                        evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters
-                    ): row
-                    for row in testdata
-                }
-                for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
-                    row_result = future.result()
-                    questions_per_model_with_ratings.append(row_result)
+        logger.info("Evaluation calls have completed. Calculating overall metrics now...")
+        results_dir.mkdir(parents=True, exist_ok=True)
 
-            logger.info("Evaluation calls have completed. Calculating overall metrics now...")
-            results_dir.mkdir(parents=True, exist_ok=True)
+        async with aiofiles.open(results_dir / "eval_results.jsonl", "a", encoding="utf-8") as results_file:
+            for row in questions_per_model_with_ratings:
+                await results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-            with open(results_dir / "eval_results.jsonl", "a", encoding="utf-8") as results_file:
-                for row in questions_per_model_with_ratings:
-                    results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+        questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
 
-            questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
-
-        summary = dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
-        plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
-    except Exception as e:
-        logger.error("Evaluation was terminated early due to an error ⬆")
-        raise e
+    summary = dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
+    plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
+    # except Exception as e:
+    #     logger.error("Evaluation was terminated early due to an error ⬆")
+    #     raise e
     return (summary, questions_with_ratings_dict)
 
 
@@ -369,7 +376,7 @@ def run_evaluation_from_config(
         return False
 
 
-def run_evaluation_by_request(
+async def run_evaluation_by_request(
     working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, results_dir: Path = None
 ):
     """Run evaluation from a backend request"""
@@ -389,7 +396,7 @@ def run_evaluation_by_request(
             logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
             return False
 
-    summary, question_results = run_evaluation(
+    summary, question_results = await run_evaluation(
         openai_config=openai_config,
         testdata_path=testdata_path,
         results_dir=results_dir,
@@ -423,8 +430,8 @@ def run_evaluation_by_request(
         config["target_url"] = target_url
         config["evaluation_gpt_model"] = openai_config.model
 
-        with open(results_config_path, "w", encoding="utf-8") as output_config:
-            output_config.write(json.dumps(config, indent=4))
+        async with aiofiles.open(results_config_path, "w", encoding="utf-8") as output_config:
+            await output_config.write(json.dumps(config, indent=4))
 
         # shutil.rmtree(results_dir)
 

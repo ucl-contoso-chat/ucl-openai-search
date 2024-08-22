@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 import io
 import json
@@ -100,9 +101,16 @@ from templates.supported_models import get_supported_models
 rootpath = os.path.join(os.getcwd(), "../..")
 sys.path.append(rootpath)
 
-from evaluation.evaluate import run_evaluation_and_redteaming_from_request, run_evaluation_by_request  # noqa E402
+from evaluation.evaluate import (  # noqa E402
+    logger,
+    run_evaluation_and_redteaming_from_request,
+    run_evaluation_by_request,
+)
 from evaluation.generate import generate_test_qa_data  # noqa E402
-from evaluation.service_setup import get_openai_config_dict, get_search_client  # noqa E402
+from evaluation.service_setup import (  # noqa E402
+    get_openai_config_dict,
+    get_search_client,
+)
 from evaluation.utils import load_config, save_config, save_jsonl  # noqa E402
 
 bp = Blueprint("routes", __name__, static_folder="static")
@@ -112,6 +120,7 @@ mimetypes.add_type("text/css", ".css")
 
 BACKEND_DIR = Path(__file__).parent
 EVALUATION_DIR = BACKEND_DIR / "evaluation"
+logger.setLevel(logging.WARNING)
 
 
 @bp.route("/")
@@ -375,14 +384,26 @@ async def evaluate(auth_claims: dict[str, Any]):
     save_config(config, "evaluation" / temp_config_path)
     run_red_teaming = config.get("run_red_teaming", False)
     results_dir = None
+
     if run_red_teaming:
-        results_dir = await run_evaluation_and_redteaming_from_request(
-            EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions
+        evaluation_task = asyncio.create_task(
+            run_evaluation_and_redteaming_from_request(
+                EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions
+            )
         )
     else:
-        results_dir = run_evaluation_by_request(
-            EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions
+        evaluation_task = asyncio.create_task(
+            run_evaluation_by_request(EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions)
         )
+
+    while not evaluation_task.done():
+        try:
+            await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            evaluation_task.cancel()
+            return error_response("Connection Lost, evaluation task was cancelled", "/evaluate")
+
+    results_dir = await evaluation_task
 
     # if evaluation failed
     if results_dir is str:
@@ -401,9 +422,9 @@ async def evaluate(auth_claims: dict[str, Any]):
         # os.remove(raw_result_data)
         result = await send_file(return_data, as_attachment=True, mimetype="application/pdf")
         return result
-    except Exception as e:
+    except Exception:
         # os.remove(raw_result_data)
-        return error_response(e, "/evaluate")
+        return error_response("Error occured while sending report file", "/evaluate")
 
 
 @bp.route("/generate", methods=["POST"])
