@@ -17,7 +17,8 @@ import {
     ChatAppRequest,
     ResponseMessage,
     VectorFieldOptions,
-    GPT4VInput
+    GPT4VInput,
+    ProtectionConfig
 } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
@@ -36,6 +37,7 @@ import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { GPT4VSettings } from "../../components/GPT4VSettings";
 import { toolTipText } from "../../i18n/tooltips.js";
 import { LoginContext } from "../../loginContext";
+import { ProtectionOptions } from "../../components/ProtectionOptions";
 
 const Chat = () => {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -62,6 +64,8 @@ const Chat = () => {
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
 
+    const [protectionConfig, setProtectionConfig] = useState<Record<string, ProtectionConfig>>({});
+
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
@@ -82,6 +86,16 @@ const Chat = () => {
     const [showSpeechOutputBrowser, setShowSpeechOutputBrowser] = useState<boolean>(false);
     const [showSpeechOutputAzure, setShowSpeechOutputAzure] = useState<boolean>(false);
 
+    const updateProtectionConfig = (name: string, enabled: boolean) => {
+        setProtectionConfig(prevConfig => ({
+            ...prevConfig,
+            [name]: {
+                ...prevConfig[name],
+                enabled: enabled
+            }
+        }));
+    };
+
     const getConfig = async () => {
         configApi().then(config => {
             setShowGPT4VOptions(config.showGPT4VOptions);
@@ -96,6 +110,9 @@ const Chat = () => {
             setShowSpeechOutputBrowser(config.showSpeechOutputBrowser);
             setShowSpeechOutputAzure(config.showSpeechOutputAzure);
             setModel(config.currentModel);
+
+            const protectionOptions = config.protectionConfig || {};
+            setProtectionConfig(protectionOptions);
         });
     };
 
@@ -127,7 +144,7 @@ const Chat = () => {
                 if (event["context"] && event["context"]["data_points"]) {
                     event["message"] = event["delta"];
                     askResponse = event as ChatAppResponse;
-                } else if (event["delta"]["content"]) {
+                } else if (event["delta"] && event["delta"]["content"]) {
                     setIsLoading(false);
                     await updateState(event["delta"]["content"]);
                 } else if (event["context"]) {
@@ -186,6 +203,7 @@ const Chat = () => {
                         use_gpt4v: useGPT4V,
                         gpt4v_input: gpt4vInput,
                         set_model: model,
+                        prompt_protection: protectionConfig,
                         ...(seed !== null ? { seed: seed } : {})
                     }
                 },
@@ -638,6 +656,12 @@ const Chat = () => {
                                 label={props?.label}
                             />
                         )}
+                    />
+
+                    <ProtectionOptions
+                        updateProtectionConfig={updateProtectionConfig}
+                        protectionConfig={protectionConfig}
+                        checkboxClassName={styles.chatSettingsSeparator}
                     />
 
                     {showGPT4VOptions && (

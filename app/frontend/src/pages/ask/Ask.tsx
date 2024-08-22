@@ -4,7 +4,18 @@ import { useId } from "@fluentui/react-hooks";
 
 import styles from "./Ask.module.css";
 
-import { askApi, configApi, getSpeechApi, ChatAppResponse, ChatAppRequest, RetrievalMode, VectorFieldOptions, GPT4VInput, getSupportedModels } from "../../api";
+import {
+    askApi,
+    configApi,
+    getSpeechApi,
+    ChatAppResponse,
+    ChatAppRequest,
+    RetrievalMode,
+    VectorFieldOptions,
+    GPT4VInput,
+    getSupportedModels,
+    ProtectionConfig
+} from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -21,6 +32,7 @@ import { useMsal } from "@azure/msal-react";
 import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { LoginContext } from "../../loginContext";
 import { ModelChoice } from "../../components/ModelChoice";
+import { ProtectionOptions } from "../../components/ProtectionOptions";
 
 export function Component(): JSX.Element {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -54,6 +66,8 @@ export function Component(): JSX.Element {
 
     const lastQuestionRef = useRef<string>("");
 
+    const [protectionConfig, setProtectionConfig] = useState<Record<string, ProtectionConfig>>({});
+
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
     const [answer, setAnswer] = useState<ChatAppResponse>();
@@ -64,6 +78,16 @@ export function Component(): JSX.Element {
 
     const client = useLogin ? useMsal().instance : undefined;
     const { loggedIn } = useContext(LoginContext);
+
+    const updateProtectionConfig = (name: string, enabled: boolean) => {
+        setProtectionConfig(prevConfig => ({
+            ...prevConfig,
+            [name]: {
+                ...prevConfig[name],
+                enabled: enabled
+            }
+        }));
+    };
 
     const getConfig = async () => {
         configApi().then(config => {
@@ -79,6 +103,9 @@ export function Component(): JSX.Element {
             setShowSpeechOutputBrowser(config.showSpeechOutputBrowser);
             setShowSpeechOutputAzure(config.showSpeechOutputAzure);
             setModel(config.currentModel);
+
+            const protectionOptions = config.protectionConfig || {};
+            setProtectionConfig(protectionOptions);
         });
     };
 
@@ -140,6 +167,7 @@ export function Component(): JSX.Element {
                         vector_fields: vectorFieldList,
                         use_gpt4v: useGPT4V,
                         gpt4v_input: gpt4vInput,
+                        prompt_protection: protectionConfig,
                         ...(seed !== null ? { seed: seed } : {})
                     }
                 },
@@ -308,7 +336,7 @@ export function Component(): JSX.Element {
             >
                 <TextField
                     id={promptTemplateFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     defaultValue={promptTemplate}
                     label="Override prompt template"
                     multiline
@@ -322,7 +350,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={temperatureFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Temperature"
                     type="number"
                     min={0}
@@ -338,7 +366,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={seedFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Seed"
                     type="text"
                     defaultValue={seed?.toString() || ""}
@@ -351,7 +379,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={searchScoreFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Minimum search score"
                     type="number"
                     min={0}
@@ -367,7 +395,7 @@ export function Component(): JSX.Element {
                 {showSemanticRankerOption && (
                     <TextField
                         id={rerankerScoreFieldId}
-                        className={styles.chatSettingsSeparator}
+                        className={styles.askSettingsSeparator}
                         label="Minimum reranker score"
                         type="number"
                         min={1}
@@ -384,7 +412,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={retrieveCountFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Retrieve this many search results:"
                     type="number"
                     min={1}
@@ -399,7 +427,7 @@ export function Component(): JSX.Element {
 
                 <TextField
                     id={excludeCategoryFieldId}
-                    className={styles.chatSettingsSeparator}
+                    className={styles.askSettingsSeparator}
                     label="Exclude category"
                     defaultValue={excludeCategory}
                     onChange={onExcludeCategoryChanged}
@@ -413,7 +441,7 @@ export function Component(): JSX.Element {
                     <>
                         <Checkbox
                             id={semanticRankerFieldId}
-                            className={styles.chatSettingsSeparator}
+                            className={styles.askSettingsSeparator}
                             checked={useSemanticRanker}
                             label="Use semantic ranker for retrieval"
                             onChange={onUseSemanticRankerChange}
@@ -430,7 +458,7 @@ export function Component(): JSX.Element {
 
                         <Checkbox
                             id={semanticCaptionsFieldId}
-                            className={styles.chatSettingsSeparator}
+                            className={styles.askSettingsSeparator}
                             checked={useSemanticCaptions}
                             label="Use semantic captions"
                             onChange={onUseSemanticCaptionsChange}
@@ -447,6 +475,12 @@ export function Component(): JSX.Element {
                         />
                     </>
                 )}
+
+                <ProtectionOptions
+                    updateProtectionConfig={updateProtectionConfig}
+                    protectionConfig={protectionConfig}
+                    checkboxClassName={styles.askSettingsSeparator}
+                />
 
                 {showGPT4VOptions && (
                     <GPT4VSettings
@@ -474,7 +508,7 @@ export function Component(): JSX.Element {
                     <>
                         <Checkbox
                             id={useOidSecurityFilterFieldId}
-                            className={styles.chatSettingsSeparator}
+                            className={styles.askSettingsSeparator}
                             checked={useOidSecurityFilter || requireAccessControl}
                             label="Use oid security filter"
                             disabled={!loggedIn || requireAccessControl}
@@ -491,7 +525,7 @@ export function Component(): JSX.Element {
                         />
                         <Checkbox
                             id={useGroupsSecurityFilterFieldId}
-                            className={styles.chatSettingsSeparator}
+                            className={styles.askSettingsSeparator}
                             checked={useGroupsSecurityFilter || requireAccessControl}
                             label="Use groups security filter"
                             disabled={!loggedIn || requireAccessControl}
