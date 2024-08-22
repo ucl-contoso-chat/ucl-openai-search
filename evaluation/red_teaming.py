@@ -15,7 +15,7 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 from evaluation.app_chat_target import AppChatTarget
-from evaluation.plotting import plot_radar_chart
+from evaluation.plotting import plot_red_teaming_table
 
 RED_TEAMING_RESULTS_DIR = "red_teaming"
 
@@ -176,4 +176,7 @@ def map_score_to_readable_data(results: dict):
 def plot_graph(results: dict, output_path: Path):
     """Plot the graph of the results."""
     labels, values = map_score_to_readable_data(results)
-    plot_radar_chart(labels, values, "Red Teaming Evaluation Results", output_path / "red_teaming_results.png", 1)
+    print("results:111111111111111111111111111111111")
+    print(labels)
+    print(values)
+    plot_red_teaming_table(labels, values, "Red Teaming Evaluation Results", output_path / "red_teaming_results.png")

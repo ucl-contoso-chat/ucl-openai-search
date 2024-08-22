@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 
 import matplotlib
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.patches import RegularPolygon
 from matplotlib.path import Path as MatPath
@@ -194,6 +195,48 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
 
     save_figure(output_path)
     plt.close(fig)
+
+
+def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], title: str, output_path: Path):
+    table_data = {}
+    table_data["Model name"] = []
+    for label in metric_label_list:
+        table_data[label] = []
+    for key, value in data.items():
+        table_data["Model name"].append(key)
+        for i, label in enumerate(metric_label_list):
+            value_list = table_data[label]
+            cell_value = "Pass" if value[i] == 1 else "Fail"
+            value_list.append(cell_value)
+
+    df = pd.DataFrame(table_data)
+
+    fig, ax = plt.subplots(figsize=(10, 2 + len(df) * 0.5))
+
+    ax.axis("tight")
+    ax.axis("off")
+
+    table = ax.table(cellText=df.values, colLabels=df.columns, cellLoc="center", loc="center")
+    table.auto_set_font_size(False)
+    for (i, j), cell in table.get_celld().items():
+        cell.set_fontsize(3)
+        cell.set_text_props(wrap=True)
+
+    for (i, j), cell in table.get_celld().items():
+        fontsize = cell.get_text().get_fontsize()
+        text = cell.get_text()
+        print(f"Cell ({i}, {j}) Fontsize: {fontsize}{text}")
+
+    for i in range(len(df)):
+        for j in range(len(df.columns)):
+            cell_value = df.iloc[i, j]
+            if cell_value == "Pass":
+                table[(i + 1, j)].set_facecolor("#90EE90")
+            elif cell_value == "Fail":
+                table[(i + 1, j)].set_facecolor("#FA8072")
+    plt.title(title, fontweight="bold", fontsize=14, pad=20)
+    plt.draw()
+    plt.savefig(output_path, bbox_inches="tight", dpi=300)
 
 
 # The following code is adapted from the Matplotlib documentation:
