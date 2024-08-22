@@ -77,9 +77,6 @@ class AppChatTarget(PromptChatTarget):
         """Complete a chat interaction by generating a response to the given input prompt."""
         headers = self._get_headers()
         payload = self._construct_http_body(messages, target_parameters)
-        print(self.endpoint_uri)
-        print(payload)
-        print(headers)
 
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers

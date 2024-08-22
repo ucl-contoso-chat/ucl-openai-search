@@ -28,14 +28,14 @@ EVALUATION_RESULTS_DIR = "gpt_evaluation"
 logger = logging.getLogger("evaluation")
 
 
-def send_question_to_target(question: str, url: str, parameters: dict = {}, raise_error=True) -> dict:
+def send_question_to_target(question: str, url: str, parameters: dict = None, raise_error=True) -> dict:
     """Send a question to the ask endpoint and return the response."""
     headers = {
         "Content-Type": "application/json",
     }
     body = {
         "messages": [{"content": question, "role": "user"}],
-        "context": parameters,
+        "context": parameters or {},
     }
 
     try:
@@ -79,14 +79,13 @@ def evaluate_row(
     target_url: str,
     openai_config: dict,
     requested_metrics: list,
-    target_parameters: dict = {},
+    target_parameters: dict,
 ) -> dict:
     """Evaluate a single row of test data."""
-    model_name = target_parameters["overrides"]["set_model"]
     output = {}
     output["question"] = row["question"]
     output["truth"] = row["truth"]
-    output["model_name"] = model_name
+    output["model_name"] = target_parameters["overrides"]["set_model"]
     target_response = send_question_to_target(
         question=row["question"],
         url=target_url,
@@ -125,15 +124,21 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
             "latency",
         ],
     )
-    get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
+    base_url = os.environ.get("BACKEND_URI") if target_url is None else target_url
+    get_model_url = base_url + "/getmodels"
+
     compared_models = config.get("models")
     all_models = get_models(get_model_url)
-    for elem in compared_models:
-        if elem not in all_models:
-            logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
-            return False
 
-    target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
+    unsupported_models = set(compared_models) - set(all_models)
+    if unsupported_models:
+        logger.error(
+            f"Requested models {', '.join(unsupported_models)} are not available."
+            f" Available models: {', '.join(all_models)}"
+        )
+        return False
+
+    target_url = base_url + "/ask"
 
     try:
         logger.info("Running evaluation using data from %s", testdata_path)
@@ -146,19 +151,22 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
 
         questions_with_ratings_dict = {}
         requested_metrics_list = requested_metrics
+        unsupported_metrics = set(requested_metrics_list) - set(metrics_by_name.keys())
+
+        if unsupported_metrics:
+            logger.error(
+                f"Requested metrics {', '.join(unsupported_metrics)} are not available."
+                f" Available metrics: {', '.join(metrics_by_name.keys())}"
+            )
+            return False
+
+        requested_metrics = [
+            metrics_by_name[metric_name] for metric_name in requested_metrics_list if metric_name in metrics_by_name
+        ]
         for model in compared_models:
+            if "overrides" not in target_parameters:
+                target_parameters["overrides"] = {}
             target_parameters["overrides"]["set_model"] = model
-            for metric in requested_metrics_list:
-                if metric not in metrics_by_name:
-                    logger.error(
-                        f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}"
-                    )
-                    return False
-
-            requested_metrics = [
-                metrics_by_name[metric_name] for metric_name in requested_metrics_list if metric_name in metrics_by_name
-            ]
-
             questions_per_model_with_ratings = []
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {
@@ -179,6 +187,7 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
                     results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
             questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
+
         dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
         plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
 
@@ -204,7 +213,6 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
 
 def dump_summary(rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
     """Save the summary to a file."""
-
     for key in rated_questions_for_models:
         rated_questions = rated_questions_for_models[key]
         summary = {}
@@ -218,7 +226,6 @@ def dump_summary(rated_questions_for_models: dict, requested_metrics: list, pass
 
         with open(results_dir / "summary.json", "a", encoding="utf-8") as summary_file:
             summary_file.write(json.dumps(summary, indent=4))
-            summary_file.write("\n")
     logger.info("Evaluation results saved in %s", results_dir)
 
 

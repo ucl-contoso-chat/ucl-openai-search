@@ -54,16 +54,13 @@ def _log_env_vars():
 
 def get_models(target_url: str) -> list:
     """Send request to /getmodels to determine whether the chosen model names are valid."""
-    try:
-        r = requests.get(target_url)
-        r.raise_for_status()
+    r = requests.get(target_url)
+    r.raise_for_status()
 
-        try:
-            response_list = r.json()
-        except json.JSONDecodeError:
-            raise ValueError(f"Response is not valid JSON:\n\n{r.text} \n")
-    except Exception as e:
-        raise e
+    try:
+        response_list = r.json()
+    except json.JSONDecodeError:
+        raise ValueError(f"Response is not valid JSON: {r.text}")
     return response_list
 
 

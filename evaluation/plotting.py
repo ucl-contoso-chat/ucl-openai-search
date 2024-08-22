@@ -26,7 +26,7 @@ def plot_bar_charts(
     y_labels: List[str],
     output_path: Path = Path("evaluation_results.png"),
     y_max_lim: List[float] = None,
-    width=0.4,
+    width: float = 0.4,
 ):
     """Plot bar charts for the provided data."""
     if layout[0] * layout[1] != len(data):
@@ -135,7 +135,6 @@ def plot_box_chart(
     y_lim: Tuple[float, float] = None,
 ):
     """Plot a box chart for the provided data."""
-
     plt.figure(figsize=(10, 6))
 
     positions = range(1, len(x_labels) + 1)
@@ -174,6 +173,7 @@ def plot_box_chart(
 
 
 def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title: str, output_path: Path, num: int):
+    """Plot a radar chart for the provided data."""
     theta = radar_factory(num_vars=len(metric_label_list))
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection="radar"))
     fig.subplots_adjust(wspace=0.5, hspace=0.20, top=0.85, bottom=0.05)
@@ -186,11 +186,11 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
         color = colors[idx % len(colors)]
         ax.plot(theta, data, color=color, label=label)
         ax.fill(theta, data, facecolor=color, alpha=0.25)
+
     ax.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
     ax.tick_params(pad=15)
     r_values = np.linspace(0, num, num + 1)
     ax.set_rgrids(r_values, angle=10)
-    # ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
     ax.set_varlabels(metric_label_list)
 
     save_figure(output_path)
@@ -198,6 +198,7 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
 
 
 def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], title: str, output_path: Path):
+    """Plot a pass/fail table for the red teaming results."""
     table_data = {}
     table_data["Model name"] = []
     for label in metric_label_list:
@@ -211,7 +212,7 @@ def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], 
 
     df = pd.DataFrame(table_data)
 
-    fig, ax = plt.subplots(figsize=(10, 2 + len(df) * 0.5))
+    _, ax = plt.subplots(figsize=(10, 2 + len(df) * 0.5))
 
     ax.axis("tight")
     ax.axis("off")
@@ -222,11 +223,6 @@ def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], 
         cell.set_fontsize(3)
         cell.set_text_props(wrap=True)
 
-    for (i, j), cell in table.get_celld().items():
-        fontsize = cell.get_text().get_fontsize()
-        text = cell.get_text()
-        print(f"Cell ({i}, {j}) Fontsize: {fontsize}{text}")
-
     for i in range(len(df)):
         for j in range(len(df.columns)):
             cell_value = df.iloc[i, j]
@@ -234,8 +230,8 @@ def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], 
                 table[(i + 1, j)].set_facecolor("#90EE90")
             elif cell_value == "Fail":
                 table[(i + 1, j)].set_facecolor("#FA8072")
+
     plt.title(title, fontweight="bold", fontsize=14, pad=20)
-    plt.draw()
     plt.savefig(output_path, bbox_inches="tight", dpi=300)
 
 
