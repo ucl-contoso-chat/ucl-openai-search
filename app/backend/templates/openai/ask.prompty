@@ -12,18 +12,29 @@ model:
 inputs:
   system_message:
     type: string
+  few_shots:
+    type: list
   question:
     type: string
   sources:
     type: list
 sample:
   system_message: You are an intelligent assistant helping Contoso Inc employees with their healthcare plan questions and employee handbook questions.
+  few_shots: [{role: "user", content: "What is included in my Northwind Health Plus plan that is not in standard?"}, {role: "assistant", content: "You have 0$ copay for prescription drugs."}]
   question: What is included in my Northwind Health Plus plan that is not in standard?
   sources: ["source1.txt: This is data from source1\nsource2.txt:This is data from source 2"]
 ---
 system:
 {{ system_message }}
 
+{% if few_shots is defined and few_shots|length > 0 %}
+{% for shot in few_shots %}
+{{ shot.role }}:
+{{ shot.content }}
+{% endfor %}
+{% endif %}
+
+user:
 Sources:
 {% for source in sources %}
 {{ source }}
