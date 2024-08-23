@@ -13,7 +13,7 @@ from promptflow.core import (
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.prompt_target import (
     AzureMLChatTarget,
-    AzureOpenAIChatTarget,
+    AzureOpenAITextChatTarget,
     OpenAIChatTarget,
     PromptChatTarget,
 )
@@ -165,13 +165,13 @@ def get_openai_target() -> PromptChatTarget:
         deployment = os.environ["AZURE_OPENAI_EVAL_DEPLOYMENT"]
         endpoint = os.environ["AZURE_OPENAI_EVAL_ENDPOINT"]
         if api_key := os.environ.get("AZURE_OPENAI_KEY"):
-            return AzureOpenAIChatTarget(
+            return AzureOpenAITextChatTarget(
                 deployment_name=deployment,
                 endpoint=endpoint,
                 api_key=api_key,
             )
         else:
-            return AzureOpenAIChatTarget(deployment_name=deployment, endpoint=endpoint, use_aad_auth=True)
+            return AzureOpenAITextChatTarget(deployment_name=deployment, endpoint=endpoint, use_aad_auth=True)
     else:
         logger.info("Using OpenAI Chat Target")
         return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])
