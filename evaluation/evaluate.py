@@ -289,10 +289,14 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         titles = [display_stats_name[mn] for mn in rating_stat_data[key].keys()]
         y_labels = [stats_y_labels[mn] for mn in rating_stat_data[key].keys()]
         y_lims = [stats_y_lim[mn] for mn in rating_stat_data[key].keys()]
-        
+
     layout = (
         int(np.ceil(len(rating_stat_data[next(iter(rating_stat_data))]) / 3)),
-        3 if len(rating_stat_data[next(iter(rating_stat_data))]) > 3 else len(rating_stat_data[next(iter(rating_stat_data))]),
+        (
+            3
+            if len(rating_stat_data[next(iter(rating_stat_data))]) > 3
+            else len(rating_stat_data[next(iter(rating_stat_data))])
+        ),
     )
 
     plot_bar_charts(
