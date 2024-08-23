@@ -338,7 +338,7 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         label_for_single_box,
         "Rating Score",
         results_dir / "evaluation_gpt_boxplot.png",
-        [0.0, 5.0],
+        y_lim=(0.0, 5.0),
     )
 
     y_labels = [metric.NOTE for _, metric in requested_stat_metrics.items()]
