@@ -56,7 +56,7 @@ def plot_bar_charts(
             all_x_data = sorted(list(all_x_data))
             x_base = list(range(len(all_x_data)))
             bar_width = 0.25
-            offsets = [-bar_width, 0, bar_width]
+            offsets = [(i - len(data) / 2) * bar_width for i in range(len(data))]
             category_positions = [[x + offset for x in x_base] for offset in offsets]
             bar_width = width / len(categories)
             y_data_per_model = list(categories[i].values())
@@ -68,12 +68,13 @@ def plot_bar_charts(
             for bar in bars:
                 yval = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 1), ha="center", va="bottom", fontsize=8)
-            handle, _ = ax.get_legend_handles_labels()
-            all_handles.append(handle[0])
-            all_labels.append(label)
+            handle = bars[0]
+            if len(all_handles) < len(data):
+                all_handles.append(handle)
+                all_labels.append(label)
 
         if y_max_lim is not None and len(y_max_lim) > i and y_max_lim[i] is not None:
-            ax.set_ylim(0, y_max_lim[i] * 1.5)
+            ax.set_ylim(0, y_max_lim[i])
         else:
             ax.set_ylim(0, np.ceil(max(y_data)) * 1.2)
 
@@ -81,7 +82,6 @@ def plot_bar_charts(
         ax.set_ylabel(y_labels[i])
         ax.set_xticks(x_base)
         ax.set_xticklabels(all_x_data)
-        # ax.legend()
     fig.legend(all_handles, all_labels, loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=len(data))
 
     save_figure(output_path)
@@ -96,8 +96,8 @@ def plot_box_charts_grid(
     output_path: Path,
 ):
     """Plot box charts for the provided data."""
-    if layout[0] * layout[1] != len(data):
-        raise ValueError("Number of plots must match the layout")
+    if layout[0] * layout[1] != len(data[next(iter(data))]):
+        raise ValueError("Number of data points must match the layout")
 
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
@@ -127,7 +127,6 @@ def plot_box_charts_grid(
         ax.set_ylabel(y_labels[i])
         ax.set_xticks(positions)
         ax.set_xticklabels(data.keys())
-
     save_figure(output_path)
     plt.close(fig)
 
@@ -184,7 +183,7 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection="radar"))
     fig.subplots_adjust(wspace=0.5, hspace=0.20, top=0.85, bottom=0.05)
 
-    colors = ["b", "r", "g", "m", "c", "y"]
+    colors = ["b", "r", "g", "m", "y", "c", "k", "w"]
 
     ax.set_title(title, weight="bold", size="large", horizontalalignment="center", verticalalignment="center", pad=20)
 
