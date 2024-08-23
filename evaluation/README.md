@@ -1,4 +1,4 @@
-# Evaluation Process
+# RAG Chat Evaluation and Red Teaming
 
 This directory contains scripts and tools based on
 [Azure-Samples/ai-rag-chat-evaluator](https://github.com/Azure-Samples/ai-rag-chat-evaluator)
@@ -107,8 +107,7 @@ python -m evaluation generate-answers \
 
 You can run the evaluation script with the following command, specifying the path to the configuration file
 (the provided [evaluation/config.json](./config.json) will be used by default; feel free to edit it or provide your
-own. You should specify the models you want to run evaluation on in the configuration file, more than one models implies running model comparison. You can view available models names with the '--help' option), as well as the number of questions considered (by default, all questions found in the input file will be
-consumed).
+own. You should specify the models you want to run evaluation on in the configuration file, with more than one models implying a comparison between them. You can view the available models names with the '--help' option), as well as the number of questions considered (by default, all questions found in the input file will be consumed).
 
 ```shell
 python -m evaluation evaluate \
@@ -142,10 +141,11 @@ The results of each evaluation are stored in the specified results directory, in
 
 - `config.json`: The original config used for the run. This is useful for reproducing the run.
 - `eval_results.jsonl`: Each question and answer, along with the GPT metrics for each QA pair.
-- `evaluation_gpt_boxplot.png`: The box chart for the evaluation results of evaluation metrics.
-- `evaluation_gpt_radar.png`: The radar chart for the mean score of evaluation metrics.
-- `evaluation_results.png`: The bar charts for the pass count, pass rate and average rating of evaluation metrics.
-- `evaluation_stat_boxplot`:  The box charts for the evaluation results corresponding to the answer length, latency and F1 score.
+- `evaluation_gpt_boxplot.png`: A box chart for the results of the evaluation metrics.
+- `evaluation_gpt_radar.png`: A radar chart with the mean score of the evaluation metrics.
+- `evaluation_results.png`: Bar charts for the pass count, pass rate and average rating of the evaluation metrics.
+- `evaluation_stat_boxplot.png`: Box charts for the evaluation results corresponding to the answer length, latency,
+   and F1 score.
 - `summary.json`: The overall results, e.g. average GPT metrics.
 
 ## Run red teaming evaluation
@@ -170,7 +170,9 @@ python -m evaluation red-teaming \
 - `true_description`
 - `false_description`
 
-When ruuning against the entire application, you can specify the model names to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
+When running red teaming against the entire application, you can specify the models to be compared
+via the `models` list in [config.json](./config.json).
+You can view the available model names with the '--help' option.
 
 ### Run the red teaming script against the target OpenAI model on Azure
 
@@ -197,4 +199,4 @@ python -m evaluation red-teaming \
 ### View red teaming evaluation results
 
 The results of each red teaming experiment are stored in the specified results directory, in a timestamped
-`red_teaming/experiment-XXXXXXXXXX` subdirectory that contains a `scores.json` file with the result and a `red_teaming_results.png` containing the radar graph of the result.
+`red_teaming/experiment-XXXXXXXXXX` subdirectory that contains a `scores.json` file with the result and a `red_teaming_results.png` with a tabular visualisation.
