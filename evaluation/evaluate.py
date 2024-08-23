@@ -117,112 +117,21 @@ def evaluate_row(
     return output
 
 
-def get_models(target_url: str) -> list:
+async def get_models(target_url: str) -> list:
     """send request to /getmodels to determine whether the chosen model names are valid"""
     try:
-        r = requests.get(target_url)
-        r.encoding = "utf-8"
-        r.raise_for_status()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(target_url) as response:
+                response.encoding = "utf-8"
+                response.raise_for_status()
 
-        try:
-            response_list = r.json()
-        except json.JSONDecodeError:
-            raise ValueError(f"Response is not valid JSON:\n\n{r.text} \n")
+                try:
+                    response_list = await response.json()
+                except json.JSONDecodeError:
+                    raise ValueError(f"Response is not valid JSON:\n\n{response.text} \n")
     except Exception as e:
         raise e
     return response_list
-
-
-async def run_evaluation_and_redteaming_from_request(
-    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None
-):
-    timestamp = int(time.time())
-    results_dir = working_dir / config["results_dir"] / f"experiment-{timestamp}"
-    results_dir.mkdir(parents=True, exist_ok=True)
-
-    openai_config = service_setup.get_openai_config()
-    testdata_path = working_dir / config["testdata_path"]
-    max_workers = config.get("max_workers", 4)
-    passing_rate = config.get("passing_rate", 3)
-    target_parameters = config.get("target_parameters", {})
-    requested_metrics = config.get(
-        "requested_metrics",
-        [
-            "gpt_groundedness",
-            "gpt_relevance",
-            "gpt_coherence",
-            "answer_length",
-            "latency",
-        ],
-    )
-
-    red_teaming_llm = service_setup.get_openai_target()
-    red_teaming_target = service_setup.get_app_target(config, target_url)
-
-    get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
-    compared_models = config.get("compared_models")
-    all_models = get_models(get_model_url)
-    for elem in compared_models:
-        if elem not in all_models:
-            logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
-            return False
-
-    target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
-
-    summary, question_results = await run_evaluation(
-        openai_config=openai_config,
-        testdata_path=testdata_path,
-        results_dir=results_dir,
-        target_url=target_url,
-        passing_rate=passing_rate,
-        max_workers=max_workers,
-        target_parameters=target_parameters,
-        requested_metrics=requested_metrics,
-        compared_models=compared_models,
-        num_questions=num_questions,
-    )
-
-    red_teaming_results = await run_red_teaming(
-        working_dir=working_dir,
-        scorer_dir=DEFAULT_SCORER_DIR,
-        config=config,
-        red_teaming_llm=red_teaming_llm,
-        prompt_target=red_teaming_target,
-        max_turns=3,
-        compare=False,
-        results_dir=results_dir,
-    )
-
-    if summary is not None:
-        results_config_path = results_dir / "config.json"
-        logger.info("Saving original config file back to %s", results_config_path)
-
-        # Replace relative paths with absolute paths in the original config
-        config["testdata_path"] = str(testdata_path)
-        config["results_dir"] = str(results_dir)
-
-        # Add extra params to original config
-        config["target_url"] = target_url
-        config["evaluation_gpt_model"] = openai_config.model
-
-        with open(results_config_path, "w", encoding="utf-8") as output_config:
-            output_config.write(json.dumps(config, indent=4))
-
-        report_output = results_dir / "evaluation_report.pdf"
-        generate_eval_report(
-            summary,
-            question_results,
-            redteaming_result=red_teaming_results,
-            results_dir=results_dir,
-            output_path=report_output,
-        )
-        logger.info("PDF Report generated at %s", os.path.abspath(report_output))
-
-        return results_dir
-    else:
-        shutil.rmtree(results_dir)
-        logger.error("Evaluation was terminated early due to an error ⬆")
-        return "Evaluation was terminated early"
 
 
 async def run_evaluation(
@@ -297,7 +206,7 @@ async def run_evaluation(
     return (summary, questions_with_ratings_dict)
 
 
-def run_evaluation_from_config(
+async def run_evaluation_from_config(
     working_dir: Path,
     config: dict,
     num_questions: int = None,
@@ -328,7 +237,7 @@ def run_evaluation_from_config(
     )
     get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
     compared_models = config.get("compared_models")
-    all_models = get_models(get_model_url)
+    all_models = await get_models(get_model_url)
     for elem in compared_models:
         if elem not in all_models:
             logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
@@ -336,7 +245,7 @@ def run_evaluation_from_config(
 
     target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
 
-    summary, question_results = run_evaluation(
+    summary, question_results = await run_evaluation(
         openai_config=openai_config,
         testdata_path=testdata_path,
         results_dir=results_dir,
@@ -376,47 +285,71 @@ def run_evaluation_from_config(
         return False
 
 
-async def run_evaluation_by_request(
-    working_dir: Path, config: dict, num_questions: int = None, target_url: str = None, results_dir: Path = None
-):
+async def run_evaluation_by_request(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
     """Run evaluation from a backend request"""
-    if results_dir is None:
-        timestamp = int(time.time())
-        results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
-        results_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.setLevel(logging.WARNING)
+
+    timestamp = int(time.time())
+    results_dir = working_dir / config["results_dir"] / f"experiment-{timestamp}"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    run_redteaming = config.get("run_red_teaming", False)
 
     openai_config = service_setup.get_openai_config()
     testdata_path = working_dir / config["testdata_path"]
+    max_workers = config.get("max_workers", 4)
+    passing_rate = config.get("passing_rate", 3)
+    target_parameters = config.get("target_parameters", {})
+    requested_metrics = config.get(
+        "requested_metrics",
+        [
+            "gpt_groundedness",
+            "gpt_relevance",
+            "gpt_coherence",
+            "answer_length",
+            "latency",
+        ],
+    )
+
+    red_teaming_llm = service_setup.get_openai_target()
+    red_teaming_target = service_setup.get_app_target(config, target_url)
 
     get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
     compared_models = config.get("compared_models")
-    all_models = get_models(get_model_url)
+    all_models = await get_models(get_model_url)
     for elem in compared_models:
         if elem not in all_models:
             logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
             return False
 
+    target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
+
     summary, question_results = await run_evaluation(
         openai_config=openai_config,
         testdata_path=testdata_path,
         results_dir=results_dir,
-        target_url=os.environ.get("BACKEND_URI") + "/ask" if target_url is None else target_url,
-        target_parameters=config.get("target_parameters", {}),
-        passing_rate=config.get("passing_rate", 3),
-        max_workers=config.get("max_workers", 4),
-        requested_metrics=config.get(
-            "requested_metrics",
-            [
-                "gpt_groundedness",
-                "gpt_relevance",
-                "gpt_coherence",
-                "answer_length",
-                "latency",
-            ],
-        ),
+        target_url=target_url,
+        passing_rate=passing_rate,
+        max_workers=max_workers,
+        target_parameters=target_parameters,
+        requested_metrics=requested_metrics,
         compared_models=compared_models,
         num_questions=num_questions,
     )
+
+    red_teaming_results = None
+    if run_redteaming:
+        red_teaming_results = await run_red_teaming(
+            working_dir=working_dir,
+            scorer_dir=DEFAULT_SCORER_DIR,
+            config=config,
+            red_teaming_llm=red_teaming_llm,
+            prompt_target=red_teaming_target,
+            max_turns=3,
+            compare=False,
+            results_dir=results_dir,
+        )
 
     if summary is not None:
         results_config_path = results_dir / "config.json"
@@ -430,13 +363,17 @@ async def run_evaluation_by_request(
         config["target_url"] = target_url
         config["evaluation_gpt_model"] = openai_config.model
 
-        async with aiofiles.open(results_config_path, "w", encoding="utf-8") as output_config:
-            await output_config.write(json.dumps(config, indent=4))
-
-        # shutil.rmtree(results_dir)
+        with open(results_config_path, "w", encoding="utf-8") as output_config:
+            output_config.write(json.dumps(config, indent=4))
 
         report_output = results_dir / "evaluation_report.pdf"
-        generate_eval_report(summary, question_results, results_dir=results_dir, output_path=report_output)
+        generate_eval_report(
+            summary,
+            question_results,
+            redteaming_result=red_teaming_results,
+            results_dir=results_dir,
+            output_path=report_output,
+        )
         logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
         return results_dir

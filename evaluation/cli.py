@@ -15,7 +15,6 @@ from evaluation.evaluate import (
     DEFAULT_SYNTHETIC_DATA_ANSWERS_DIR,
     DEFAULT_SYNTHETIC_DATA_DIR,
     EVALUATION_DIR,
-    get_models,
     run_evaluation_from_config,
 )
 from evaluation.generate import generate_test_qa_answer, generate_test_qa_data
@@ -37,6 +36,8 @@ logger.setLevel(logging.INFO)
 dotenv.load_dotenv(override=True)
 
 get_model_url = os.environ.get("BACKEND_URI") + "/getmodels"
+# available_models = asyncio.run(get_models(get_model_url))
+available_models = ["GPT 3.5 turbo", "Phi 3 Mini 4K", "Mistral AI 7B"]
 
 
 def int_or_none(raw: str) -> Optional[int]:
@@ -53,7 +54,7 @@ def evaluate(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help=f"Path to the configuration JSON file. The name of the model to be evaluated should be specified in the JSON file. The available models that you can choose from are: {', '.join(get_models(get_model_url))}",
+        help=f"Path to the configuration JSON file. The name of the model to be evaluated should be specified in the JSON file. The available models that you can choose from are: {', '.join(available_models)}",
         default=DEFAULT_CONFIG_PATH,
     ),
     numquestions: Optional[int] = typer.Option(
@@ -73,36 +74,13 @@ def evaluate(
         file_okay=True,
     ),
 ):
-    run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl, report_output)
-
-
-@app.command()
-def compare(
-    config: Path = typer.Option(
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        help=f"Path to the configuration JSON file.The name of the models to be compared should be specified in the JSON file. The available models that you can choose from are: {', '.join(get_models(get_model_url))}",
-        default=DEFAULT_CONFIG_PATH,
-    ),
-    numquestions: Optional[int] = typer.Option(
-        help="Number of questions to evaluate (defaults to all if not specified).",
-        default=None,
-        parser=int_or_none,
-    ),
-    targeturl: Optional[str] = typer.Option(
-        help="URL of the target service to evaluate against (defaults to the one in the config).",
-        default=None,
-        parser=str_or_none,
-    ),
-    report_output: Optional[Path] = typer.Option(
-        help="Path to the PDF report output file (defaults to not generating a report).",
-        default=None,
-        dir_okay=False,
-        file_okay=True,
-    ),
-):
-    run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl, report_output)
+    reuslt = asyncio.run(
+        run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl, report_output)
+    ).result()
+    if reuslt:
+        typer.echo("Evaluation completed successfully")
+    else:
+        typer.echo("Evaluation failed")
 
 
 @app.command()
@@ -208,7 +186,7 @@ def red_teaming_comparison(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help=f"Path to the configuration JSON file. The available models that you can choose to compare are: {', '.join(get_models(get_model_url))}",
+        help=f"Path to the configuration JSON file. The available models that you can choose to compare are: {', '.join(available_models)}",
         default=DEFAULT_CONFIG_PATH,
     ),
     scorer_dir: Path = typer.Option(

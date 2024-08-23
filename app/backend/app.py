@@ -101,11 +101,7 @@ from templates.supported_models import get_supported_models
 rootpath = os.path.join(os.getcwd(), "../..")
 sys.path.append(rootpath)
 
-from evaluation.evaluate import (  # noqa E402
-    logger,
-    run_evaluation_and_redteaming_from_request,
-    run_evaluation_by_request,
-)
+from evaluation.evaluate import run_evaluation_by_request  # noqa: E402
 from evaluation.generate import generate_test_qa_data  # noqa E402
 from evaluation.service_setup import (  # noqa E402
     get_openai_config_dict,
@@ -120,7 +116,8 @@ mimetypes.add_type("text/css", ".css")
 
 BACKEND_DIR = Path(__file__).parent
 EVALUATION_DIR = BACKEND_DIR / "evaluation"
-logger.setLevel(logging.WARNING)
+
+LOCALHOST_PORT = 50505
 
 
 @bp.route("/")
@@ -382,19 +379,14 @@ async def evaluate(auth_claims: dict[str, Any]):
     temp_config_path = Path("config_temp.json")
 
     save_config(config, "evaluation" / temp_config_path)
-    run_red_teaming = config.get("run_red_teaming", False)
-    results_dir = None
 
-    if run_red_teaming:
-        evaluation_task = asyncio.create_task(
-            run_evaluation_and_redteaming_from_request(
-                EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions
-            )
+    local_backend_url = "http://localhost:" + str(LOCALHOST_PORT)
+
+    evaluation_task = asyncio.create_task(
+        run_evaluation_by_request(
+            EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, target_url=local_backend_url
         )
-    else:
-        evaluation_task = asyncio.create_task(
-            run_evaluation_by_request(EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions)
-        )
+    )
 
     while not evaluation_task.done():
         try:
