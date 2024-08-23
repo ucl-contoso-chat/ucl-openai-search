@@ -52,7 +52,11 @@ def evaluate(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help=f"Path to the configuration JSON file. The name of the model to be evaluated/compared should be specified in the JSON file. The available models that you can choose from are: {', '.join(get_models(get_model_url))}",
+        help=(
+            "Path to the configuration JSON file."
+            " Edit the JSON file to specify the list of models to be evaluated/compared."
+            f" The available models are: {', '.join(get_models(get_model_url))}"
+        ),
         default=DEFAULT_CONFIG_PATH,
     ),
     numquestions: Optional[int] = typer.Option(
@@ -120,7 +124,11 @@ def red_teaming(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Path to the configuration JSON file. The available models that can be used in the application and you can choose to compare are: {', '.join(get_models(get_model_url))}",
+        help=(
+            "Path to the configuration JSON file."
+            " Edit the JSON file to specify the list of models to be evaluated/compared."
+            f" The available models are: {', '.join(get_models(get_model_url))}"
+        ),
         default=DEFAULT_CONFIG_PATH,
     ),
     scorer_dir: Path = typer.Option(
@@ -132,14 +140,14 @@ def red_teaming(
     ),
     prompt_target: Optional[str] = typer.Option(
         default="application",
-        help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'. use 'application' will use the first model in the config models list.",
+        help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'.",
     ),
     targeturl: Optional[str] = typer.Option(
         help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
         default=None,
         parser=str_or_none,
     ),
-    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy."),
+    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy for."),
 ):
     config = load_config(config)
     red_team = service_setup.get_openai_target()
