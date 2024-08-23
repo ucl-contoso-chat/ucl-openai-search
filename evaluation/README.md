@@ -86,7 +86,7 @@ pairs, as well as the number of pairs per source (i.e. document):
 ```shell
 python -m evaluation generate \
   --output=evaluation/input/qa.jsonl \
-  --numquestions=200 \
+  --num_questions=200 \
   --persource=5
 ```
 
@@ -112,7 +112,7 @@ own. You should specify the models you want to run evaluation on in the configur
 ```shell
 python -m evaluation evaluate \
   --config=evaluation/config.json \
-  --numquestions=2
+  --num_questions=2
 ```
 
 ### Specify desired evaluation metrics

@@ -121,11 +121,11 @@ jobs:
 
       - name: Generate Q&As
         run: |
-          python -m evaluation generate --numquestions ${{ inputs.eval-num-questions }}
+          python -m evaluation generate --num_questions ${{ inputs.eval-num-questions }}
 
       - name: Run AI RAG Chat evaluation
         run: |
-          python -m evaluation evaluate --numquestions ${{ inputs.eval-num-questions }}
+          python -m evaluation evaluate --num_questions ${{ inputs.eval-num-questions }}
 
           # Store evaluation results path
           results_path=$(ls -d evaluation/results/gpt_evaluation/experiment-* | tail -n 1)
