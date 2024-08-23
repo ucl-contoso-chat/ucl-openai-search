@@ -68,7 +68,7 @@ class AppChatTarget(PromptChatTarget):
 
         logger.info(
             "Received the following response from the prompt target: %s",
-            response_entry.response_pieces[0].converted_value,
+            response_entry.request_pieces[0].converted_value,
         )
         return response_entry
 
