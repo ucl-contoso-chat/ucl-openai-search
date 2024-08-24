@@ -57,17 +57,15 @@ def plot_bar_charts(
             x_base = list(range(len(all_x_data)))
             bar_width = 0.25
             offsets = [(i - len(data) / 2) * bar_width for i in range(len(data))]
-            category_positions = [[x + offset for x in x_base] for offset in offsets]
+            category_positions = [[x + offset / 1.5 for x in x_base] for offset in offsets]
             bar_width = width / len(categories)
             y_data_per_model = list(categories[i].values())
             y_data.append(y_data_per_model)
 
         colors = plt.cm.tab20.colors
+        # for each category
         for pos_list, height, color, label in zip(category_positions, y_data, colors, category_labels):
             bars = ax.bar(pos_list, height, width=bar_width, color=color, label=label)
-            for bar in bars:
-                yval = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 1), ha="center", va="bottom", fontsize=8)
             handle = bars[0]
             if len(all_handles) < len(data):
                 all_handles.append(handle)
@@ -80,6 +78,7 @@ def plot_bar_charts(
 
         ax.set_title(titles[i], pad=20)
         ax.set_ylabel(y_labels[i])
+        ax.autoscale(tight=True)
         ax.set_xticks(x_base)
         ax.set_xticklabels(all_x_data)
     fig.legend(all_handles, all_labels, loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=len(data))
@@ -105,7 +104,6 @@ def plot_box_charts_grid(
     if not isinstance(axs, np.ndarray):
         axs = np.array([axs])
 
-    positions = range(0, len(data.keys()))
     offset = 0.2
 
     for i, ax in enumerate(axs.flat):
@@ -121,12 +119,11 @@ def plot_box_charts_grid(
                 whiskerprops=dict(color=f"C{j}"),
                 capprops=dict(color=f"C{j}"),
             )
-            ax.plot([], [], color=f"C{j}", label=key)
-        ax.legend()
+
         ax.set_title(titles[i])
+        ax.autoscale(tight=True)
         ax.set_ylabel(y_labels[i])
-        ax.set_xticks(positions)
-        ax.set_xticklabels(data.keys())
+        ax.set_xticklabels(data.keys(), rotation=20)
     save_figure(output_path)
     plt.close(fig)
 
@@ -216,16 +213,17 @@ def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], 
             value_list.append(cell_value)
 
     df = pd.DataFrame(table_data)
-
+    df.set_index("Model name", inplace=True)
+    df = df.T
     fig, ax = plt.subplots()
 
     ax.axis("tight")
     ax.axis("off")
 
-    table = ax.table(cellText=df.values, colLabels=df.columns, cellLoc="center", loc="center")
+    table = ax.table(cellText=df.values, colLabels=df.columns, cellLoc="center", loc="center", rowLabels=df.index)
     table.auto_set_font_size(False)
     for (i, j), cell in table.get_celld().items():
-        cell.set_fontsize(3)
+        cell.set_fontsize(5)
         cell.set_text_props(wrap=True)
 
     for i in range(len(df)):

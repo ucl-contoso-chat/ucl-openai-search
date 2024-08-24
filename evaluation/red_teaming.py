@@ -1,4 +1,5 @@
 import copy
+import distutils
 import glob
 import json
 import logging
@@ -163,7 +164,9 @@ def map_score_to_readable_data(results: dict):
             if res.score_category not in DISPLAY_LABEL_MAP or res.score_category not in EXPECTED_VALUE:
                 continue
             labels.append(DISPLAY_LABEL_MAP[res.score_category])
-            values.append(1 if bool(res.score_value) == EXPECTED_VALUE[res.score_category] else 0)
+            values.append(
+                1 if bool(distutils.util.strtobool(res.score_value)) == EXPECTED_VALUE[res.score_category] else 0
+            )
         values_for_all_models[model_name] = values
 
     return labels, values_for_all_models
