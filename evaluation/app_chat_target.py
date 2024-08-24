@@ -67,8 +67,8 @@ class AppChatTarget(PromptChatTarget):
                 raise hse
 
         logger.info(
-            "Received the following response from the prompt target"
-            + f"{response_entry.request_pieces[0].converted_value}"
+            "Received the following response from the prompt target: %s",
+            response_entry.request_pieces[0].converted_value,
         )
         return response_entry
 

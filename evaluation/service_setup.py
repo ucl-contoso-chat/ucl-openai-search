@@ -1,7 +1,9 @@
+import json
 import logging
 import os
 
 import openai
+import requests
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import AzureDeveloperCliCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
@@ -48,6 +50,18 @@ def _log_env_vars():
     logger.debug("Environment Variables:")
     for var in vars:
         logger.debug(f"{var}: {os.environ.get(var)}")
+
+
+def get_models(target_url: str) -> list:
+    """Send request to /getmodels to determine whether the chosen model names are valid."""
+    r = requests.get(target_url)
+    r.raise_for_status()
+
+    try:
+        response_list = r.json()
+    except json.JSONDecodeError:
+        raise ValueError(f"Response is not valid JSON: {r.text}")
+    return response_list
 
 
 def get_openai_config() -> ModelConfiguration:

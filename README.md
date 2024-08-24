@@ -17,6 +17,7 @@ This solution's backend is written in Python. There are also [**JavaScript**](ht
 - [Deploying](#deploying)
   - [Deploying again](#deploying-again)
   - [Sharing environments](#sharing-environments)
+- [Evaluation and red teaming](#evaluation-and-red-teaming)
 - [Running locally](#running-locally)
 - [Using the app](#using-the-app)
 - [Clean up](#clean-up)
@@ -41,7 +42,7 @@ The repo includes sample data so it's ready to try end to end. In this sample ap
 - Renders citations and thought process for each answer
 - Includes settings directly in the UI to tweak the behavior and experiment with options
 - Integrates Azure AI Search for indexing and retrieval of documents, with support for [many document formats](/docs/data_ingestion.md#supported-document-formats) as well as [integrated vectorization](/docs/data_ingestion.md#overview-of-integrated-vectorization)
-- Optional usage of [GPT-4 with vision](/docs/gpt4vision.md) to reason over image-heavy documents
+- Optional usage of [GPT-4 with vision](/docs/gpt4v.md) to reason over image-heavy documents
 - Optional addition of [speech input/output](/docs/deploy_features.md#enabling-speech-inputoutput) for accessibility
 - Optional automation of [user login and data access](/docs/login_and_acl.md) via Microsoft Entra
 - Performance tracing and monitoring with Application Insights
@@ -174,6 +175,11 @@ either you or they can follow these steps:
    They will need the azd environment name, subscription ID, and location to run this command. You can find those values in your `.azure/{env name}/.env` file.  This will populate their azd environment's `.env` file with all the settings needed to run the app locally.
 1. Set the environment variable `AZURE_PRINCIPAL_ID` either in that `.env` file or in the active shell to their Azure ID, which they can get with `az ad signed-in-user show`.
 1. Run `./scripts/roles.ps1` or `.scripts/roles.sh` to assign all of the necessary roles to the user.  If they do not have the necessary permission to create roles in the subscription, then you may need to run this script for them. Once the script runs, they should be able to run the app locally.
+
+## Evaluation and red teaming
+
+You can run the provided evaluation and red teaming scripts to gain insights into the app behaviour when using different LLMs.
+For detailed instructions, please refer to the [respective guide](/evaluation/README.md).
 
 ## Running locally
 
