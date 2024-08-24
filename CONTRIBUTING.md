@@ -96,6 +96,74 @@ Compile the JavaScript:
 ```shell
 ( cd ./app/frontend ; npm install ; npm run build )
 ```
+## Adding Hugging Face Models
+
+Follow the steps below to add a new Hugging Face model to your project:
+
+### 1. Create a New Template (Optional)
+- This step is optional and existing templates can be used.
+- Navigate to the `app/backend/templates` directory.
+- Create a new template following the format of the existing templates.
+- For a separate LLM, there should be **four separate files**:
+  - **`ask.prompty`**: Responsible for generating messages for the Ask approach.
+  - **`chat.prompty`**: Responsible for generating messages for the Chat approach.
+  - **`query.prompty`**: Used to generate search queries for AI search.
+  - **`tools.json`**: Contains custom functions for the LLM's Inference API calls. If not needed, this file can be empty.
+
+### 2. Update Supported Models
+- Open the [`supported_models.py`](app/backend/templates/supported_models.py) file.
+- Add a new supported model by filling out the following fields:
+
+  - **`model_name`**: The identifier of the model on Hugging Face or OpenAI API.
+  - **`display_name`**: The model name displayed on the UI and used for evaluation API requests.
+  - **`type`**: The model type, either `'hf'` (for Hugging Face) or `'openai'`.
+  - **`identifier`**: The identifier used within the code for client calls to chat completions. For Hugging Face models, this should be the same as `model_name`. For OpenAI models, it is automatically generated based on the deployment type (Azure OpenAI Service or OpenAI API).
+
+---
+
+#### Example
+
+```python
+"Phi 3 Mini 4K": ModelConfig(
+    model_name="microsoft/Phi-3-mini-4k-instruct",
+    display_name="Phi 3 Mini 4K",
+    template_path=BASE_DIR / "hf_phi3_mini_4k",
+    type="hf",
+    identifier="microsoft/Phi-3-mini-4k-instruct",
+)
+```
+
+## Adding Protection Mechanisms
+
+Follow these steps to add a new protection mechanism to your project:
+
+### 1. Implement Protection Mechanism
+- Open the [`app/backend/core/promptprotection.py`](app/backend/core/promptprotection.py) file.
+- Create a new data class implementing the `ProtectionMechanism` base class.
+  - In this data class, add an attribute named `model_name` to specify the model used for the protection.
+  - Define a function named `check_for_violation`, which should be accompanied by the `@ProtectionMechanism.run_if_enabled` decorator.
+  - Implement the core logic of your protection mechanism within this function.
+
+#### Example
+```python
+@ProtectionMechanism.run_if_enabled
+async def check_for_violation(self, **kwargs) -> bool:
+    required_args = frozenset(["llm_client", "message"])
+    if not required_args.issubset(kwargs):
+        raise ValueError(f"Missing required arguments: {required_args - kwargs.keys()}")
+    llm_client, message = kwargs["llm_client"], kwargs["message"]
+    result = await llm_client.text_classification(text=message, model=self.model_name)
+
+    for element in result:
+        if element.label == "INJECTION" and element.score > 0.8:
+            return False
+    return True
+```
+
+### 2. Register the Protection Mechanism
+- Open the [`app/backend/core/promptprotection.py`](app/backend/core/promptprotection.py) file.
+- Inside the `PromptProtection` class, register the new protection mechanism by adding a key-value pair to `protections` dictionary. The key should be the name of your protection mechanism and the value should be an instance of the class.
+
 
 ## Running unit tests
 
@@ -122,7 +190,6 @@ playwright install --with-deps
 Run the tests:
 
 ```shell
-python -m pytest tests/e2e.py --tracing=retain-on-failure
 ```
 
 When a failure happens, the trace zip will be saved in the test-results folder.
