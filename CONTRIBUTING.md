@@ -19,6 +19,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
   - [Submitting an Issue](#submitting-an-issue)
   - [Submitting a Pull Request (PR)](#submitting-a-pull-request-pr)
 - [Setting up the development environment](#setting-up-the-development-environment)
+- [Adding Hugging Face models](#adding-hugging-face-models)
+- [Adding protection mechanisms](#adding-protection-mechanisms)
 - [Running unit tests](#running-unit-tests)
 - [Running E2E tests](#running-e2e-tests)
 - [Code Style](#code-style)
@@ -96,6 +98,68 @@ Compile the JavaScript:
 ```shell
 ( cd ./app/frontend ; npm install ; npm run build )
 ```
+
+## Adding Hugging Face Models
+
+Follow the steps below to add support for a new Hugging Face model to your project:
+
+### 1. Create a New Template (Optional)
+
+- This step is optional as your new model might work with one of the existing templates.
+  **`hf_llama`** and **`hf_phi3_mini_4k`** could be used for models that support `system_message`,
+  while **`hf_mistralai`** could be used for those that don't.
+
+  - It is generally recommended to create new templates for different models, as you can control general
+    model parameters such as the `temperature` individually, or set configuration like  `messages_length_limit`,
+    which is crucial for the faultless operation of the `Chat` approach.
+    These parameters can often be found on the respective model's page on Hugging Face.
+- Navigate to the `app/backend/templates` directory.
+- Create a new template following the format of the existing templates.
+- For a new LLM, there should be **four separate files**:
+  - **`ask.prompty`**: Used to generate messages for the Ask approach.
+  - **`chat.prompty`**: Used to generate messages for the Chat approach.
+  - **`query.prompty`**: Used to generate search queries for AI search.
+  - **`tools.json`**: Contains custom functions for the LLM's Inference API calls. If not needed, this file can be empty.
+
+
+### 2. Update the List of Supported Models
+
+- Open the [`supported_models.py`](app/backend/templates/supported_models.py) file.
+- Add a new supported model by filling out the following fields:
+
+  - **`model_name`**: The identifier of the model on Hugging Face or OpenAI API.
+  - **`display_name`**: The model name displayed on the UI and used for evaluation API requests.
+  - **`type`**: The model type, either `'hf'` (for Hugging Face) or `'openai'`.
+  - **`identifier`**: The identifier used within the code for client calls to chat completions. For Hugging Face models,
+    this should be the same as `model_name`. For OpenAI models, it is automatically generated based on the deployment
+    type (Azure OpenAI Service or OpenAI API).
+
+For more details, you can look at this [example](https://github.com/ucl-contoso-chat/ucl-openai-search/blob/df739268738e451b35332257d83e57b88a3ca2c6/app/backend/templates/supported_models.py#L28-L41).
+
+## Adding Protection Mechanisms
+
+Follow these steps to add a new protection mechanism to your project:
+
+### 1. Implement a Protection Mechanism
+
+- Open the [`app/backend/core/promptprotection.py`](app/backend/core/promptprotection.py) file.
+- Create a new data class implementing the `ProtectionMechanism` base class.
+
+  - In this data class, add an attribute named `model_name` to specify the model used for the protection.
+  - Define a method named `check_for_violation`, which should be wrapped with the `@ProtectionMechanism.run_if_enabled` decorator.
+
+    - Implement the core logic of your protection mechanism within this method.
+    - `check_for_violation` should return `False` if a violation is detected and `True` otherwise.
+
+For more details, you can look at this [example](https://github.com/ucl-contoso-chat/ucl-openai-search/blob/df739268738e451b35332257d83e57b88a3ca2c6/app/backend/core/promptprotection.py#L55-L78).
+
+### 2. Register the Protection Mechanism
+
+- Open the [`app/backend/core/promptprotection.py`](app/backend/core/promptprotection.py) file.
+- Inside the `PromptProtection` class, register the new protection mechanism by adding a new key-value pair to
+  the `protections` dictionary, with the name of your protection mechanism as the key and an instance of the class as the value.
+
+For more details, you can look at this [example](https://github.com/ucl-contoso-chat/ucl-openai-search/blob/df739268738e451b35332257d83e57b88a3ca2c6/app/backend/core/promptprotection.py#L102-L104).
 
 ## Running unit tests
 
