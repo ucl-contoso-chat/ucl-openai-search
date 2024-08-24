@@ -83,13 +83,13 @@ def generate(
         help="Path for the output file that will be generated.",
     ),
     num_questions: int = typer.Option(help="Number of questions to generate.", default=200),
-    persource: int = typer.Option(help="Number of questions to generate per source.", default=5),
+    per_source: int = typer.Option(help="Number of questions to generate per source.", default=5),
 ):
     generate_test_qa_data(
         openai_config=service_setup.get_openai_config_dict(),
         search_client=service_setup.get_search_client(),
         num_questions_total=num_questions,
-        num_questions_per_source=persource,
+        num_questions_per_source=per_source,
         output_file=output,
     )
 
