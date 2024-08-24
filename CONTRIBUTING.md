@@ -19,6 +19,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
   - [Submitting an Issue](#submitting-an-issue)
   - [Submitting a Pull Request (PR)](#submitting-a-pull-request-pr)
 - [Setting up the development environment](#setting-up-the-development-environment)
+- [Adding Hugging Face models](#adding-hugging-face-models)
+- [Adding protection mechanisms](#adding-protection-mechanisms)
 - [Running unit tests](#running-unit-tests)
 - [Running E2E tests](#running-e2e-tests)
 - [Code Style](#code-style)
