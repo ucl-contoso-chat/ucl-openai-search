@@ -16,7 +16,7 @@ from matplotlib.transforms import Affine2D
 def save_figure(output_path: Path, format: str = "png"):
     """Save the current figure to the provided output path."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path, bbox_inches="tight", format=format)
+    plt.savefig(output_path, bbox_inches="tight", format=format, dpi=300)
 
 
 def plot_bar_charts(
@@ -199,22 +199,14 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
     plt.close(fig)
 
 
-def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], title: str, output_path: Path):
+def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], output_path: Path):
     """Plot a pass/fail table for the red teaming results."""
-    table_data = {}
-    table_data["Model name"] = []
-    for label in metric_label_list:
-        table_data[label] = []
-    for key, value in data.items():
-        table_data["Model name"].append(key)
-        for i, label in enumerate(metric_label_list):
-            value_list = table_data[label]
-            cell_value = "Pass" if value[i] == 1 else "Fail"
-            value_list.append(cell_value)
+    table_data = {
+        "Model name": list(data.keys()),
+        **{label: [value[i] for value in data.values()] for i, label in enumerate(metric_label_list)},
+    }
+    df = pd.DataFrame(table_data).set_index("Model name").T
 
-    df = pd.DataFrame(table_data)
-    df.set_index("Model name", inplace=True)
-    df = df.T
     fig, ax = plt.subplots()
 
     ax.axis("tight")
@@ -234,8 +226,8 @@ def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], 
             elif cell_value == "Fail":
                 table[(i + 1, j)].set_facecolor("#FA8072")
 
-    plt.title(title, fontweight="bold", fontsize=14, pad=20)
-    plt.savefig(output_path, bbox_inches="tight", dpi=300)
+    save_figure(output_path)
+    plt.close(fig)
 
 
 # The following code is adapted from the Matplotlib documentation:
