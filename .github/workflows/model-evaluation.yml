@@ -121,11 +121,11 @@ jobs:
 
       - name: Generate Q&As
         run: |
-          python -m evaluation generate --numquestions ${{ inputs.eval-num-questions }}
+          python -m evaluation generate --num-questions ${{ inputs.eval-num-questions }}
 
       - name: Run AI RAG Chat evaluation
         run: |
-          python -m evaluation evaluate --numquestions ${{ inputs.eval-num-questions }}
+          python -m evaluation evaluate --num-questions ${{ inputs.eval-num-questions }}
 
           # Store evaluation results path
           results_path=$(ls -d evaluation/results/gpt_evaluation/experiment-* | tail -n 1)
@@ -147,12 +147,12 @@ jobs:
             ${{ env.EVALUATION_RESULTS }}/summary.json
             ${{ env.EVALUATION_RESULTS }}/eval_results.jsonl
             ${{ env.EVALUATION_RESULTS }}/config.json
-            ${{ env.EVALUATION_RESULTS }}/evaluation_gpt_boxplot.pdf
-            ${{ env.EVALUATION_RESULTS }}/evaluation_gpt_radar.pdf
-            ${{ env.EVALUATION_RESULTS }}/evaluation_results.pdf
-            ${{ env.EVALUATION_RESULTS }}/evaluation_stat_boxplot.pdf
+            ${{ env.EVALUATION_RESULTS }}/evaluation_gpt_boxplot.png
+            ${{ env.EVALUATION_RESULTS }}/evaluation_gpt_radar.png
+            ${{ env.EVALUATION_RESULTS }}/evaluation_results.png
+            ${{ env.EVALUATION_RESULTS }}/evaluation_stat_boxplot.png
             ${{ env.RED_TEAMING_RESULTS }}/scores.json
-            ${{ env.RED_TEAMING_RESULTS }}/red_teaming_results.pdf
+            ${{ env.RED_TEAMING_RESULTS }}/red_teaming_results.png
 
       #------------------------- Cleanup --------------------------
 

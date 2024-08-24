@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +12,7 @@ from evaluation import service_setup
 from evaluation.evaluate import run_evaluation_from_config
 from evaluation.generate import generate_test_qa_answer, generate_test_qa_data
 from evaluation.red_teaming import run_red_teaming
+from evaluation.service_setup import get_models
 from evaluation.utils import load_config
 
 EVALUATION_DIR = Path(__file__).parent
@@ -33,6 +35,8 @@ logger.setLevel(logging.INFO)
 
 dotenv.load_dotenv(override=True)
 
+get_model_url = os.environ.get("BACKEND_URI") + "/getmodels"
+
 
 def int_or_none(raw: str) -> Optional[int]:
     return None if raw == "None" else int(raw)
@@ -48,21 +52,25 @@ def evaluate(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Path to the configuration JSON file.",
+        help=(
+            "Path to the configuration JSON file."
+            " Edit the JSON file to specify the list of models to be evaluated/compared."
+            f" The available models are: {', '.join(get_models(get_model_url))}"
+        ),
         default=DEFAULT_CONFIG_PATH,
     ),
-    numquestions: Optional[int] = typer.Option(
+    num_questions: Optional[int] = typer.Option(
         help="Number of questions to evaluate (defaults to all if not specified).",
         default=None,
         parser=int_or_none,
     ),
-    targeturl: Optional[str] = typer.Option(
+    target_url: Optional[str] = typer.Option(
         help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
         default=None,
         parser=str_or_none,
     ),
 ):
-    run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl)
+    run_evaluation_from_config(EVALUATION_DIR, load_config(config), num_questions, target_url)
 
 
 @app.command()
@@ -74,14 +82,14 @@ def generate(
         default=DEFAULT_SYNTHETIC_DATA_DIR,
         help="Path for the output file that will be generated.",
     ),
-    numquestions: int = typer.Option(help="Number of questions to generate.", default=200),
-    persource: int = typer.Option(help="Number of questions to generate per source.", default=5),
+    num_questions: int = typer.Option(help="Number of questions to generate.", default=200),
+    per_source: int = typer.Option(help="Number of questions to generate per source.", default=5),
 ):
     generate_test_qa_data(
         openai_config=service_setup.get_openai_config_dict(),
         search_client=service_setup.get_search_client(),
-        num_questions_total=numquestions,
-        num_questions_per_source=persource,
+        num_questions_total=num_questions,
+        num_questions_per_source=per_source,
         output_file=output,
     )
 
@@ -116,7 +124,11 @@ def red_teaming(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Path to the configuration JSON file.",
+        help=(
+            "Path to the configuration JSON file."
+            " Edit the JSON file to specify the list of models to be evaluated/compared."
+            f" The available models are: {', '.join(get_models(get_model_url))}"
+        ),
         default=DEFAULT_CONFIG_PATH,
     ),
     scorer_dir: Path = typer.Option(
@@ -130,16 +142,17 @@ def red_teaming(
         default="application",
         help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'.",
     ),
-    targeturl: Optional[str] = typer.Option(
+    target_url: Optional[str] = typer.Option(
         help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
         default=None,
         parser=str_or_none,
     ),
+    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy for."),
 ):
     config = load_config(config)
     red_team = service_setup.get_openai_target()
     if prompt_target == "application":
-        target = service_setup.get_app_target(config, targeturl)
+        target = service_setup.get_app_target(config, target_url)
     elif prompt_target == "azureopenai":
         target = service_setup.get_openai_target()
     elif prompt_target == "azureml":
@@ -155,6 +168,7 @@ def red_teaming(
             config=config,
             red_teaming_llm=red_team,
             prompt_target=target,
+            max_turns=max_turns,
         )
     )
 

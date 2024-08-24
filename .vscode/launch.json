@@ -50,7 +50,7 @@
             "args": [
                 "evaluate",
                 "--config=evaluation/config.json",
-                "--numquestions=2"
+                "--num_questions=2"
             ]
           },
           {

@@ -4,9 +4,14 @@ from pathlib import Path
 from unittest import mock
 
 import requests
-from promptflow.core import AzureOpenAIModelConfiguration
+from promptflow.core import AzureOpenAIModelConfiguration, OpenAIModelConfiguration
 
-from evaluation.evaluate import evaluate_row, run_evaluation, send_question_to_target
+from evaluation.evaluate import (
+    evaluate_row,
+    get_models,
+    run_evaluation_from_config,
+    send_question_to_target,
+)
 from evaluation.evaluate_metrics import metrics_by_name
 
 
@@ -27,7 +32,7 @@ def test_evaluate_row():
         target_url=target_url,
         openai_config=openai_config,
         requested_metrics=[MockMetric],
-        target_parameters={},
+        target_parameters={"overrides": {"set_model": ""}},
     )
 
     assert result["question"] == "What is the capital of France?"
@@ -119,7 +124,18 @@ def test_send_question_to_target_request_failed():
         assert isinstance(e, requests.HTTPError)
 
 
-def test_run_evaluation():
+def test_get_models_success():
+    mock_response = mock.Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = ["model1", "model2"]
+    mock_response.text = '["model1", "model2"]'
+
+    with mock.patch("requests.get", return_value=mock_response):
+        models = get_models("http://fake-url.com/getmodels")
+        assert models == ["model1", "model2"]
+
+
+def test_run_evaluation_from_config():
     with tempfile.TemporaryDirectory() as tempdir:
         testdata_path = Path(tempdir) / "test_data.jsonl"
         results_dir = Path(tempdir) / "results"
@@ -127,48 +143,52 @@ def test_run_evaluation():
         with mock.patch("evaluation.evaluate.load_jsonl", return_value=[{"question": "What is 2 + 2?", "truth": "4"}]):
             with mock.patch("evaluation.evaluate.dump_summary", return_value=None):
                 with mock.patch("evaluation.evaluate.plot_diagrams", return_value=None):
-                    with mock.patch("evaluation.evaluate.service_setup.get_openai_config", return_value={}):
+                    with mock.patch(
+                        "evaluation.evaluate.service_setup.get_openai_config",
+                        return_value=OpenAIModelConfiguration(model="model"),
+                    ):
                         with mock.patch(
                             "evaluation.evaluate.send_question_to_target",
                             return_value={"answer": "4", "context": "2 + 2 = 4", "latency": 1.0},
                         ):
+                            with mock.patch("evaluation.evaluate.get_models", return_value=["model_name"]):
 
-                            metrics_by_name["mock_metric"] = type(
-                                "MockMetric",
-                                (),
-                                {
-                                    "METRIC_NAME": "mock_metric",
-                                    "evaluator_fn": staticmethod(
-                                        lambda openai_config: lambda question, answer, context, ground_truth: {
-                                            "mock_metric_score": 3.0
-                                        }
-                                    ),
-                                    "get_aggregate_stats": staticmethod(
-                                        lambda df, passing_rate: {"pass_rate": 0.67, "mean_rating": 3.0}
-                                    ),
-                                },
-                            )
+                                metrics_by_name["mock_metric"] = type(
+                                    "MockMetric",
+                                    (),
+                                    {
+                                        "METRIC_NAME": "mock_metric",
+                                        "evaluator_fn": staticmethod(
+                                            lambda openai_config: lambda question, answer, context, ground_truth: {
+                                                "mock_metric_score": 3.0
+                                            }
+                                        ),
+                                        "get_aggregate_stats": staticmethod(
+                                            lambda df, passing_rate: {"pass_rate": 0.67, "mean_rating": 3.0}
+                                        ),
+                                    },
+                                )
 
-                            openai_config = AzureOpenAIModelConfiguration("azure")
-                            openai_config.model = "mock_model"
-                            target_url = "http://mock-target-url.com"
-                            passing_rate = 3
-                            max_workers = 2
-                            target_parameters = {}
-                            requested_metrics = ["mock_metric"]
+                                target_url = "http://mock-target-url.com"
+                                openai_config = AzureOpenAIModelConfiguration("azure")
+                                openai_config.model = "mock_model"
+                                config = {
+                                    "testdata_path": testdata_path,
+                                    "results_dir": results_dir,
+                                    "passing_rate": 3,
+                                    "requested_metrics": ["mock_metric"],
+                                    "models": ["model_name"],
+                                    "max_workers": 2,
+                                    "target_parameters": {"overrides": {"set_model": ""}},
+                                }
 
-                            success = run_evaluation(
-                                openai_config=openai_config,
-                                testdata_path=testdata_path,
-                                results_dir=results_dir,
-                                target_url=target_url,
-                                passing_rate=passing_rate,
-                                max_workers=max_workers,
-                                target_parameters=target_parameters,
-                                requested_metrics=requested_metrics,
-                            )
+                                success = run_evaluation_from_config(
+                                    working_dir=Path(tempdir),
+                                    config=config,
+                                    target_url=target_url,
+                                )
 
-                            assert success
+                                assert success
 
 
 class MockResponse:
