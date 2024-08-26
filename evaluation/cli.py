@@ -74,10 +74,10 @@ def evaluate(
         file_okay=True,
     ),
 ):
-    reuslt = asyncio.run(
+    result = asyncio.run(
         run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl, report_output)
     ).result()
-    if reuslt:
+    if result:
         typer.echo("Evaluation completed successfully")
     else:
         typer.echo("Evaluation failed")

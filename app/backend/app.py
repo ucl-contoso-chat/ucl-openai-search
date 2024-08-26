@@ -117,7 +117,8 @@ mimetypes.add_type("text/css", ".css")
 BACKEND_DIR = Path(__file__).parent
 EVALUATION_DIR = BACKEND_DIR / "evaluation"
 
-LOCALHOST_PORT = 50505
+# BACKEND_URL = "http://127.0.0.1:50505"
+BACKEND_URL = None
 
 
 @bp.route("/")
@@ -380,11 +381,9 @@ async def evaluate(auth_claims: dict[str, Any]):
 
     save_config(config, "evaluation" / temp_config_path)
 
-    local_backend_url = "http://localhost:" + str(LOCALHOST_PORT)
-
     evaluation_task = asyncio.create_task(
         run_evaluation_by_request(
-            EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, target_url=local_backend_url
+            EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, target_url=BACKEND_URL
         )
     )
 
