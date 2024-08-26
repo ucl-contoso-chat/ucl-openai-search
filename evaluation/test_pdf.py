@@ -1,3 +1,0 @@
-from evaluation.report_generator import generate_eval_report_from_result_files
-
-generate_eval_report_from_result_files()
