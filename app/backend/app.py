@@ -395,15 +395,16 @@ async def evaluate(auth_claims: dict[str, Any]):
             await asyncio.sleep(1)
         except asyncio.CancelledError:
             evaluation_task.cancel()
-            return error_response("Connection Lost, evaluation task was cancelled", "/evaluate")
+            return jsonify({"error": "Connection Lost, evaluation task was cancelled"}), 500
 
-    results_dir = await evaluation_task
+    result = await evaluation_task
 
     # if evaluation failed
-    if results_dir is str:
-        return error_response("Evaluation failed", "/evaluate")
+    if result is str:
+        evaluation_task.cancel()
+        return jsonify({"error": result}), 500
 
-    report_path = results_dir / "evaluation_report.pdf"
+    report_path = result / "evaluation_report.pdf"
     # result_raw_zip = shutil.make_archive(os.path.dirname(results_dir), "zip", results_dir)
 
     # TODO: return pdf report after we have it
@@ -418,7 +419,7 @@ async def evaluate(auth_claims: dict[str, Any]):
         return result
     except Exception:
         # os.remove(raw_result_data)
-        return error_response("Error occured while sending report file", "/evaluate")
+        return jsonify({"error": "Failed while writing the report file"}), 500
 
 
 @bp.route("/generate", methods=["POST"])

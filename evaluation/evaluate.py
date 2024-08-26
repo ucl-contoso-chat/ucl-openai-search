@@ -6,6 +6,7 @@ import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Optional
 
 import aiofiles
 import aiohttp
@@ -271,7 +272,9 @@ async def run_evaluation_from_config(
         return False
 
 
-async def run_evaluation_by_request(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
+async def run_evaluation_by_request(
+    working_dir: Path, config: dict, num_questions: Optional[int] = None, target_url: Optional[str] = None
+):
     """Run evaluation from a backend request"""
 
     logger.setLevel(logging.WARNING)

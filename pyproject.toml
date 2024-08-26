@@ -22,7 +22,11 @@ show_missing = true
 
 [tool.mypy]
 check_untyped_defs = true
-python_version = 3.9
+python_version = 3.11
+
+[[tool.mypy.overrides]]
+module = "evaluation.*"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
