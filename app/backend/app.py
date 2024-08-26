@@ -98,26 +98,29 @@ from prepdocslib.filestrategy import UploadUserFileStrategy
 from prepdocslib.listfilestrategy import File
 from templates.supported_models import get_supported_models
 
-# Bring evaluation packages onto the path
-# FIXME: This is a workaround for the evaluation package not in the backend directory, may need to restructure
-rootpath = os.path.join(os.getcwd(), "../..")
-sys.path.append(rootpath)
+PYRIT_COMPATIBLE = sys.version_info >= (3, 10) and sys.version_info < (3, 12)
 
-from evaluation.evaluate import run_evaluation_by_request  # noqa: E402
-from evaluation.generate import generate_test_qa_data  # noqa E402
-from evaluation.service_setup import (  # noqa E402
-    get_openai_config_dict,
-    get_search_client,
-)
-from evaluation.utils import load_config, save_config, save_jsonl  # noqa E402
+if PYRIT_COMPATIBLE:
+    # Bring evaluation packages onto the path
+    # FIXME: This is a workaround for the evaluation package not in the backend directory, may need to restructure
+    rootpath = os.path.join(os.getcwd(), "../..")
+    sys.path.append(rootpath)
+
+    from evaluation.evaluate import run_evaluation_by_request  # noqa: E402
+    from evaluation.generate import generate_test_qa_data  # noqa E402
+    from evaluation.service_setup import (  # noqa E402
+        get_openai_config_dict,
+        get_search_client,
+    )
+    from evaluation.utils import load_config, save_config, save_jsonl  # noqa E402
+
+    BACKEND_DIR = Path(__file__).parent
+    EVALUATION_DIR = BACKEND_DIR / "evaluation"
 
 bp = Blueprint("routes", __name__, static_folder="static")
 # Fix Windows registry issue with mimetypes
 mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
-
-BACKEND_DIR = Path(__file__).parent
-EVALUATION_DIR = BACKEND_DIR / "evaluation"
 
 # BACKEND_URL = "http://127.0.0.1:50505"
 BACKEND_URL = None
@@ -360,66 +363,68 @@ async def speech():
         return jsonify({"error": str(e)}), 500
 
 
-@bp.route("/evaluate", methods=["POST"])
-@authenticated
-async def evaluate(auth_claims: dict[str, Any]):
-    request_form = await request.form
-    request_files = await request.files
-    if "input_data" not in request_files:
-        return jsonify({"message": "No input_data part in the request", "status": "failed"}), 400
-    if "config" not in request_form:
-        return jsonify({"message": "No application setting config part in the request", "status": "failed"}), 400
+if PYRIT_COMPATIBLE:
 
-    input_data_file = request_files.get("input_data")
-    num_questions = int(request_form.get("num_questions", 0))
-    config = json.loads(request_form.get("config", "{}"))
+    @bp.route("/evaluate", methods=["POST"])
+    @authenticated
+    async def evaluate(auth_claims: dict[str, Any]):
+        request_form = await request.form
+        request_files = await request.files
+        if "input_data" not in request_files:
+            return jsonify({"message": "No input_data part in the request", "status": "failed"}), 400
+        if "config" not in request_form:
+            return jsonify({"message": "No application setting config part in the request", "status": "failed"}), 400
 
-    if input_data_file is not None:
-        input_data = [json.loads(line) for line in input_data_file.readlines()]
-    save_jsonl(input_data, Path("./evaluation/input/input_temp.jsonl"))
-    config["testdata_path"] = "input/input_temp.jsonl"
-    config["results_dir"] = "results"
+        input_data_file = request_files.get("input_data")
+        num_questions = int(request_form.get("num_questions", 0))
+        config = json.loads(request_form.get("config", "{}"))
 
-    temp_config_path = Path("config_temp.json")
+        if input_data_file is not None:
+            input_data = [json.loads(line) for line in input_data_file.readlines()]
+        save_jsonl(input_data, Path("./evaluation/input/input_temp.jsonl"))
+        config["testdata_path"] = "input/input_temp.jsonl"
+        config["results_dir"] = "results"
 
-    save_config(config, "evaluation" / temp_config_path)
+        temp_config_path = Path("config_temp.json")
 
-    evaluation_task = asyncio.create_task(
-        run_evaluation_by_request(
-            EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, target_url=BACKEND_URL
+        save_config(config, "evaluation" / temp_config_path)
+
+        evaluation_task = asyncio.create_task(
+            run_evaluation_by_request(
+                EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, target_url=BACKEND_URL
+            )
         )
-    )
 
-    while not evaluation_task.done():
-        try:
-            await asyncio.sleep(1)
-        except asyncio.CancelledError:
+        while not evaluation_task.done():
+            try:
+                await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                evaluation_task.cancel()
+                return jsonify({"error": "Connection Lost, evaluation task was cancelled"}), 500
+
+        result = await evaluation_task
+
+        # if evaluation failed
+        if result is str:
             evaluation_task.cancel()
-            return jsonify({"error": "Connection Lost, evaluation task was cancelled"}), 500
+            return jsonify({"error": result}), 500
 
-    result = await evaluation_task
+        report_path = result / "evaluation_report.pdf"
+        # result_raw_zip = shutil.make_archive(os.path.dirname(results_dir), "zip", results_dir)
 
-    # if evaluation failed
-    if result is str:
-        evaluation_task.cancel()
-        return jsonify({"error": result}), 500
-
-    report_path = result / "evaluation_report.pdf"
-    # result_raw_zip = shutil.make_archive(os.path.dirname(results_dir), "zip", results_dir)
-
-    # TODO: return pdf report after we have it
-    try:
-        # Save the file in memory and remove the orignal file
-        return_data = io.BytesIO()
-        with open(report_path, "rb") as fo:
-            return_data.write(fo.read())
-        return_data.seek(0)
-        # os.remove(raw_result_data)
-        result = await send_file(return_data, as_attachment=True, mimetype="application/pdf")
-        return result
-    except Exception:
-        # os.remove(raw_result_data)
-        return jsonify({"error": "Failed while writing the report file"}), 500
+        # TODO: return pdf report after we have it
+        try:
+            # Save the file in memory and remove the orignal file
+            return_data = io.BytesIO()
+            with open(report_path, "rb") as fo:
+                return_data.write(fo.read())
+            return_data.seek(0)
+            # os.remove(raw_result_data)
+            result = await send_file(return_data, as_attachment=True, mimetype="application/pdf")
+            return result
+        except Exception:
+            # os.remove(raw_result_data)
+            return jsonify({"error": "Failed while writing the report file"}), 500
 
 
 @bp.route("/generate", methods=["POST"])
