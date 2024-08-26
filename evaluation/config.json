@@ -14,6 +14,7 @@
     ],
     "models": ["GPT 3.5 Turbo", "Llama 3 8B Instruct", "Mistral AI 7B", "Phi 3 Mini 4K"],
     "max_workers": 1,
+    "include_conversation": false,
     "target_parameters": {
         "overrides": {
             "top": 3,

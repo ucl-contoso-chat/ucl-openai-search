@@ -121,6 +121,7 @@
 
     <para spaceAfter="5.0cm"></para>
 
+    {{if include_conversation}}
     <h2>Conversation Log</h2>
     {{for model, conversations in conversation_logs.items()}}
         <h3>Model: {{model}}</h3>
@@ -153,10 +154,10 @@
             {{context}}
         </para>
     {{endfor}}
+    {{endif}}
+
     {{if redteaming_results}}
-
         <h2>Red Teaming Results</h2>
-
         {{for model, redteaming_result in redteaming_results.items()}}
         <h3>Model: {{model}}</h3>
         <hr width="500"/>

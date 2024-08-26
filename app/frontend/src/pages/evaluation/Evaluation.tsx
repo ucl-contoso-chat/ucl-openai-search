@@ -48,6 +48,7 @@ export function Component(): JSX.Element {
     const [gpt4vInput, setGPT4VInput] = useState<GPT4VInput>(GPT4VInput.TextAndImages);
     const [useGPT4V, setUseGPT4V] = useState<boolean>(false);
     const [runRedTeaming, setRunRedTeaming] = useState<boolean>(true);
+    const [includeConversationLogs, setIncludeConversationLogs] = useState<boolean>(false);
 
     const [inProgress, setInProgress] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
@@ -100,6 +101,10 @@ export function Component(): JSX.Element {
         setRunRedTeaming(!!checked);
     };
 
+    const onIncludeConversationLogsChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
+        setIncludeConversationLogs(!!checked);
+    };
+
     // IDs for form labels and their associated callouts
     const numQuestionsId = useId("numQuestions");
     const numQuestionsFieldId = useId("numQuestionsField");
@@ -124,6 +129,7 @@ export function Component(): JSX.Element {
     const shouldStreamId = useId("shouldStream");
     const shouldStreamFieldId = useId("shouldStreamField");
     const runRedTeamingId = useId("runRedTeaming");
+    const includeConversationLogsId = useId("includeConversationLogs");
 
     const [showGPT4VOptions, setShowGPT4VOptions] = useState<boolean>(false);
     const [showSemanticRankerOption, setShowSemanticRankerOption] = useState<boolean>(false);
@@ -198,6 +204,7 @@ export function Component(): JSX.Element {
             requested_metrics: selectedMetrics,
             models: selectedModels,
             run_red_teaming: runRedTeaming,
+            include_conversation: includeConversationLogs,
             target_parameters: {
                 overrides: {
                     top: retrieveCount,
@@ -329,6 +336,22 @@ export function Component(): JSX.Element {
                                             labelId={runRedTeamingId}
                                             fieldId={runRedTeamingId}
                                             helpText={toolTipText.runRedTeaming}
+                                            label={props?.label}
+                                        />
+                                    )}
+                                />
+                                <Checkbox
+                                    id={includeConversationLogsId}
+                                    className={styles.evaluateSettingsSeparator}
+                                    checked={includeConversationLogs}
+                                    label="Include conversation logs"
+                                    onChange={onIncludeConversationLogsChange}
+                                    aria-labelledby={includeConversationLogsId}
+                                    onRenderLabel={(props: ICheckboxProps | undefined) => (
+                                        <HelpCallout
+                                            labelId={includeConversationLogsId}
+                                            fieldId={includeConversationLogsId}
+                                            helpText={toolTipText.includeConversationLogs}
                                             label={props?.label}
                                         />
                                     )}

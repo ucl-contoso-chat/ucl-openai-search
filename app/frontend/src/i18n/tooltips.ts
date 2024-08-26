@@ -29,5 +29,6 @@ export const toolTipText = {
     useOidSecurityFilter: "Filter search results based on the authenticated user's OID.",
     useGroupsSecurityFilter: "Filter search results based on the authenticated user's groups.",
     runRedTeaming:
-        "Enables running the red teaming evaluation on the selected models. The red teaming evaluation is a security evaluation that tests the model's robustness against adversarial attacks. The red teaming evaluation results will be aggregated together in the results report."
+        "Enables running the red teaming evaluation on the selected models. The red teaming evaluation is a security evaluation that tests the model's robustness against adversarial attacks. The red teaming evaluation results will be aggregated together in the results report.",
+    includeConversationLogs: "Include the conversation logs between the mock user and the model in the results report."
 };

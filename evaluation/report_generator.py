@@ -1,4 +1,3 @@
-import distutils.util
 import enum
 import json
 import os
@@ -62,7 +61,12 @@ def generate_eval_report_from_result_files(results_dir: str = "", output_path: s
 
 
 def generate_eval_report(
-    summary: dict, eval_results: dict, redteaming_result: dict = None, results_dir: str = "", output_path: str = ""
+    summary: dict,
+    eval_results: dict,
+    redteaming_result: dict = None,
+    results_dir: str = "",
+    output_path: str = "",
+    include_conversation: bool = False,
 ):
     if results_dir == "":
         results_dir_ls = os.listdir(EVAL_RESULTS_DIR)
@@ -163,12 +167,7 @@ def generate_eval_report(
                     condJSONSafe(
                         {
                             "label": DISPLAY_LABEL_MAP[score.score_category],
-                            "value": (
-                                "Pass"
-                                if EXPECTED_VALUE[score.score_category]
-                                == bool(distutils.util.strtobool(score.score_value))
-                                else "Fail"
-                            ),
+                            "value": ("Pass" if EXPECTED_VALUE[score.score_category] == score.score_value else "Fail"),
                             "description": score.score_rationale,
                         }
                     )
@@ -185,6 +184,7 @@ def generate_eval_report(
         diagrams=diagrams,
         contexts=contexts,
         redteaming_results=redteaming_result,
+        include_conversation=include_conversation,
     )
 
     rml = template.getOutput(passin_data, quoteFunc=preppy.stdQuote)

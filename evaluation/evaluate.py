@@ -259,7 +259,10 @@ async def run_evaluation_from_config(
             output_config.write(json.dumps(config, indent=4))
 
         if report_output is not None and report_output != "":
-            generate_eval_report(summary, question_results, output_path=report_output)
+            include_conversation = config.get("include_conversation", False)
+            generate_eval_report(
+                summary, question_results, output_path=report_output, include_conversation=include_conversation
+            )
             logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
         return True
@@ -349,6 +352,8 @@ async def run_evaluation_by_request(working_dir: Path, config: dict, num_questio
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
 
+        include_conversation = config.get("include_conversation", False)
+
         report_output = results_dir / "evaluation_report.pdf"
         generate_eval_report(
             summary,
@@ -356,6 +361,7 @@ async def run_evaluation_by_request(working_dir: Path, config: dict, num_questio
             redteaming_result=red_teaming_results,
             results_dir=results_dir,
             output_path=report_output,
+            include_conversation=include_conversation,
         )
         logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
