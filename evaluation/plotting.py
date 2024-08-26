@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 
 import matplotlib
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.patches import RegularPolygon
 from matplotlib.path import Path as MatPath
@@ -12,10 +13,10 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 
 
-def save_figure(output_path: Path, format: str = "png"):
+def save_figure(output_path: Path):
     """Save the current figure to the provided output path."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path, bbox_inches="tight", format=format)
+    plt.savefig(output_path, bbox_inches="tight", format="png", dpi=300)
 
 
 def plot_bar_charts(
@@ -35,7 +36,7 @@ def plot_bar_charts(
         if len(results[i]) != init_len:
             raise ValueError("Number of data points must match the layout")
 
-    if layout[0] * layout[1] != len(results[0]):
+    if layout[0] * layout[1] != len(data[next(iter(data))]):
         raise ValueError("Number of data points must match the layout")
 
     font = {"weight": "normal", "size": 9}
@@ -44,6 +45,8 @@ def plot_bar_charts(
 
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
     fig.tight_layout(pad=3.0)
+    all_handles = []
+    all_labels = []
 
     if axs is not np.ndarray:
         axs = np.array([axs])
@@ -60,29 +63,32 @@ def plot_bar_charts(
             all_x_data = sorted(list(all_x_data))
             x_base = list(range(len(all_x_data)))
             bar_width = 0.25
-            offsets = [-bar_width, 0, bar_width]
-            category_positions = [[x + offset for x in x_base] for offset in offsets]
+            offsets = [(i - len(data) / 2) * bar_width for i in range(len(data))]
+            category_positions = [[x + offset / 1.5 for x in x_base] for offset in offsets]
             bar_width = width / len(categories)
             y_data_per_model = list(categories[i].values())
             y_data.append(y_data_per_model)
 
         colors = plt.cm.tab20.colors
+        # for each category
         for pos_list, height, color, label in zip(category_positions, y_data, colors, category_labels):
             bars = ax.bar(pos_list, height, width=bar_width, color=color, label=label)
-            for bar in bars:
-                yval = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 1), ha="center", va="bottom", fontsize=8)
+            handle = bars[0]
+            if len(all_handles) < len(data):
+                all_handles.append(handle)
+                all_labels.append(label)
 
         if y_max_lim is not None and len(y_max_lim) > i and y_max_lim[i] is not None:
-            ax.set_ylim(0, y_max_lim[i] * 1.5)
+            ax.set_ylim(0, y_max_lim[i])
         else:
             ax.set_ylim(0, np.ceil(max(y_data)) * 1.2)
 
         ax.set_title(titles[i], pad=20)
         ax.set_ylabel(y_labels[i])
+        ax.autoscale(tight=True)
         ax.set_xticks(x_base)
         ax.set_xticklabels(all_x_data)
-        ax.legend()
+    fig.legend(all_handles, all_labels, loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=len(data))
 
     save_figure(output_path)
     plt.close(fig)
@@ -102,7 +108,7 @@ def plot_box_charts_grid(
         if len(results[i]) != init_len:
             raise ValueError("Number of data points must match the layout")
 
-    if layout[0] * layout[1] != len(results[0]):
+    if layout[0] * layout[1] != len(data[next(iter(data))]):
         raise ValueError("Number of data points must match the layout")
 
     fig, axs = plt.subplots(layout[0], layout[1], figsize=(layout[1] * 5, layout[0] * 4))
@@ -111,7 +117,6 @@ def plot_box_charts_grid(
     if not isinstance(axs, np.ndarray):
         axs = np.array([axs])
 
-    positions = range(0, len(data.keys()))
     offset = 0.2
 
     for i, ax in enumerate(axs.flat):
@@ -127,13 +132,10 @@ def plot_box_charts_grid(
                 whiskerprops=dict(color=f"C{j}"),
                 capprops=dict(color=f"C{j}"),
             )
-            ax.plot([], [], color=f"C{j}", label=key)
-        ax.legend()
         ax.set_title(titles[i])
+        ax.autoscale(tight=True)
         ax.set_ylabel(y_labels[i])
-        ax.set_xticks(positions)
-        ax.set_xticklabels(data.keys())
-
+        ax.set_xticklabels(data.keys(), rotation=20)
     save_figure(output_path)
     plt.close(fig)
 
@@ -147,7 +149,6 @@ def plot_box_chart(
     y_lim: Tuple[float, float] = None,
 ):
     """Plot a box chart for the provided data."""
-
     plt.figure(figsize=(10, 6))
 
     positions = range(1, len(x_labels) + 1)
@@ -186,11 +187,12 @@ def plot_box_chart(
 
 
 def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title: str, output_path: Path, num: int):
+    """Plot a radar chart for the provided data."""
     theta = radar_factory(num_vars=len(metric_label_list))
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection="radar"))
     fig.subplots_adjust(wspace=0.5, hspace=0.20, top=0.85, bottom=0.05)
 
-    colors = ["b", "r", "g", "m", "c", "y"]
+    colors = ["b", "r", "g", "m", "y", "c", "k", "w"]
 
     ax.set_title(title, weight="bold", size="large", horizontalalignment="center", verticalalignment="center", pad=20)
 
@@ -202,11 +204,45 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
     ax.tick_params(pad=15)
     r_values = np.linspace(0, num, num + 1)
     ax.set_rgrids(r_values, angle=10)
-    # ax.set_rgrids([0, 1, 2, 3, 4, 5], angle=10)
     ax.set_varlabels(metric_label_list)
 
     save_figure(output_path)
     plt.close(fig)
+
+
+def plot_red_teaming_table(metric_label_list: List[str], data: Dict[str, List], output_path: Path):
+    """Plot a pass/fail table for the red teaming results."""
+    table_data = {
+        "Model name": list(data.keys()),
+        **{label: [value[i] for value in data.values()] for i, label in enumerate(metric_label_list)},
+    }
+    df = pd.DataFrame(table_data).set_index("Model name").T
+
+    fig, ax = plt.subplots()
+
+    ax.axis("tight")
+    ax.axis("off")
+
+    table = ax.table(cellText=df.values, colLabels=df.columns, cellLoc="center", loc="center", rowLabels=df.index)
+    table.auto_set_font_size(False)
+    for (i, j), cell in table.get_celld().items():
+        cell.set_fontsize(5)
+        cell.set_text_props(wrap=True)
+
+    for i in range(len(df)):
+        for j in range(len(df.columns)):
+            cell_value = df.iloc[i, j]
+            if cell_value == "Pass":
+                table[(i + 1, j)].set_facecolor("#90EE90")
+            elif cell_value == "Fail":
+                table[(i + 1, j)].set_facecolor("#FA8072")
+
+    save_figure(output_path)
+    plt.close(fig)
+
+
+# The following code is adapted from the Matplotlib documentation:
+# https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html
 
 
 def radar_factory(num_vars):

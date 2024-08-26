@@ -70,6 +70,7 @@ from config import (
     CONFIG_GPT4V_DEPLOYED,
     CONFIG_INGESTER,
     CONFIG_LLM_CLIENTS,
+    CONFIG_PROMPT_PROTECTION,
     CONFIG_SEARCH_CLIENT,
     CONFIG_SEMANTIC_RANKER_DEPLOYED,
     CONFIG_SPEECH_INPUT_ENABLED,
@@ -84,6 +85,7 @@ from config import (
     CONFIG_VECTOR_SEARCH_ENABLED,
 )
 from core.authentication import AuthenticationHelper
+from core.promptprotection import PromptProtection
 from decorators import authenticated, authenticated_path
 from error import error_dict, error_response
 from prepdocs import (
@@ -301,6 +303,7 @@ def config():
             "showSpeechOutputBrowser": current_app.config[CONFIG_SPEECH_OUTPUT_BROWSER_ENABLED],
             "showSpeechOutputAzure": current_app.config[CONFIG_SPEECH_OUTPUT_AZURE_ENABLED],
             "currentModel": current_app.config[CONFIG_CURRENT_MODEL],
+            "protectionConfig": current_app.config[CONFIG_PROMPT_PROTECTION],
         }
     )
 
@@ -564,6 +567,8 @@ async def setup_clients():
     HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
     DEFAULT_MODEL = os.getenv("DEFAULT_MODEL")
 
+    USE_INJECTION_PROTECTION = os.getenv("USE_INJECTION_PROTECTION", "").lower() == "true"
+
     USE_GPT4V = os.getenv("USE_GPT4V", "").lower() == "true"
     USE_USER_UPLOAD = os.getenv("USE_USER_UPLOAD", "").lower() == "true"
     USE_SPEECH_INPUT_BROWSER = os.getenv("USE_SPEECH_INPUT_BROWSER", "").lower() == "true"
@@ -720,9 +725,12 @@ async def setup_clients():
 
     llm_clients: dict[str, LLMClient] = {"openai": openai_client, "hf": hf_client}
 
+    prompt_protection = PromptProtection(injection_protection_enabled=USE_INJECTION_PROTECTION)
+
     current_app.config[CONFIG_LLM_CLIENTS] = llm_clients
     current_app.config[CONFIG_SEARCH_CLIENT] = search_client
     current_app.config[CONFIG_CURRENT_MODEL] = current_model
+    current_app.config[CONFIG_PROMPT_PROTECTION] = prompt_protection.protections
     current_app.config[CONFIG_AVAILABLE_MODELS] = available_models
     current_app.config[CONFIG_BLOB_CONTAINER_CLIENT] = blob_container_client
     current_app.config[CONFIG_AUTH_CLIENT] = auth_helper
@@ -743,6 +751,7 @@ async def setup_clients():
         auth_helper=auth_helper,
         current_model=current_model,
         available_models=available_models,
+        prompt_protection=prompt_protection,
         embedding_model=OPENAI_EMB_MODEL,
         embedding_deployment=AZURE_OPENAI_EMB_DEPLOYMENT,
         embedding_dimensions=OPENAI_EMB_DIMENSIONS,
@@ -758,6 +767,7 @@ async def setup_clients():
         auth_helper=auth_helper,
         current_model=current_model,
         available_models=available_models,
+        prompt_protection=prompt_protection,
         embedding_model=OPENAI_EMB_MODEL,
         embedding_deployment=AZURE_OPENAI_EMB_DEPLOYMENT,
         embedding_dimensions=OPENAI_EMB_DIMENSIONS,

@@ -196,7 +196,7 @@ export function Component(): JSX.Element {
 
         const config = {
             requested_metrics: selectedMetrics,
-            compared_models: selectedModels,
+            models: selectedModels,
             run_red_teaming: runRedTeaming,
             target_parameters: {
                 overrides: {

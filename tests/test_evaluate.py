@@ -8,11 +8,11 @@ from promptflow.core import AzureOpenAIModelConfiguration, OpenAIModelConfigurat
 
 from evaluation.evaluate import (
     evaluate_row,
-    get_models,
     run_evaluation_from_config,
     send_question_to_target,
 )
 from evaluation.evaluate_metrics import metrics_by_name
+from evaluation.service_setup import get_models
 
 
 def test_evaluate_row():
@@ -151,7 +151,7 @@ def test_run_evaluation_from_config():
                             "evaluation.evaluate.send_question_to_target",
                             return_value={"answer": "4", "context": "2 + 2 = 4", "latency": 1.0},
                         ):
-                            with mock.patch("evaluation.evaluate.get_models", return_value=["model_name"]):
+                            with mock.patch("evaluation.service_setup.get_models", return_value=["model_name"]):
 
                                 metrics_by_name["mock_metric"] = type(
                                     "MockMetric",
@@ -177,7 +177,7 @@ def test_run_evaluation_from_config():
                                     "results_dir": results_dir,
                                     "passing_rate": 3,
                                     "requested_metrics": ["mock_metric"],
-                                    "compared_models": ["model_name"],
+                                    "models": ["model_name"],
                                     "max_workers": 2,
                                     "target_parameters": {"overrides": {"set_model": ""}},
                                 }

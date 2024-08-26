@@ -2,8 +2,17 @@
     "testdata_path": "input/qa.jsonl",
     "results_dir": "results",
     "passing_rate": 3,
-    "requested_metrics": ["gpt_groundedness", "gpt_relevance", "gpt_coherence", "gpt_similarity", "gpt_fluency", "answer_length", "latency", "f1_score"],
-    "compared_models":["GPT 3.5 Turbo", "Mistral AI 7B", "Phi 3 Mini 4K"],
+    "requested_metrics": [
+        "gpt_groundedness",
+        "gpt_relevance",
+        "gpt_coherence",
+        "gpt_similarity",
+        "gpt_fluency",
+        "answer_length",
+        "latency",
+        "f1_score"
+    ],
+    "models": ["GPT 3.5 Turbo", "Llama 3 8B Instruct", "Mistral AI 7B", "Phi 3 Mini 4K"],
     "max_workers": 1,
     "target_parameters": {
         "overrides": {
@@ -22,7 +31,7 @@
             ],
             "use_gpt4v": false,
             "gpt4v_input": "textAndImages",
-            "set_model":""
+            "set_model": ""
         }
     }
 }

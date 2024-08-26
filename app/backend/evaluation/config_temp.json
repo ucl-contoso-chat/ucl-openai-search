@@ -9,6 +9,10 @@
         "answer_length",
         "latency"
     ],
+    "models": [
+        "Mistral AI 7B"
+    ],
+    "run_red_teaming": true,
     "target_parameters": {
         "overrides": {
             "top": 3,

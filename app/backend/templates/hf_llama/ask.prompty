@@ -1,11 +1,11 @@
 ---
-name: Phi3-Mini-4k Ask
-description: A basic prompt using Phi3-Mini-4k for QA page
+name: Llama_ask
+description: A basic prompt using Llama for QA page
 model:
   api: chat
   configuration:
     type: "hf"
-    messages_length_limit: 4096
+    messages_length_limit: 4000
   parameters:
     max_tokens: 1024
     temperature: 0.3
@@ -35,11 +35,10 @@ system:
 {% endif %}
 
 user:
+Question:
+{{ question }}
+
 Sources:
 {% for source in sources %}
 {{ source }}
 {% endfor %}
-
-user:
-Question:
-{{ question }}

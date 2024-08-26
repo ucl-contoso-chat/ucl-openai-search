@@ -1,7 +1,10 @@
+import json
 import logging
 import os
 
+import aiohttp
 import openai
+import requests
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import AzureDeveloperCliCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
@@ -13,7 +16,7 @@ from promptflow.core import (
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.prompt_target import (
     AzureMLChatTarget,
-    AzureOpenAIChatTarget,
+    AzureOpenAITextChatTarget,
     OpenAIChatTarget,
     PromptChatTarget,
 )
@@ -48,6 +51,35 @@ def _log_env_vars():
     logger.debug("Environment Variables:")
     for var in vars:
         logger.debug(f"{var}: {os.environ.get(var)}")
+
+
+def get_models(target_url: str) -> list:
+    """Send request to /getmodels to determine whether the chosen model names are valid."""
+    r = requests.get(target_url)
+    r.raise_for_status()
+
+    try:
+        response_list = r.json()
+    except json.JSONDecodeError:
+        raise ValueError(f"Response is not valid JSON: {r.text}")
+    return response_list
+
+
+async def get_models_async(target_url: str) -> list:
+    """send request to /getmodels to determine whether the chosen model names are valid"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(target_url) as response:
+                response.encoding = "utf-8"
+                response.raise_for_status()
+
+                try:
+                    response_list = await response.json()
+                except json.JSONDecodeError:
+                    raise ValueError(f"Response is not valid JSON:\n\n{response.text} \n")
+    except Exception as e:
+        raise e
+    return response_list
 
 
 def get_openai_config() -> ModelConfiguration:
@@ -165,13 +197,13 @@ def get_openai_target() -> PromptChatTarget:
         deployment = os.environ["AZURE_OPENAI_EVAL_DEPLOYMENT"]
         endpoint = os.environ["AZURE_OPENAI_EVAL_ENDPOINT"]
         if api_key := os.environ.get("AZURE_OPENAI_KEY"):
-            return AzureOpenAIChatTarget(
+            return AzureOpenAITextChatTarget(
                 deployment_name=deployment,
                 endpoint=endpoint,
                 api_key=api_key,
             )
         else:
-            return AzureOpenAIChatTarget(deployment_name=deployment, endpoint=endpoint, use_aad_auth=True)
+            return AzureOpenAITextChatTarget(deployment_name=deployment, endpoint=endpoint, use_aad_auth=True)
     else:
         logger.info("Using OpenAI Chat Target")
         return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])

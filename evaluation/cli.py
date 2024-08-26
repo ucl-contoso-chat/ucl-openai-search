@@ -19,6 +19,7 @@ from evaluation.evaluate import (
 )
 from evaluation.generate import generate_test_qa_answer, generate_test_qa_data
 from evaluation.red_teaming import run_red_teaming
+from evaluation.service_setup import get_models_async
 from evaluation.utils import load_config
 
 app = typer.Typer(pretty_exceptions_enable=False)
@@ -36,8 +37,7 @@ logger.setLevel(logging.INFO)
 dotenv.load_dotenv(override=True)
 
 get_model_url = os.environ.get("BACKEND_URI") + "/getmodels"
-# available_models = asyncio.run(get_models(get_model_url))
-available_models = ["GPT 3.5 turbo", "Phi 3 Mini 4K", "Mistral AI 7B"]
+available_models = asyncio.run(get_models_async(get_model_url))
 
 
 def int_or_none(raw: str) -> Optional[int]:
@@ -54,15 +54,19 @@ def evaluate(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help=f"Path to the configuration JSON file. The name of the model to be evaluated should be specified in the JSON file. The available models that you can choose from are: {', '.join(available_models)}",
+        help=(
+            "Path to the configuration JSON file."
+            " Edit the JSON file to specify the list of models to be evaluated/compared."
+            f" The available models are: {', '.join(available_models)}"
+        ),
         default=DEFAULT_CONFIG_PATH,
     ),
-    numquestions: Optional[int] = typer.Option(
+    num_questions: Optional[int] = typer.Option(
         help="Number of questions to evaluate (defaults to all if not specified).",
         default=None,
         parser=int_or_none,
     ),
-    targeturl: Optional[str] = typer.Option(
+    target_url: Optional[str] = typer.Option(
         help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
         default=None,
         parser=str_or_none,
@@ -75,8 +79,8 @@ def evaluate(
     ),
 ):
     result = asyncio.run(
-        run_evaluation_from_config(EVALUATION_DIR, load_config(config), numquestions, targeturl, report_output)
-    ).result()
+        run_evaluation_from_config(EVALUATION_DIR, load_config(config), num_questions, target_url, report_output)
+    )
     if result:
         typer.echo("Evaluation completed successfully")
     else:
@@ -92,14 +96,14 @@ def generate(
         default=DEFAULT_SYNTHETIC_DATA_DIR,
         help="Path for the output file that will be generated.",
     ),
-    numquestions: int = typer.Option(help="Number of questions to generate.", default=200),
-    persource: int = typer.Option(help="Number of questions to generate per source.", default=5),
+    num_questions: int = typer.Option(help="Number of questions to generate.", default=200),
+    per_source: int = typer.Option(help="Number of questions to generate per source.", default=5),
 ):
     generate_test_qa_data(
         openai_config=service_setup.get_openai_config_dict(),
         search_client=service_setup.get_search_client(),
-        num_questions_total=numquestions,
-        num_questions_per_source=persource,
+        num_questions_total=num_questions,
+        num_questions_per_source=per_source,
         output_file=output,
     )
 
@@ -134,7 +138,11 @@ def red_teaming(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Path to the configuration JSON file.",
+        help=(
+            "Path to the configuration JSON file."
+            " Edit the JSON file to specify the list of models to be evaluated/compared."
+            f" The available models are: {', '.join(available_models)}"
+        ),
         default=DEFAULT_CONFIG_PATH,
     ),
     scorer_dir: Path = typer.Option(
@@ -148,17 +156,17 @@ def red_teaming(
         default="application",
         help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'. use 'application' will use the first model in the config models list.",
     ),
-    targeturl: Optional[str] = typer.Option(
+    target_url: Optional[str] = typer.Option(
         help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
         default=None,
         parser=str_or_none,
     ),
-    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy."),
+    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy for."),
 ):
     config = load_config(config)
     red_team = service_setup.get_openai_target()
     if prompt_target == "application":
-        target = service_setup.get_app_target(config, targeturl)
+        target = service_setup.get_app_target(config, target_url)
     elif prompt_target == "azureopenai":
         target = service_setup.get_openai_target()
     elif prompt_target == "azureml":
@@ -174,46 +182,6 @@ def red_teaming(
             config=config,
             red_teaming_llm=red_team,
             prompt_target=target,
-            compare=False,
-            max_turns=max_turns,
-        )
-    )
-
-
-@app.command()
-def red_teaming_comparison(
-    config: Path = typer.Option(
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        help=f"Path to the configuration JSON file. The available models that you can choose to compare are: {', '.join(available_models)}",
-        default=DEFAULT_CONFIG_PATH,
-    ),
-    scorer_dir: Path = typer.Option(
-        exists=True,
-        dir_okay=True,
-        file_okay=False,
-        help="Path to the directory where the scorer YAML files are stored.",
-        default=DEFAULT_SCORER_DIR,
-    ),
-    targeturl: Optional[str] = typer.Option(
-        help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
-        default=None,
-        parser=str_or_none,
-    ),
-    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy."),
-):
-    config = load_config(config)
-    red_team = service_setup.get_openai_target()
-    target = service_setup.get_app_target(config, targeturl)
-    asyncio.run(
-        run_red_teaming(
-            working_dir=EVALUATION_DIR,
-            scorer_dir=scorer_dir,
-            config=config,
-            red_teaming_llm=red_team,
-            prompt_target=target,
-            compare=True,
             max_turns=max_turns,
         )
     )

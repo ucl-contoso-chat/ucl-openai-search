@@ -28,6 +28,7 @@ from evaluation.red_teaming import run_red_teaming
 from evaluation.report_generator import (
     generate_eval_report,
 )
+from evaluation.service_setup import get_models_async
 from evaluation.utils import load_jsonl
 
 EVALUATION_RESULTS_DIR = "gpt_evaluation"
@@ -41,14 +42,14 @@ DEFAULT_SYNTHETIC_DATA_ANSWERS_DIR = EVALUATION_DIR / "output" / "qa.jsonl"
 logger = logging.getLogger("evaluation")
 
 
-def send_question_to_target(question: str, url: str, parameters: dict = {}, raise_error=True) -> dict:
+def send_question_to_target(question: str, url: str, parameters: dict = None, raise_error=True) -> dict:
     """Send a question to the ask endpoint and return the response."""
     headers = {
         "Content-Type": "application/json",
     }
     body = {
         "messages": [{"content": question, "role": "user"}],
-        "context": parameters,
+        "context": parameters or {},
     }
 
     try:
@@ -61,7 +62,7 @@ def send_question_to_target(question: str, url: str, parameters: dict = {}, rais
             response_dict = r.json()
         except aiohttp.ContentTypeError:
             raise ValueError(
-                f"Response from target {url} is not valid JSON:\n\n{r.text()} \n"
+                f"Response from target {url} is not valid JSON:\n{r.text}"
                 "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
             )
         try:
@@ -92,14 +93,13 @@ def evaluate_row(
     target_url: str,
     openai_config: dict,
     requested_metrics: list,
-    target_parameters: dict = {},
+    target_parameters: dict,
 ) -> dict:
     """Evaluate a single row of test data."""
-    model_name = target_parameters["overrides"]["set_model"]
     output = {}
     output["question"] = row["question"]
     output["truth"] = row["truth"]
-    output["model_name"] = model_name
+    output["model_name"] = target_parameters["overrides"]["set_model"]
     target_response = send_question_to_target(
         question=row["question"],
         url=target_url,
@@ -115,23 +115,6 @@ def evaluate_row(
         )
         output.update(result)
     return output
-
-
-async def get_models(target_url: str) -> list:
-    """send request to /getmodels to determine whether the chosen model names are valid"""
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(target_url) as response:
-                response.encoding = "utf-8"
-                response.raise_for_status()
-
-                try:
-                    response_list = await response.json()
-                except json.JSONDecodeError:
-                    raise ValueError(f"Response is not valid JSON:\n\n{response.text} \n")
-    except Exception as e:
-        raise e
-    return response_list
 
 
 async def run_evaluation(
@@ -236,8 +219,8 @@ async def run_evaluation_from_config(
         ],
     )
     get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
-    compared_models = config.get("compared_models")
-    all_models = await get_models(get_model_url)
+    compared_models = config.get("models")
+    all_models = await get_models_async(get_model_url)
     for elem in compared_models:
         if elem not in all_models:
             logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
@@ -270,7 +253,7 @@ async def run_evaluation_from_config(
         # Add extra params to original config
         config["target_url"] = target_url
         config["evaluation_gpt_model"] = openai_config.model
-        config["compared_models"] = compared_models
+        config["models"] = compared_models
 
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
@@ -316,8 +299,8 @@ async def run_evaluation_by_request(working_dir: Path, config: dict, num_questio
     red_teaming_target = service_setup.get_app_target(config, target_url)
 
     get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
-    compared_models = config.get("compared_models")
-    all_models = await get_models(get_model_url)
+    compared_models = config.get("models")
+    all_models = await get_models_async(get_model_url)
     for elem in compared_models:
         if elem not in all_models:
             logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
@@ -347,7 +330,6 @@ async def run_evaluation_by_request(working_dir: Path, config: dict, num_questio
             red_teaming_llm=red_teaming_llm,
             prompt_target=red_teaming_target,
             max_turns=3,
-            compare=False,
             results_dir=results_dir,
         )
 
@@ -362,6 +344,7 @@ async def run_evaluation_by_request(working_dir: Path, config: dict, num_questio
         # Add extra params to original config
         config["target_url"] = target_url
         config["evaluation_gpt_model"] = openai_config.model
+        config["models"] = compared_models
 
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
@@ -408,8 +391,7 @@ def dump_summary(rated_questions_for_models: dict, requested_metrics: list, pass
 
 def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, passing_rate: int, results_dir: Path):
     """Summarize the evaluation results and plot them."""
-    rating_stat_data = {}
-    stat_metric_data = {}
+    rating_stat_data, stat_metric_data = {}, {}
     for key in questions_with_ratings_dict:
         rating_stat_data[key] = {"pass_count": {}, "pass_rate": {}, "mean_rating": {}}
         stat_metric_data[key] = {"latency": {}, "f1_score": {}, "answer_length": {}}
@@ -423,8 +405,7 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         for metrics in metrics_list:
             data_per_model.append(metrics)
             df = pd.DataFrame(data_per_model)
-            data_dict_gpt = {}
-            data_dict_stat = {}
+            data_dict_gpt, data_dict_stat = {}, {}
             for metric in requested_metrics:
                 metric_name = metric.METRIC_NAME
                 short_name = metric.SHORT_NAME
@@ -469,28 +450,41 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
         titles = [display_stats_name[mn] for mn in rating_stat_data[key].keys()]
         y_labels = [stats_y_labels[mn] for mn in rating_stat_data[key].keys()]
         y_lims = [stats_y_lim[mn] for mn in rating_stat_data[key].keys()]
-        layout = (
-            int(np.ceil(len(rating_stat_data[key]) / 3)),
-            3 if len(rating_stat_data[key]) > 3 else len(rating_stat_data[key]),
-        )
 
-    plot_bar_charts(
-        layout, data, titles, y_labels, results_dir / "evaluation_results.png", y_max_lim=y_lims, width=width
+    layout = (
+        int(np.ceil(len(rating_stat_data[next(iter(rating_stat_data))]) / 3)),
+        (
+            3
+            if len(rating_stat_data[next(iter(rating_stat_data))]) > 3
+            else len(rating_stat_data[next(iter(rating_stat_data))])
+        ),
     )
 
-    gpt_metric_avg_ratings = {}
-    data_for_single_box = {}
-    data_for_multi_box = {}
+    plot_bar_charts(
+        layout,
+        data,
+        titles,
+        y_labels,
+        results_dir / "evaluation_results.png",
+        y_lims,
+        width,
+    )
+
+    gpt_metric_avg_ratings, data_for_single_box, data_for_multi_box = {}, {}, {}
     for key in questions_with_ratings_dict:
-        gpt_metric_avg_ratings[key] = [val for _, val in rating_stat_data[key]["mean_rating"].items()]
-        data_for_single_box[key] = [data for _, data in gpt_metric_data_points[key].items()]
-        data_for_multi_box[key] = [data for _, data in stat_metric_data_points[key].items()]
+        gpt_metric_avg_ratings[key] = list(rating_stat_data[key]["mean_rating"].values())
+        data_for_single_box[key] = list(gpt_metric_data_points[key].values())
+        data_for_multi_box[key] = list(stat_metric_data_points[key].values())
         label_for_single_box = list(gpt_metric_data_points[key].keys())
         titles_for_multi_box = list(stat_metric_data_points[key].keys())
-        layout = (
-            int(np.ceil(len(stat_metric_data_points[key]) / 3)),
-            3 if len(stat_metric_data_points[key]) > 3 else len(stat_metric_data_points[key]),
-        )
+    layout = (
+        int(np.ceil(len(stat_metric_data_points[next(iter(stat_metric_data_points))]) / 3)),
+        (
+            3
+            if len(stat_metric_data_points[next(iter(stat_metric_data_points))]) > 3
+            else len(stat_metric_data_points[next(iter(stat_metric_data_points))])
+        ),
+    )
     gpt_metric_short_names = [m.SHORT_NAME for _, m in requested_gpt_metrics.items()]
     plot_radar_chart(
         gpt_metric_short_names,
