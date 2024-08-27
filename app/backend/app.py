@@ -410,9 +410,7 @@ if PYRIT_COMPATIBLE:
             return jsonify({"error": result}), 500
 
         report_path = result / "evaluation_report.pdf"
-        # result_raw_zip = shutil.make_archive(os.path.dirname(results_dir), "zip", results_dir)
 
-        # TODO: return pdf report after we have it
         try:
             # Save the file in memory and remove the orignal file
             return_data = io.BytesIO()

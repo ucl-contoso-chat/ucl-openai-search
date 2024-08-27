@@ -284,6 +284,7 @@ async def run_evaluation_by_request(
     results_dir.mkdir(parents=True, exist_ok=True)
 
     run_redteaming = config.get("run_red_teaming", False)
+    redteaming_max_turns = config.get("red_teaming_max_turns", 1)
 
     openai_config = service_setup.get_openai_config()
     testdata_path = working_dir / config["testdata_path"]
@@ -300,9 +301,6 @@ async def run_evaluation_by_request(
             "latency",
         ],
     )
-
-    red_teaming_llm = service_setup.get_openai_target()
-    red_teaming_target = service_setup.get_app_target(config, target_url)
 
     get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
     compared_models = config.get("models")
@@ -328,14 +326,18 @@ async def run_evaluation_by_request(
     )
 
     red_teaming_results = None
+    # Run red teaming if enabled
     if run_redteaming:
+        red_teaming_llm = service_setup.get_openai_target()
+        red_teaming_target = service_setup.get_app_target(config, target_url)
+
         red_teaming_results = await run_red_teaming(
             working_dir=working_dir,
             scorer_dir=DEFAULT_SCORER_DIR,
             config=config,
             red_teaming_llm=red_teaming_llm,
             prompt_target=red_teaming_target,
-            max_turns=3,
+            max_turns=redteaming_max_turns,
             results_dir=results_dir,
         )
 

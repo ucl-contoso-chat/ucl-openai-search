@@ -8,6 +8,7 @@ evaluation/results
 # Evaluation datasets
 evaluation/input
 app/backend/evaluation/input
+app/backend/evaluation/config_temp.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

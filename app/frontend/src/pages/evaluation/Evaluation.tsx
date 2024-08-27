@@ -49,6 +49,7 @@ export function Component(): JSX.Element {
     const [useGPT4V, setUseGPT4V] = useState<boolean>(false);
     const [runRedTeaming, setRunRedTeaming] = useState<boolean>(true);
     const [includeConversationLogs, setIncludeConversationLogs] = useState<boolean>(false);
+    const [redTeamingMaxTurns, setRedTeamingMaxTurns] = useState<number>(1);
 
     const [inProgress, setInProgress] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
@@ -105,6 +106,10 @@ export function Component(): JSX.Element {
         setIncludeConversationLogs(!!checked);
     };
 
+    const onRedTeamingMaxTurnsChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
+        setRedTeamingMaxTurns(parseInt(newValue || "1"));
+    };
+
     // IDs for form labels and their associated callouts
     const numQuestionsId = useId("numQuestions");
     const numQuestionsFieldId = useId("numQuestionsField");
@@ -129,7 +134,11 @@ export function Component(): JSX.Element {
     const shouldStreamId = useId("shouldStream");
     const shouldStreamFieldId = useId("shouldStreamField");
     const runRedTeamingId = useId("runRedTeaming");
+    const runRedTeamingFieldId = useId("runRedTeamingField");
     const includeConversationLogsId = useId("includeConversationLogs");
+    const includeConversationLogsFieldId = useId("includeConversationLogsField");
+    const redTeamingMaxTurnsId = useId("redTeamingMaxTurns");
+    const redTeamingMaxTurnsFieldId = useId("redTeamingMaxTurnsField");
 
     const [showGPT4VOptions, setShowGPT4VOptions] = useState<boolean>(false);
     const [showSemanticRankerOption, setShowSemanticRankerOption] = useState<boolean>(false);
@@ -164,6 +173,9 @@ export function Component(): JSX.Element {
 
     const makeEvaluationRequest = async () => {
         setInProgress(true);
+        setError(null);
+        setEvalResultDownloadUrl("");
+
         const requestData: FormData = new FormData();
         if (evalData === null) {
             setError("Please upload a file to evaluate");
@@ -196,14 +208,13 @@ export function Component(): JSX.Element {
             return;
         }
 
-        setEvalResultDownloadUrl("");
-
         const selectedMetrics = selectedGPTMetrics.concat(selectedStatsMetrics);
 
         const config = {
             requested_metrics: selectedMetrics,
             models: selectedModels,
             run_red_teaming: runRedTeaming,
+            red_teaming_max_turns: redTeamingMaxTurns,
             include_conversation: includeConversationLogs,
             target_parameters: {
                 overrides: {
@@ -225,6 +236,7 @@ export function Component(): JSX.Element {
         };
         requestData.append("config", JSON.stringify(config));
 
+        // Send the request
         const token = client ? await getToken(client) : undefined;
         try {
             console.log("start");
@@ -325,7 +337,7 @@ export function Component(): JSX.Element {
                         <AccordionPanel>
                             <div className={styles.configPanel}>
                                 <Checkbox
-                                    id={runRedTeamingId}
+                                    id={runRedTeamingFieldId}
                                     className={styles.evaluateSettingsSeparator}
                                     checked={runRedTeaming}
                                     label="Run red teaming"
@@ -334,14 +346,42 @@ export function Component(): JSX.Element {
                                     onRenderLabel={(props: ICheckboxProps | undefined) => (
                                         <HelpCallout
                                             labelId={runRedTeamingId}
-                                            fieldId={runRedTeamingId}
+                                            fieldId={runRedTeamingFieldId}
                                             helpText={toolTipText.runRedTeaming}
                                             label={props?.label}
                                         />
                                     )}
                                 />
+
+                                {runRedTeaming && (
+                                    <div>
+                                        <h4>{"Red Teaming Settings"}</h4>
+                                        <TextField
+                                            id={redTeamingMaxTurnsFieldId}
+                                            className={styles.evaluateSettingsSeparator}
+                                            label="Red teaming max turns"
+                                            type="number"
+                                            min={1}
+                                            defaultValue={redTeamingMaxTurns.toString()}
+                                            step={1}
+                                            onChange={onRedTeamingMaxTurnsChange}
+                                            aria-labelledby={redTeamingMaxTurnsId}
+                                            onRenderLabel={(props: ITextFieldProps | undefined) => (
+                                                <HelpCallout
+                                                    labelId={redTeamingMaxTurnsId}
+                                                    fieldId={redTeamingMaxTurnsFieldId}
+                                                    helpText={toolTipText.redTeamingMaxTurns}
+                                                    label={props?.label}
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                )}
+
+                                {<h4>{"RAG Evaluation Settings"}</h4>}
+
                                 <Checkbox
-                                    id={includeConversationLogsId}
+                                    id={includeConversationLogsFieldId}
                                     className={styles.evaluateSettingsSeparator}
                                     checked={includeConversationLogs}
                                     label="Include conversation logs"
@@ -350,7 +390,7 @@ export function Component(): JSX.Element {
                                     onRenderLabel={(props: ICheckboxProps | undefined) => (
                                         <HelpCallout
                                             labelId={includeConversationLogsId}
-                                            fieldId={includeConversationLogsId}
+                                            fieldId={includeConversationLogsFieldId}
                                             helpText={toolTipText.includeConversationLogs}
                                             label={props?.label}
                                         />
