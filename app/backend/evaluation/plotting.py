@@ -26,7 +26,7 @@ def plot_bar_charts(
     y_labels: List[str],
     output_path: Path = Path("evaluation_results.png"),
     y_max_lim: List[float] = None,
-    width: float=0.4,
+    width: float = 0.4,
 ):
     """Plot bar charts for the provided data."""
 

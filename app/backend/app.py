@@ -102,13 +102,13 @@ PYRIT_COMPATIBLE = sys.version_info >= (3, 10) and sys.version_info < (3, 12)
 
 if PYRIT_COMPATIBLE:
 
-    from evaluation.evaluate import run_evaluation_by_request  # noqa: E402
-    from evaluation.generate import generate_test_qa_data  # noqa E402
-    from evaluation.service_setup import (  # noqa E402
+    from evaluation.evaluate import run_evaluation_by_request
+    from evaluation.generate import generate_test_qa_data
+    from evaluation.service_setup import (
         get_openai_config_dict,
         get_search_client,
     )
-    from evaluation.utils import load_config, save_config, save_jsonl  # noqa E402
+    from evaluation.utils import load_config, save_config, save_jsonl
 
     BACKEND_DIR = Path(__file__).parent
     EVALUATION_DIR = BACKEND_DIR / "evaluation"
