@@ -376,7 +376,7 @@ def test_ask(sized_page: Page, live_server_url: str):
     # The burger menu only exists at smaller viewport sizes
     if page.get_by_role("button", name="Toggle menu").is_visible():
         page.get_by_role("button", name="Toggle menu").click()
-    page.get_by_role("link", name="Ask a question").click(force=True)
+    page.get_by_role("link", name="Ask a question").dispatch_event("click")
     page.get_by_placeholder("Example: Does my plan cover annual eye exams?").click()
     page.get_by_placeholder("Example: Does my plan cover annual eye exams?").fill("Whats the dental plan?")
     page.get_by_placeholder("Example: Does my plan cover annual eye exams?").click()
