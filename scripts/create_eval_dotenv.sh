@@ -16,7 +16,7 @@ WEBAPP_NAME=$(az webapp list --resource-group $RESOURCE_GROUP --query "[0].name"
 BACKEND_URI=$(az webapp show --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --query "defaultHostName" -o tsv)
 
 # Populate the .env file
-cat <<EOL > evaluation/.env
+cat <<EOL > app/backend/evaluation/.env
 OPENAI_HOST="${OPENAI_HOST:-azure}"
 OPENAI_GPT_MODEL="${OPENAI_GPT_MODEL:-gpt-35-turbo}"
 
@@ -46,4 +46,4 @@ AZURE_ML_ENDPOINT="${AZURE_ML_ENDPOINT:-}"
 AZURE_ML_MANAGED_KEY="${AZURE_ML_MANAGED_KEY:-}"
 EOL
 
-echo "evaluation/.env file has been populated successfully"
+echo "app/backend/evaluation/.env file has been populated successfully"

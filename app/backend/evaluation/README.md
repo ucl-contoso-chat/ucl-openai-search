@@ -8,7 +8,7 @@ As an alternative, you can either use an Azure-hosted OpenAI instance or openai.
 
 ## Prerequisites
 
-All of the following instructions assume that you're running commands from inside the directory of the repository.
+All of the following instructions assume that you're running commands from inside the `app/backend` directory of the repository.
 Before using the evaluation scripts, you'll need to:
 
 - Have a live deployment of the chat application on Azure

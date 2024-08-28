@@ -113,7 +113,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r evaluation/requirements.txt
+          pip install -r app/backend/evaluation/requirements.txt
 
       - name: Create evaluation environment
         run: |
@@ -121,22 +121,25 @@ jobs:
 
       - name: Generate Q&As
         run: |
+          cd app/backend
           python -m evaluation generate --num-questions ${{ inputs.eval-num-questions }}
 
       - name: Run AI RAG Chat evaluation
         run: |
+          cd app/backend
           python -m evaluation evaluate --num-questions ${{ inputs.eval-num-questions }}
 
           # Store evaluation results path
-          results_path=$(ls -d evaluation/results/gpt_evaluation/experiment-* | tail -n 1)
+          results_path="app/backend/$(ls -d evaluation/results/gpt_evaluation/experiment-* | tail -n 1)"
           echo "EVALUATION_RESULTS=$results_path" >> $GITHUB_ENV
 
       - name: Run Red Teaming evaluation
         run: |
+          cd app/backend
           python -m evaluation red-teaming
 
           # Store red teaming results path
-          results_path=$(ls -d evaluation/results/red_teaming/experiment-* | tail -n 1)
+          results_path="app/backend/$(ls -d evaluation/results/red_teaming/experiment-* | tail -n 1)"
           echo "RED_TEAMING_RESULTS=$results_path" >> $GITHUB_ENV
 
       - name: Dump results
