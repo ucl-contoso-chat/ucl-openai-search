@@ -119,7 +119,7 @@ mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 
 # BACKEND_URL = "http://127.0.0.1:50505"
-BACKEND_URL = None
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:50505")
 
 
 @bp.route("/")
