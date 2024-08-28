@@ -7,11 +7,13 @@ import requests
 from promptflow.core import AzureOpenAIModelConfiguration, OpenAIModelConfiguration
 
 from evaluation.evaluate import (
+    dump_summary,
     evaluate_row,
     run_evaluation_from_config,
     send_question_to_target,
 )
 from evaluation.evaluate_metrics import metrics_by_name
+from evaluation.evaluate_metrics.base_metric import BaseMetric
 from evaluation.service_setup import get_models
 
 
@@ -191,6 +193,22 @@ def test_run_evaluation_from_config():
                                 assert success
 
 
+def test_dump_summary(tmp_path):
+    rated_questions_for_models = {
+        "model1": [
+            {"question": "What is the capital of France?", "answer": "Paris", "truth": "Paris"},
+            {"question": "What is 2 + 2?", "answer": "4", "truth": "4"},
+        ]
+    }
+    requested_metrics = []
+    passing_rate = 3
+    results_dir = tmp_path
+
+    summary = dump_summary(rated_questions_for_models, requested_metrics, passing_rate, results_dir)
+    assert summary is not None
+    assert results_dir.joinpath("summary.json").exists()
+
+
 class MockResponse:
     def __init__(self, json_data, status_code=200, reason="Fail Test", url="http://mock-url.com"):
         self.json_data = json_data
@@ -211,9 +229,16 @@ class MockResponse:
         return self.json_data
 
 
-class MockMetric:
+class MockMetric(BaseMetric):
     METRIC_NAME = "mock_metric"
+    DISPLAY_NAME = "Mock Evaluation Metric Rating"
+    SHORT_NAME = "Mock Metric"
+    NOTE = "Mock Rating Score"
 
     @staticmethod
     def evaluator_fn(openai_config):
         return lambda question, answer, context, ground_truth: {"mock_metric_score": 1.0}
+
+    @classmethod
+    def get_aggregate_stats(cls, df, passing_threshold=3):
+        return {"pass_count": 1, "pass_rate": 1.0, "mean_rating": 5.0}
