@@ -101,10 +101,6 @@ from templates.supported_models import get_supported_models
 PYRIT_COMPATIBLE = sys.version_info >= (3, 10) and sys.version_info < (3, 12)
 
 if PYRIT_COMPATIBLE:
-    # Bring evaluation packages onto the path
-    # FIXME: This is a workaround for the evaluation package not in the backend directory, may need to restructure
-    rootpath = os.path.join(os.getcwd(), "../..")
-    sys.path.append(rootpath)
 
     from evaluation.evaluate import run_evaluation_by_request  # noqa: E402
     from evaluation.generate import generate_test_qa_data  # noqa E402

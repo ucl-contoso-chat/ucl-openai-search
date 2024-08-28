@@ -2,20 +2,20 @@
 target-version = "py38"
 lint.select = ["E", "F", "I", "UP"]
 lint.ignore = ["E501", "E701"] # line too long, multiple statements on one line
-src = ["app/backend", "scripts", "evaluation"]
+src = ["app/backend", "scripts"]
 
 [tool.ruff.lint.isort]
-known-local-folder = ["scripts", "evaluation"]
+known-local-folder = ["scripts"]
 
 [tool.black]
 line-length = 120
 
 [tool.pytest.ini_options]
 addopts = "-ra"
-pythonpath = ["app/backend", "scripts", "evaluation"]
+pythonpath = ["app/backend", "scripts"]
 
 [tool.coverage.paths]
-source = ["scripts", "app", "evaluation"]
+source = ["scripts", "app"]
 
 [tool.coverage.report]
 show_missing = true
@@ -25,8 +25,10 @@ check_untyped_defs = true
 python_version = 3.11
 
 [[tool.mypy.overrides]]
-module = "evaluation.*"
-ignore_missing_imports = true
+module = [
+  "evaluation.*"
+]
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [

@@ -1,5 +1,5 @@
 -r app/backend/requirements.in
--r evaluation/requirements.in
+-r app/backend/evaluation/requirements.in
 ruff
 black
 pytest
