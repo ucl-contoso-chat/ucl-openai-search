@@ -222,10 +222,14 @@ async def run_evaluation_from_config(
     get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
     compared_models = config.get("models")
     all_models = await get_models_async(get_model_url)
-    for elem in compared_models:
-        if elem not in all_models:
-            logger.error(f"Requested model {elem} is not available. Available metrics: {', '.join(all_models)}")
-            return False
+
+    unsupported_models = set(compared_models) - set(all_models)
+    if unsupported_models:
+        logger.error(
+            f"Requested models {', '.join(unsupported_models)} are not available."
+            f" Available models: {', '.join(all_models)}"
+        )
+        return False
 
     target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
 
