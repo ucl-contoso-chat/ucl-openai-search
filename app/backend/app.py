@@ -118,7 +118,6 @@ bp = Blueprint("routes", __name__, static_folder="static")
 mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 
-# BACKEND_URL = "http://127.0.0.1:50505"
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:50505")
 
 
@@ -413,11 +412,9 @@ if PYRIT_COMPATIBLE:
             with open(report_path, "rb") as fo:
                 return_data.write(fo.read())
             return_data.seek(0)
-            # os.remove(raw_result_data)
             result = await send_file(return_data, as_attachment=True, mimetype="application/pdf")
             return result
         except Exception:
-            # os.remove(raw_result_data)
             return jsonify({"error": "Failed while writing the report file"}), 500
 
 

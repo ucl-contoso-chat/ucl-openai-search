@@ -193,7 +193,7 @@ async def run_evaluation_from_config(
     target_url: str = None,
     report_output: Path = None,
 ):
-    """Run evaluation using the provided configuration file."""
+    """Run evaluation using the provided configuration file. If run_red_teaming is enabled in config, run red teaming as well."""
 
     run_redteaming = config.get("run_red_teaming", False)
     redteaming_max_turns = config.get("red_teaming_max_turns", 1)
