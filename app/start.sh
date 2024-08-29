@@ -11,7 +11,7 @@ done <<EOF
 $(azd env get-values)
 EOF
 
-cd ../evaluation
+cd backend/evaluation
 while IFS='=' read -r key value; do
     [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
     value=$(echo "$value" | sed 's/^"//' | sed 's/"$//')
@@ -23,7 +23,7 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
-cd ../
+cd ../../../
 echo 'Creating python virtual environment ".venv"'
 python3 -m venv .venv
 

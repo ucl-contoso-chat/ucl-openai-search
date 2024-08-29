@@ -15,6 +15,25 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+Set-Location ./backend/evaluation
+if (Test-Path -Path ".env") {
+    Get-Content -Path .env | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -match "([^=]+)=(.*)") {
+            $key = $matches[1]
+            $value = $matches[2] -replace '^"|"$'
+            Set-Item -Path "env:\$key" -Value $value
+        }
+    }
+}
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Failed to load environment variables from .env file"
+    exit $LASTEXITCODE
+}
+
+Set-Location ../..
+
 
 Write-Host 'Creating python virtual environment ".venv"'
 $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
