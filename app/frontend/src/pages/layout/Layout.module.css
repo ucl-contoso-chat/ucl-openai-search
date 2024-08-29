@@ -119,9 +119,8 @@
 
     .headerNavPageLink {
         border-bottom: none;
-        padding: 0;
+        padding: 0 0.5rem;
         display: block;
-        margin-left: 0.5rem;
     }
 
     .headerNavPageLink:hover {
@@ -129,6 +128,7 @@
     }
 
     .headerNavPageLinkActive {
+        padding: 0.5rem;
         color: #f2f2f2;
         text-decoration: none;
     }
