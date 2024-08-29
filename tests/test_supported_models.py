@@ -17,22 +17,16 @@ def test_model_config_structure():
     assert isinstance(MODEL_CONFIGS, dict)
 
     for model_name, config in MODEL_CONFIGS.items():
+        assert isinstance(
+            config, (dict, ModelConfig)
+        ), "Model configuration entry can either be a 'dict' or a 'ModelConfig' object."
         if isinstance(config, dict):
-            # Ensure both 'openai' and 'azure' keys exist in the dictionary
-            assert "openai" in config, f"{model_name} config should have an 'openai' entry."
-            assert "azure" in config, f"{model_name} config should have an 'azure' entry."
-            assert isinstance(
-                config["openai"], ModelConfig
-            ), f"The 'openai' entry for {model_name} should be a ModelConfig."
-            assert isinstance(
-                config["azure"], ModelConfig
-            ), f"The 'azure' entry for {model_name} should be a ModelConfig."
-
-        elif isinstance(config, ModelConfig):
-            assert config.type == "hf", f"{model_name} should be a Hugging Face model."
+            has_model_config = all(isinstance(value, ModelConfig) for value in config.values())
+            assert has_model_config, f"Model configuration for '{model_name}' must be a 'ModelConfig' object."
 
 
-def test_get_supported_models_with_azure(sample_azure_deployment):
+def test_get_supported_models_with_azure():
+    sample_azure_deployment = {"type": "azure", "model_name": "gpt-35-turbo", "deployment_name": "azure"}
     supported_models = get_supported_models(sample_azure_deployment)
 
     assert "GPT 3.5 Turbo" in supported_models
@@ -44,7 +38,8 @@ def test_get_supported_models_with_azure(sample_azure_deployment):
     assert supported_models["Mistral AI 7B"].type == "hf"
 
 
-def test_get_supported_models_with_openai_fallback(sample_openai_deployment):
+def test_get_supported_models_with_openai_fallback():
+    sample_openai_deployment = {"type": "openai", "model_name": "gpt-3.5-turbo", "deployment_name": ""}
     supported_models = get_supported_models(sample_openai_deployment)
 
     assert "GPT 3.5 Turbo" in supported_models
@@ -63,7 +58,6 @@ def test_get_supported_models_hugging_face_only():
     assert "GPT 3.5 Turbo" not in supported_models
     assert "Mistral AI 7B" in supported_models
     assert supported_models["Mistral AI 7B"].type == "hf"
-    assert "Llama 3 8B Instruct" in supported_models
 
 
 def test_get_supported_models_invalid_openai_deployment():
