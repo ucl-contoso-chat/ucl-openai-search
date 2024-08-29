@@ -34,10 +34,7 @@ from evaluation.utils import load_jsonl
 EVALUATION_RESULTS_DIR = "gpt_evaluation"
 
 EVALUATION_DIR = Path(__file__).parent
-DEFAULT_CONFIG_PATH = EVALUATION_DIR / "config.json"
 DEFAULT_SCORER_DIR = EVALUATION_DIR / "scorer_definitions"
-DEFAULT_SYNTHETIC_DATA_DIR = EVALUATION_DIR / "input" / "qa.jsonl"
-DEFAULT_SYNTHETIC_DATA_ANSWERS_DIR = EVALUATION_DIR / "output" / "qa.jsonl"
 
 logger = logging.getLogger("evaluation")
 
@@ -76,8 +73,7 @@ def send_question_to_target(question: str, url: str, parameters: dict = None, ra
                 f"Response: {response_dict}"
             )
 
-        response_obj = {"answer": answer,
-                        "context": context, "latency": latency}
+        response_obj = {"answer": answer, "context": context, "latency": latency}
         return response_obj
     except Exception as e:
         if raise_error:
@@ -146,8 +142,7 @@ async def run_evaluation(
         target_parameters["overrides"]["set_model"] = model
         for metric in requested_metrics_list:
             if metric not in metrics_by_name:
-                logger.error(
-                    f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}")
+                logger.error(f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}")
                 return False
 
         requested_metrics = [
@@ -174,21 +169,17 @@ async def run_evaluation(
                 row_result = await eval_cor
                 questions_per_model_with_ratings.append(row_result)
 
-        logger.info(
-            "Evaluation calls have completed. Calculating overall metrics now...")
+        logger.info("Evaluation calls have completed. Calculating overall metrics now...")
         results_dir.mkdir(parents=True, exist_ok=True)
 
         async with aiofiles.open(results_dir / "eval_results.jsonl", "a", encoding="utf-8") as results_file:
             for row in questions_per_model_with_ratings:
                 await results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-        questions_with_ratings_dict.update(
-            {model: questions_per_model_with_ratings})
+        questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
 
-    summary = dump_summary(questions_with_ratings_dict,
-                           requested_metrics, passing_rate, results_dir)
-    plot_diagrams(questions_with_ratings_dict,
-                  requested_metrics, passing_rate, results_dir)
+    summary = dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
+    plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
     # except Exception as e:
     #     logger.error("Evaluation was terminated early due to an error ⬆")
     #     raise e
@@ -209,12 +200,9 @@ async def run_evaluation_from_config(
 
     timestamp = int(time.time())
     if run_redteaming:
-        results_dir = working_dir / \
-            config["results_dir"] / f"experiment-{timestamp}"
+        results_dir = working_dir / config["results_dir"] / f"experiment-{timestamp}"
     else:
-        results_dir = working_dir / \
-            config["results_dir"] / EVALUATION_RESULTS_DIR / \
-            f"experiment-{timestamp}"
+        results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     openai_config = service_setup.get_openai_config()
@@ -232,8 +220,7 @@ async def run_evaluation_from_config(
             "latency",
         ],
     )
-    get_model_url = (os.environ.get("BACKEND_URI")
-                     if target_url is None else target_url) + "/getmodels"
+    get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
     compared_models = config.get("models")
     all_models = await get_models_async(get_model_url)
 
@@ -245,8 +232,7 @@ async def run_evaluation_from_config(
         )
         return False
 
-    target_url = (os.environ.get("BACKEND_URI")
-                  if target_url is None else target_url) + "/ask"
+    target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
 
     summary, question_results = await run_evaluation(
         openai_config=openai_config,
@@ -280,8 +266,7 @@ async def run_evaluation_from_config(
     if summary is not None:
 
         results_config_path = results_dir / "config.json"
-        logger.info("Saving original config file back to %s",
-                    results_config_path)
+        logger.info("Saving original config file back to %s", results_config_path)
 
         # Replace relative paths with absolute paths in the original config
         config["testdata_path"] = str(testdata_path)
@@ -297,19 +282,24 @@ async def run_evaluation_from_config(
 
         if report_output is None or report_output == "":
             report_output = results_dir / "evaluation_report.pdf"
-        
+
         include_conversation = config.get("include_conversation", False)
         generate_eval_report(
-            summary, question_results, redteaming_result=red_teaming_results, results_dir=results_dir, output_path=report_output, include_conversation=include_conversation
+            summary,
+            question_results,
+            redteaming_result=red_teaming_results,
+            results_dir=results_dir,
+            output_path=report_output,
+            include_conversation=include_conversation,
         )
-        logger.info("PDF Report generated at %s",
-                    os.path.abspath(report_output))
+        logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
         return True, results_dir
     else:
         shutil.rmtree(results_dir)
         logger.error("Evaluation was terminated early due to an error ⬆")
         return False, "Evaluation was terminated early"
+
 
 def dump_summary(rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
     """Save the summary to a file."""
@@ -322,8 +312,7 @@ def dump_summary(rated_questions_for_models: dict, requested_metrics: list, pass
         rated_questions_df = pd.DataFrame(rated_questions)
         results_per_model = {}
         for metric in requested_metrics:
-            metric_result = metric.get_aggregate_stats(
-                rated_questions_df, passing_rate)
+            metric_result = metric.get_aggregate_stats(rated_questions_df, passing_rate)
             results_per_model[metric.METRIC_NAME] = metric_result
         summary["model_result"] = results_per_model
         summaries.append(summary)
@@ -339,10 +328,8 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
     """Summarize the evaluation results and plot them."""
     rating_stat_data, stat_metric_data = {}, {}
     for key in questions_with_ratings_dict:
-        rating_stat_data[key] = {"pass_count": {},
-                                 "pass_rate": {}, "mean_rating": {}}
-        stat_metric_data[key] = {"latency": {},
-                                 "f1_score": {}, "answer_length": {}}
+        rating_stat_data[key] = {"pass_count": {}, "pass_rate": {}, "mean_rating": {}}
+        stat_metric_data[key] = {"latency": {}, "f1_score": {}, "answer_length": {}}
     requested_gpt_metrics, requested_stat_metrics = {}, {}
     gpt_metric_data_points, stat_metric_data_points = {}, {}
 
@@ -395,8 +382,7 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
     for key in questions_with_ratings_dict:
         data_per_model = [data for _, data in rating_stat_data[key].items()]
         data[key] = data_per_model
-        titles = [display_stats_name[mn]
-                  for mn in rating_stat_data[key].keys()]
+        titles = [display_stats_name[mn] for mn in rating_stat_data[key].keys()]
         y_labels = [stats_y_labels[mn] for mn in rating_stat_data[key].keys()]
         y_lims = [stats_y_lim[mn] for mn in rating_stat_data[key].keys()]
 
@@ -421,23 +407,20 @@ def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, pa
 
     gpt_metric_avg_ratings, data_for_single_box, data_for_multi_box = {}, {}, {}
     for key in questions_with_ratings_dict:
-        gpt_metric_avg_ratings[key] = list(
-            rating_stat_data[key]["mean_rating"].values())
+        gpt_metric_avg_ratings[key] = list(rating_stat_data[key]["mean_rating"].values())
         data_for_single_box[key] = list(gpt_metric_data_points[key].values())
         data_for_multi_box[key] = list(stat_metric_data_points[key].values())
         label_for_single_box = list(gpt_metric_data_points[key].keys())
         titles_for_multi_box = list(stat_metric_data_points[key].keys())
     layout = (
-        int(np.ceil(len(stat_metric_data_points[next(
-            iter(stat_metric_data_points))]) / 3)),
+        int(np.ceil(len(stat_metric_data_points[next(iter(stat_metric_data_points))]) / 3)),
         (
             3
             if len(stat_metric_data_points[next(iter(stat_metric_data_points))]) > 3
             else len(stat_metric_data_points[next(iter(stat_metric_data_points))])
         ),
     )
-    gpt_metric_short_names = [m.SHORT_NAME for _,
-                              m in requested_gpt_metrics.items()]
+    gpt_metric_short_names = [m.SHORT_NAME for _, m in requested_gpt_metrics.items()]
     plot_radar_chart(
         gpt_metric_short_names,
         gpt_metric_avg_ratings,
