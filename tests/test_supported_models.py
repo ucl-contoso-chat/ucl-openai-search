@@ -1,16 +1,4 @@
-import pytest
-
 from templates.supported_models import MODEL_CONFIGS, ModelConfig, get_supported_models
-
-
-@pytest.fixture
-def sample_azure_deployment():
-    return {"type": "azure", "model_name": "gpt-35-turbo", "deployment_name": "azure"}
-
-
-@pytest.fixture
-def sample_openai_deployment():
-    return {"type": "openai", "model_name": "gpt-3.5-turbo", "deployment_name": ""}
 
 
 def test_model_config_structure():
@@ -20,6 +8,7 @@ def test_model_config_structure():
         assert isinstance(
             config, (dict, ModelConfig)
         ), "Model configuration entry can either be a 'dict' or a 'ModelConfig' object."
+
         if isinstance(config, dict):
             has_model_config = all(isinstance(value, ModelConfig) for value in config.values())
             assert has_model_config, f"Model configuration for '{model_name}' must be a 'ModelConfig' object."
