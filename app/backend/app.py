@@ -102,7 +102,7 @@ PYRIT_COMPATIBLE = sys.version_info >= (3, 10) and sys.version_info < (3, 12)
 
 if PYRIT_COMPATIBLE:
 
-    from evaluation.evaluate import run_evaluation_by_request
+    from evaluation.evaluate import run_evaluation_from_config
     from evaluation.generate import generate_test_qa_data
     from evaluation.service_setup import (
         get_openai_config_dict,
@@ -386,7 +386,7 @@ if PYRIT_COMPATIBLE:
         save_config(config, "evaluation" / temp_config_path)
 
         evaluation_task = asyncio.create_task(
-            run_evaluation_by_request(
+            run_evaluation_from_config(
                 EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, target_url=BACKEND_URL
             )
         )
@@ -398,10 +398,10 @@ if PYRIT_COMPATIBLE:
                 evaluation_task.cancel()
                 return jsonify({"error": "Connection Lost, evaluation task was cancelled"}), 500
 
-        result = await evaluation_task
+        success, result = await evaluation_task
 
         # if evaluation failed
-        if result is str:
+        if not success:
             evaluation_task.cancel()
             return jsonify({"error": result}), 500
 

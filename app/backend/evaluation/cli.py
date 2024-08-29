@@ -78,13 +78,13 @@ def evaluate(
         file_okay=True,
     ),
 ):
-    result = asyncio.run(
+    success, result = asyncio.run(
         run_evaluation_from_config(EVALUATION_DIR, load_config(config), num_questions, target_url, report_output)
     )
-    if result:
-        typer.echo("Evaluation completed successfully")
+    if success:
+        typer.echo(f"Evaluation completed successfully, results saved to: {result.absolute().as_posix()}")
     else:
-        typer.echo("Evaluation failed")
+        typer.echo("Evaluation failed: " + result)
 
 
 @app.command()
