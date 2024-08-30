@@ -118,7 +118,7 @@ bp = Blueprint("routes", __name__, static_folder="static")
 mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:50505")
+BACKEND_URI = os.getenv("BACKEND_URI", "http://127.0.0.1:50505")
 
 
 @bp.route("/")
@@ -386,7 +386,7 @@ if PYRIT_COMPATIBLE:
 
         evaluation_task = asyncio.create_task(
             run_evaluation_from_config(
-                EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, target_url=BACKEND_URL
+                EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions, target_url=BACKEND_URI
             )
         )
 
