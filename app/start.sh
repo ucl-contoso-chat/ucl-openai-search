@@ -11,19 +11,12 @@ done <<EOF
 $(azd env get-values)
 EOF
 
-cd backend/evaluation
-while IFS='=' read -r key value; do
-    [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
-    value=$(echo "$value" | sed 's/^"//' | sed 's/"$//')
-    export "$key=$value";
-done < .env
-
 if [ $? -ne 0 ]; then
     echo "Failed to load environment variables from azd environment"
     exit $?
 fi
 
-cd ../../../
+cd ../
 echo 'Creating python virtual environment ".venv"'
 python3 -m venv .venv
 
