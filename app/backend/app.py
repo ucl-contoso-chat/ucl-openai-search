@@ -118,6 +118,10 @@ bp = Blueprint("routes", __name__, static_folder="static")
 mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 
+os.environ["BACKEND_URI"] = (
+    f"https://{os.getenv('WEBSITE_HOSTNAME')}" if os.getenv("WEBSITE_HOSTNAME") else "http://localhost:50505"
+)
+
 
 @bp.route("/")
 async def index():
