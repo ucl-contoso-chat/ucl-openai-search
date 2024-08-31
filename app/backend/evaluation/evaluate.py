@@ -127,7 +127,7 @@ async def run_evaluation(
     num_questions: int = None,
 ):
     """Run evaluation on the provided test data."""
-    # try:
+
     logger.info("Running evaluation using data from %s", testdata_path)
     testdata = load_jsonl(testdata_path)
     if num_questions:
@@ -180,9 +180,7 @@ async def run_evaluation(
 
     summary = dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
     plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
-    # except Exception as e:
-    #     logger.error("Evaluation was terminated early due to an error ⬆")
-    #     raise e
+
     return (summary, questions_with_ratings_dict)
 
 

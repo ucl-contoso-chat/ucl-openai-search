@@ -153,7 +153,7 @@ def red_teaming(
     ),
     prompt_target: Optional[str] = typer.Option(
         default="application",
-        help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'. use 'application' will use the first model in the config models list.",
+        help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'.",
     ),
     target_url: Optional[str] = typer.Option(
         help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
