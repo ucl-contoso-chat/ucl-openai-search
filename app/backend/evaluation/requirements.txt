@@ -12,6 +12,7 @@ aioconsole==0.7.1
     # via pyrit
 aiohttp==3.9.5
     # via
+    #   -r requirements.in
     #   aiohttp-retry
     #   azureml-metrics
     #   datasets
