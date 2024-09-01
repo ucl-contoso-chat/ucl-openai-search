@@ -23,7 +23,7 @@
     "forwardPorts": [
         50505
     ],
-    "postCreateCommand": "",
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libcairo2-dev",
     "remoteUser": "vscode",
     "hostRequirements": {
         "memory": "8gb"
