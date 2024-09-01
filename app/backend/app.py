@@ -108,7 +108,7 @@ if PYRIT_COMPATIBLE:
         get_openai_config_dict,
         get_search_client,
     )
-    from evaluation.utils import load_config, save_config, save_jsonl
+    from evaluation.utils import save_jsonl
 
     BACKEND_DIR = Path(__file__).parent
     EVALUATION_DIR = BACKEND_DIR / "evaluation"
@@ -382,13 +382,7 @@ if PYRIT_COMPATIBLE:
         config["testdata_path"] = "input/input_temp.jsonl"
         config["results_dir"] = "results"
 
-        temp_config_path = Path("config_temp.json")
-
-        save_config(config, "evaluation" / temp_config_path)
-
-        evaluation_task = asyncio.create_task(
-            run_evaluation_from_config(EVALUATION_DIR, load_config(EVALUATION_DIR / temp_config_path), num_questions)
-        )
+        evaluation_task = asyncio.create_task(run_evaluation_from_config(EVALUATION_DIR, config, num_questions))
 
         while not evaluation_task.done():
             try:
