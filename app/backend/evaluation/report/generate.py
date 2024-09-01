@@ -1,19 +1,16 @@
 import enum
-import json
 import os
+from collections import defaultdict
 from os import path
 from pathlib import Path
+from typing import Optional
 
 import preppy
 
 from evaluation.evaluate_metrics import metrics_by_name
 from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
-from evaluation.jsondict import condJSONSafe
-from evaluation.red_teaming import (
-    DISPLAY_LABEL_MAP,
-    EXPECTED_VALUE,
-)
-from evaluation.utils import load_jsonl
+from evaluation.red_teaming import DISPLAY_LABEL_MAP, EXPECTED_VALUE
+from evaluation.report.jsondict import condJSONSafe
 
 
 class RML2PDFEngine(enum.Enum):
@@ -23,68 +20,36 @@ class RML2PDFEngine(enum.Enum):
 
 
 RML2PDF_ENGINE = RML2PDFEngine.Z3C
-REPORT_TEMPLATE = Path("evaluation/report_template/eval_report.prep")
+REPORT_TEMPLATE = Path("evaluation/report/template.prep")
 EVAL_RESULTS_DIR = Path("evaluation/results/")
-DEFUALT_OUTPUT_PATH = Path("evaluation/report/eval_report.pdf")
+# FIXME: Output into a timestamped directory
+DEFAULT_OUTPUT_PATH = Path("evaluation/report/evaluation_report.pdf")
 
 
-def generate_eval_report_from_result_files(results_dir: str = "", output_path: str = ""):
-    if results_dir == "":
-        results_dir_ls = os.listdir(EVAL_RESULTS_DIR)
-        results_dir_ls.sort(reverse=True)
-        results_dir_ls = [d for d in results_dir_ls if path.isdir(path.join(EVAL_RESULTS_DIR, d))]
-        if len(results_dir_ls) == 0:
-            print("No evaluation results found.")
-        results_dir = path.join(EVAL_RESULTS_DIR, results_dir_ls[0])
-
-    with open(path.join(results_dir, "summary.json")) as eval_json_file:
-        summary = json.load(eval_json_file)
-
-    eval_results = load_jsonl(path.join(results_dir, "eval_results.jsonl"))
-
-    eval_questions = {}
-    for eval_result in eval_results:
-        model_name = eval_result["model_name"]
-        if model_name not in eval_questions:
-            eval_questions[model_name] = []
-        eval_questions[model_name].append(condJSONSafe(eval_result))
-
-    with open(path.join(results_dir, "scores.json")) as redteaming_json_file:
-        redteaming_result = json.load(redteaming_json_file)
-        for model in redteaming_result:
-            for i, score in enumerate(redteaming_result[model]):
-                redteaming_result[model][i] = condJSONSafe(score)
-
-    generate_eval_report(
-        summary, eval_questions, redteaming_result=redteaming_result, results_dir=results_dir, output_path=output_path
-    )
-
-
-def generate_eval_report(
+def generate_evaluation_report(
     summary: dict,
     eval_results: dict,
-    redteaming_result: dict = None,
-    results_dir: str = "",
-    output_path: str = "",
-    include_conversation: bool = False,
+    redteaming_result: Optional[dict],
+    results_dir: Optional[str],
+    output_path: Optional[str],
+    include_conversation: Optional[bool] = False,
 ):
-    if results_dir == "":
+    if results_dir is None:
         results_dir_ls = os.listdir(EVAL_RESULTS_DIR)
         results_dir_ls.sort(reverse=True)
         results_dir_ls = [d for d in results_dir_ls if path.isdir(path.join(EVAL_RESULTS_DIR, d))]
         if len(results_dir_ls) == 0:
-            print("No evaluation results found.")
+            raise ValueError("No evaluation results found.")
         results_dir = path.join(EVAL_RESULTS_DIR, results_dir_ls[0])
 
-    output_path = output_path if output_path != "" else DEFUALT_OUTPUT_PATH
+    output_path = DEFAULT_OUTPUT_PATH if output_path is None else output_path
 
     template = preppy.getModule(REPORT_TEMPLATE)
 
     model_summaries = []
-    for model in summary:
-        gpt_summary = {}
-        stat_summary = {}
-        for key, value in model["model_result"].items():
+    for model, result in summary.items():
+        gpt_summary, stat_summary = {}, {}
+        for key, value in result.items():
             if key in metrics_by_name:
                 metric = metrics_by_name[key]
                 value["title"] = metric.DISPLAY_NAME
@@ -97,11 +62,10 @@ def generate_eval_report(
         gpt_summary = condJSONSafe(gpt_summary)
         stat_summary = condJSONSafe(stat_summary)
         model_summaries.append(
-            condJSONSafe({"model_name": model["model_name"], "gpt_summary": gpt_summary, "stat_summary": stat_summary})
+            condJSONSafe({"model_name": model, "gpt_summary": gpt_summary, "stat_summary": stat_summary})
         )
 
-    conversation_results = {}
-
+    conversation_results = defaultdict(list)
     for model_name, questions in eval_results.items():
         for res in questions:
             metric_values = []
@@ -128,8 +92,6 @@ def generate_eval_report(
                 else:
                     conversasion_data[key] = value
             conversasion_data["metrics"] = condJSONSafe(metric_values)
-            if model_name not in conversation_results:
-                conversation_results[model_name] = []
             conversation_results[model_name].append(condJSONSafe(conversasion_data))
 
     conversation_results = condJSONSafe(conversation_results)
@@ -175,9 +137,9 @@ def generate_eval_report(
 
         redteaming_result = condJSONSafe(redteaming_summary)
 
-        diagrams["redteaming_radar_path"] = path.join(results_dir, "red_teaming_results.png")
+        diagrams["redteaming_results_table_path"] = path.join(results_dir, "red_teaming_results.png")
 
-    passin_data = dict(
+    passing_data = dict(
         total_questions=num_questions,
         summary=model_summaries,
         conversation_logs=conversation_results,
@@ -187,10 +149,10 @@ def generate_eval_report(
         include_conversation=include_conversation,
     )
 
-    rml = template.getOutput(passin_data, quoteFunc=preppy.stdQuote)
+    rml = template.getOutput(passing_data, quoteFunc=preppy.stdQuote)
     rml = str(rml, encoding="utf-8")
 
-    rml_path = path.join(path.dirname(output_path), "eval_report.rml")
+    rml_path = path.join(path.dirname(output_path), "evaluation_report.rml")
     with open(rml_path, "w+") as f:
         f.write(rml)
 

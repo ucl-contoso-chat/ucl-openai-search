@@ -101,7 +101,7 @@ from templates.supported_models import get_supported_models
 PYRIT_COMPATIBLE = sys.version_info >= (3, 10) and sys.version_info < (3, 12)
 
 if PYRIT_COMPATIBLE:
-
+    from evaluation.config import get_evaluation_config, get_red_teaming_config
     from evaluation.evaluate import run_evaluation_from_config
     from evaluation.generate import generate_test_qa_data
     from evaluation.service_setup import (
@@ -373,7 +373,8 @@ if PYRIT_COMPATIBLE:
             return jsonify({"message": "No application setting config part in the request", "status": "failed"}), 400
 
         input_data_file = request_files.get("input_data")
-        num_questions = int(request_form.get("num_questions", 0))
+        num_questions_str = request_form.get("num_questions", "")
+        num_questions = None if num_questions_str == "" else int(num_questions_str)
         config = json.loads(request_form.get("config", "{}"))
 
         if input_data_file is not None:
@@ -381,8 +382,31 @@ if PYRIT_COMPATIBLE:
         save_jsonl(input_data, Path("./evaluation/input/input_temp.jsonl"))
         config["testdata_path"] = "input/input_temp.jsonl"
         config["results_dir"] = "results"
+        config["scorer_dir"] = "scorer_definitions"
+        config["prompt_target"] = "application"
 
-        evaluation_task = asyncio.create_task(run_evaluation_from_config(EVALUATION_DIR, config, num_questions))
+        evaluation_config = get_evaluation_config(
+            enabled=config.get("run_evaluation", True),
+            num_questions=num_questions,
+            target_url=config.get("target_url"),
+        )
+        red_teaming_config = get_red_teaming_config(
+            enabled=config.get("run_red_teaming", True),
+            scorer_dir=Path(config.get("scorer_dir")),
+            prompt_target=config.get("prompt_target"),
+            max_turns=config.get("red_teaming_max_turns"),
+            config=config,
+            target_url=config.get("target_url"),
+        )
+
+        evaluation_task = asyncio.create_task(
+            run_evaluation_from_config(
+                working_dir=EVALUATION_DIR,
+                config=config,
+                evaluation_config=evaluation_config,
+                red_teaming_config=red_teaming_config,
+            )
+        )
 
         while not evaluation_task.done():
             try:
@@ -391,17 +415,14 @@ if PYRIT_COMPATIBLE:
                 evaluation_task.cancel()
                 return jsonify({"error": "Connection Lost, evaluation task was cancelled"}), 500
 
-        success, result = await evaluation_task
+        report_path = await evaluation_task
 
         # if evaluation failed
-        if not success:
+        if not report_path:
             evaluation_task.cancel()
-            return jsonify({"error": result}), 500
-
-        report_path = result / "evaluation_report.pdf"
+            return jsonify({"error": "Evaluation was terminated early due to an error"}), 500
 
         try:
-            # Save the file in memory and remove the original file
             return_data = io.BytesIO()
             with open(report_path, "rb") as fo:
                 return_data.write(fo.read())

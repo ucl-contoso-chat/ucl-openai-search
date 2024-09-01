@@ -1,10 +1,10 @@
 """
-This source file is taken from Reortlab official sample:
+This source file is taken from Reportlab official sample:
 https://docs.reportlab.com/rml/tutorials/fund-reports-json-to-pdf/
 
-Functions and classes in this code are used for converting JSON dict to a preppy compatible object.
+This module is used for converting JSON dicts to a preppy compatible objects.
 
-------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
 
 Utilities for working with JSON and json-like structures - deeply nested Python dicts and lists
 

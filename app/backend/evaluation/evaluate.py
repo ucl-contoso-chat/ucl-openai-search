@@ -6,6 +6,7 @@ import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Optional
 
 import aiofiles
 import aiohttp
@@ -16,6 +17,7 @@ from promptflow.core import AzureOpenAIModelConfiguration
 from rich.progress import track
 
 from evaluation import service_setup
+from evaluation.config import EvaluationConfig, RedTeamingConfig
 from evaluation.evaluate_metrics import metrics_by_name
 from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
 from evaluation.plotting import (
@@ -25,16 +27,11 @@ from evaluation.plotting import (
     plot_radar_chart,
 )
 from evaluation.red_teaming import run_red_teaming
-from evaluation.report_generator import (
-    generate_eval_report,
+from evaluation.report.generate import (
+    generate_evaluation_report,
 )
 from evaluation.service_setup import get_models_async
 from evaluation.utils import load_jsonl
-
-EVALUATION_RESULTS_DIR = "gpt_evaluation"
-
-EVALUATION_DIR = Path(__file__).parent
-DEFAULT_SCORER_DIR = EVALUATION_DIR / "scorer_definitions"
 
 logger = logging.getLogger("evaluation")
 
@@ -127,7 +124,6 @@ async def run_evaluation(
     num_questions: int = None,
 ):
     """Run evaluation on the provided test data."""
-
     logger.info("Running evaluation using data from %s", testdata_path)
     testdata = load_jsonl(testdata_path)
     if num_questions:
@@ -187,20 +183,16 @@ async def run_evaluation(
 async def run_evaluation_from_config(
     working_dir: Path,
     config: dict,
-    num_questions: int = None,
-    target_url: str = None,
-    report_output: Path = None,
+    evaluation_config: EvaluationConfig,
+    red_teaming_config: RedTeamingConfig,
+    report_output: Optional[Path] = None,
 ):
     """Run evaluation using the provided configuration file. If run_red_teaming is enabled in config, run red teaming as well."""
-
-    run_redteaming = config.get("run_red_teaming", False)
-    redteaming_max_turns = config.get("red_teaming_max_turns", 1)
-
+    if not evaluation_config.enabled and not red_teaming_config.enabled:
+        logger.error("Both evaluation and red teaming are disabled. Exiting...")
+        return None
     timestamp = int(time.time())
-    if run_redteaming:
-        results_dir = working_dir / config["results_dir"] / f"experiment-{timestamp}"
-    else:
-        results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
+    results_dir = working_dir / config["results_dir"] / f"experiment-{timestamp}"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     openai_config = service_setup.get_openai_config()
@@ -218,7 +210,9 @@ async def run_evaluation_from_config(
             "latency",
         ],
     )
-    get_model_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/getmodels"
+    target_url = evaluation_config.target_url
+    base_url = os.environ.get("BACKEND_URI") if target_url is None else target_url
+    get_model_url = base_url + "/getmodels"
     compared_models = config.get("models")
     all_models = await get_models_async(get_model_url)
 
@@ -230,39 +224,36 @@ async def run_evaluation_from_config(
         )
         return False
 
-    target_url = (os.environ.get("BACKEND_URI") if target_url is None else target_url) + "/ask"
+    ask_url = base_url + "/ask"
 
-    summary, question_results = await run_evaluation(
-        openai_config=openai_config,
-        testdata_path=testdata_path,
-        results_dir=results_dir,
-        target_url=target_url,
-        passing_rate=passing_rate,
-        max_workers=max_workers,
-        target_parameters=target_parameters,
-        requested_metrics=requested_metrics,
-        compared_models=compared_models,
-        num_questions=num_questions,
-    )
+    summary, question_results = None, None
+    if evaluation_config.enabled:
+        summary, question_results = await run_evaluation(
+            openai_config=openai_config,
+            testdata_path=testdata_path,
+            results_dir=results_dir,
+            target_url=ask_url,
+            passing_rate=passing_rate,
+            max_workers=max_workers,
+            target_parameters=target_parameters,
+            requested_metrics=requested_metrics,
+            compared_models=compared_models,
+            num_questions=evaluation_config.num_questions,
+        )
 
     red_teaming_results = None
-    # Run red teaming if enabled
-    if run_redteaming:
-        red_teaming_llm = service_setup.get_openai_target()
-        red_teaming_target = service_setup.get_app_target(config, target_url)
-
+    if red_teaming_config.enabled:
         red_teaming_results = await run_red_teaming(
             working_dir=working_dir,
-            scorer_dir=DEFAULT_SCORER_DIR,
+            scorer_dir=red_teaming_config.scorer_dir,
             config=config,
-            red_teaming_llm=red_teaming_llm,
-            prompt_target=red_teaming_target,
-            max_turns=redteaming_max_turns,
+            red_teaming_llm=red_teaming_config.red_teaming_llm,
+            prompt_target=red_teaming_config.prompt_target,
+            max_turns=red_teaming_config.max_turns,
             results_dir=results_dir,
         )
 
-    if summary is not None:
-
+    if summary is not None or red_teaming_results is not None:
         results_config_path = results_dir / "config.json"
         logger.info("Saving original config file back to %s", results_config_path)
 
@@ -278,11 +269,11 @@ async def run_evaluation_from_config(
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
 
-        if report_output is None or report_output == "":
+        if report_output is None:
             report_output = results_dir / "evaluation_report.pdf"
 
         include_conversation = config.get("include_conversation", False)
-        generate_eval_report(
+        generate_evaluation_report(
             summary,
             question_results,
             redteaming_result=red_teaming_results,
@@ -292,34 +283,30 @@ async def run_evaluation_from_config(
         )
         logger.info("PDF Report generated at %s", os.path.abspath(report_output))
 
-        return True, results_dir
+        return report_output
     else:
         shutil.rmtree(results_dir)
         logger.error("Evaluation was terminated early due to an error ⬆")
-        return False, "Evaluation was terminated early"
+        return None
 
 
-def dump_summary(rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
-    """Save the summary to a file."""
+def dump_summary(
+    rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path
+) -> dict:
+    """Save the summary to a file and return it as a dict."""
+    summary = {}
+    for model, results in rated_questions_for_models.items():
+        rated_questions_df = pd.DataFrame(results)
+        summary[model] = {
+            metric.METRIC_NAME: metric.get_aggregate_stats(rated_questions_df, passing_rate)
+            for metric in requested_metrics
+        }
 
-    summaries = []
-    for key in rated_questions_for_models:
-        rated_questions = rated_questions_for_models[key]
-        summary = {}
-        summary["model_name"] = key
-        rated_questions_df = pd.DataFrame(rated_questions)
-        results_per_model = {}
-        for metric in requested_metrics:
-            metric_result = metric.get_aggregate_stats(rated_questions_df, passing_rate)
-            results_per_model[metric.METRIC_NAME] = metric_result
-        summary["model_result"] = results_per_model
-        summaries.append(summary)
-
-    with open(results_dir / "summary.json", "a", encoding="utf-8") as summary_file:
-        summary_file.write(json.dumps(summaries, indent=4))
+    with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
+        summary_file.write(json.dumps(summary, indent=4))
     logger.info("Evaluation results saved in %s", results_dir)
 
-    return summaries
+    return summary
 
 
 def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, passing_rate: int, results_dir: Path):

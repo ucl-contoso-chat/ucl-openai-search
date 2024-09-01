@@ -66,12 +66,12 @@ On the other hand, to use instances deployed on openai.com, you need to set the 
 
 ```shell
 # Shell
-export OPENAICOM_ORGANIZATION="<openai-organization-name>"
-export OPENAICOM_KEY="<access-key>"
+export OPENAI_ORGANIZATION="<openai-organization-name>"
+export OPENAI_API_KEY="<access-key>"
 
 # Powershell
-$env:OPENAICOM_ORGANIZATION = "<openai-organization-name>"
-$env:OPENAICOM_KEY = "<access-key>"
+$env:OPENAI_ORGANIZATION = "<openai-organization-name>"
+$env:OPENAI_API_KEY = "<access-key>"
 ```
 
 ## Generate synthetic data for evaluation
