@@ -108,10 +108,10 @@ def get_openai_config() -> ModelConfiguration:
         openai_config.model = os.environ["OPENAI_GPT_MODEL"]
     else:
         logger.info("Using OpenAI Service with API Key from OPENAICOM_KEY")
-        openai_config = OpenAIModelConfiguration(
-            model=os.environ["OPENAI_GPT_MODEL"],
-            api_key=os.environ.get("AZURE_OPENAI_KEY"),
-            organization=os.environ["OPENAICOM_ORGANIZATION"],
+        openai_config = AzureOpenAIModelConfiguration(
+            model=os.environ["AZURE_OPENAI_CHATGPT_MODEL"],
+            api_key=os.environ.get("OPENAI_API_KEY"),
+            organization=os.environ["OPENAI_ORGANIZATION"],
         )
     return openai_config
 
@@ -142,9 +142,9 @@ def get_openai_config_dict() -> dict:
         logger.info("Using OpenAI Service with API Key from OPENAICOM_KEY")
         openai_config = {
             "api_type": "openai",
-            "api_key": os.environ["OPENAICOM_KEY"],
-            "organization": os.environ["OPENAICOM_ORGANIZATION"],
-            "model": os.environ["OPENAI_GPT_MODEL"],
+            "api_key": os.environ["OPENAI_API_KEY"],
+            "organization": os.environ["OPENAI_ORGANIZATION"],
+            "model": os.environ["AZURE_OPENAI_CHATGPT_MODEL"],
             "deployment": "none-needed-for-openaicom",
         }
     return openai_config
@@ -206,7 +206,7 @@ def get_openai_target() -> PromptChatTarget:
             return AzureOpenAITextChatTarget(deployment_name=deployment, endpoint=endpoint, use_aad_auth=True)
     else:
         logger.info("Using OpenAI Chat Target")
-        return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])
+        return OpenAIChatTarget(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def get_app_target(config: dict, target_url: str = None) -> PromptChatTarget:

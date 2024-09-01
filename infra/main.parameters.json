@@ -89,6 +89,9 @@
     "backendServiceName": {
       "value": "${AZURE_APP_SERVICE}"
     },
+    "appServiceLocation":{
+      "value": "${AZURE_APP_SERVICE_LOCATION=ukwest}"
+    },
     "chatGptModelName":{
       "value": "${AZURE_OPENAI_CHATGPT_MODEL}"
     },
