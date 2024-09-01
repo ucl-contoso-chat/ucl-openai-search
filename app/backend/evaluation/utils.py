@@ -20,10 +20,3 @@ def save_jsonl(data: list[dict], path: Path):
     with open(path, "w", encoding="utf-8") as f:
         for item in data:
             f.write(json.dumps(item) + "\n")
-
-
-def save_config(config: dict, path: Path):
-    """Save a JSON configuration file."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=4)
