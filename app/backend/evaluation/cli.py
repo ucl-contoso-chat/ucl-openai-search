@@ -9,11 +9,9 @@ import typer
 from rich.logging import RichHandler
 
 from evaluation import service_setup
+from evaluation.config import get_evaluation_config, get_red_teaming_config, load_config
 from evaluation.evaluate import run_evaluation_from_config
 from evaluation.generate import generate_test_qa_answer, generate_test_qa_data
-from evaluation.red_teaming import run_red_teaming
-from evaluation.service_setup import get_models_async
-from evaluation.utils import load_config
 
 EVALUATION_DIR = Path(__file__).parent
 DEFAULT_CONFIG_PATH = EVALUATION_DIR / "config.json"
@@ -36,7 +34,7 @@ logger.setLevel(logging.INFO)
 dotenv.load_dotenv(override=True)
 
 get_model_url = os.environ.get("BACKEND_URI") + "/getmodels"
-available_models = asyncio.run(get_models_async(get_model_url))
+available_models = asyncio.run(service_setup.get_models_async(get_model_url))
 
 
 def int_or_none(raw: str) -> Optional[int]:
@@ -48,7 +46,14 @@ def str_or_none(raw: str) -> Optional[str]:
 
 
 @app.command()
-def evaluate(
+def run(
+    evaluation: bool = typer.Option(True, help="Enable or disable running the evaluation."),
+    red_teaming: bool = typer.Option(True, help="Enable or disable running the red teaming evaluation."),
+    target_url: Optional[str] = typer.Option(
+        help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
+        default=None,
+        parser=str_or_none,
+    ),
     config: Path = typer.Option(
         exists=True,
         dir_okay=False,
@@ -60,30 +65,62 @@ def evaluate(
         ),
         default=DEFAULT_CONFIG_PATH,
     ),
-    num_questions: Optional[int] = typer.Option(
-        help="Number of questions to evaluate (defaults to all if not specified).",
-        default=None,
-        parser=int_or_none,
-    ),
-    target_url: Optional[str] = typer.Option(
-        help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
-        default=None,
-        parser=str_or_none,
-    ),
     report_output: Optional[Path] = typer.Option(
-        help="Path to the PDF report output file (defaults to not generating a report).",
+        help="Path for the PDF report output file to be generated.",
         default=None,
         dir_okay=False,
         file_okay=True,
     ),
+    evaluation_num_questions: Optional[int] = typer.Option(
+        help="Number of questions to use for GPT evaluation (defaults to all if not specified).",
+        default=None,
+        parser=int_or_none,
+    ),
+    red_teaming_prompt_target: Optional[str] = typer.Option(
+        default="application",
+        help="Specify the target of the red teaming approach. Must be one of: 'application', 'azureopenai', 'azureml'.",
+    ),
+    red_teaming_scorer_dir: Path = typer.Option(
+        exists=True,
+        dir_okay=True,
+        file_okay=False,
+        help="Path to the directory where the scorer YAML files are stored.",
+        default=DEFAULT_SCORER_DIR,
+    ),
+    red_teaming_max_turns: int = typer.Option(
+        default=3, help="The maximum number of turns to apply the attack strategy for."
+    ),
 ):
-    success, result = asyncio.run(
-        run_evaluation_from_config(EVALUATION_DIR, load_config(config), num_questions, target_url, report_output)
+    config = load_config(config)
+
+    evaluation_config = get_evaluation_config(
+        enabled=evaluation,
+        num_questions=evaluation_num_questions,
+        target_url=target_url,
     )
-    if success:
-        typer.echo(f"Evaluation completed successfully, results saved to: {result.absolute().as_posix()}")
+
+    red_teaming_config = get_red_teaming_config(
+        enabled=red_teaming,
+        scorer_dir=red_teaming_scorer_dir,
+        prompt_target=red_teaming_prompt_target,
+        max_turns=red_teaming_max_turns,
+        config=config,
+        target_url=target_url,
+    )
+
+    report_path = asyncio.run(
+        run_evaluation_from_config(
+            working_dir=EVALUATION_DIR,
+            config=config,
+            evaluation_config=evaluation_config,
+            red_teaming_config=red_teaming_config,
+            report_output=report_output,
+        )
+    )
+    if report_path:
+        typer.echo(f"Evaluation completed successfully, results saved to {report_path.absolute().as_posix()}")
     else:
-        typer.echo("Evaluation failed: " + result)
+        typer.echo("Evaluation failed")
 
 
 @app.command()
@@ -128,61 +165,6 @@ def generate_answers(
         openai_config=service_setup.get_openai_config(),
         question_path=input,
         output_file=output,
-    )
-
-
-@app.command()
-def red_teaming(
-    config: Path = typer.Option(
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        help=(
-            "Path to the configuration JSON file."
-            " Edit the JSON file to specify the list of models to be evaluated/compared."
-            f" The available models are: {', '.join(available_models)}"
-        ),
-        default=DEFAULT_CONFIG_PATH,
-    ),
-    scorer_dir: Path = typer.Option(
-        exists=True,
-        dir_okay=True,
-        file_okay=False,
-        help="Path to the directory where the scorer YAML files are stored.",
-        default=DEFAULT_SCORER_DIR,
-    ),
-    prompt_target: Optional[str] = typer.Option(
-        default="application",
-        help="Specify the target for the prompt. Must be one of: 'application', 'azureopenai', 'azureml'.",
-    ),
-    target_url: Optional[str] = typer.Option(
-        help="URL of the target service to evaluate (defaults to the value of the BACKEND_URI environment variable).",
-        default=None,
-        parser=str_or_none,
-    ),
-    max_turns: int = typer.Option(default=3, help="The maximum number of turns to apply the attack strategy for."),
-):
-    config = load_config(config)
-    red_team = service_setup.get_openai_target()
-    if prompt_target == "application":
-        target = service_setup.get_app_target(config, target_url)
-    elif prompt_target == "azureopenai":
-        target = service_setup.get_openai_target()
-    elif prompt_target == "azureml":
-        target = service_setup.get_azure_ml_chat_target()
-    else:
-        raise ValueError(
-            f"Invalid prompt_target value: {prompt_target}. Must be one of 'application', 'azureopenai', 'azureml'"
-        )
-    asyncio.run(
-        run_red_teaming(
-            working_dir=EVALUATION_DIR,
-            scorer_dir=scorer_dir,
-            config=config,
-            red_teaming_llm=red_team,
-            prompt_target=target,
-            max_turns=max_turns,
-        )
     )
 
 

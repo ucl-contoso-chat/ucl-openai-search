@@ -13,10 +13,11 @@ Before using the evaluation scripts, you'll need to:
 
 - Have a live deployment of the chat application on Azure
 - Be on an Azure-authenticated shell session.
-  You can run the following command to ensure you're logged in before proceeding:
+  You can run the following commands to ensure you're logged in before proceeding:
 
   ```shell
   az login
+  azd auth login
   ```
 
 - Create a `.env` file with environment variables required by the evaluation scripts.
@@ -66,12 +67,12 @@ On the other hand, to use instances deployed on openai.com, you need to set the 
 
 ```shell
 # Shell
-export OPENAICOM_ORGANIZATION="<openai-organization-name>"
-export OPENAICOM_KEY="<access-key>"
+export OPENAI_ORGANIZATION="<openai-organization-name>"
+export OPENAI_API_KEY="<access-key>"
 
 # Powershell
-$env:OPENAICOM_ORGANIZATION = "<openai-organization-name>"
-$env:OPENAICOM_KEY = "<access-key>"
+$env:OPENAI_ORGANIZATION = "<openai-organization-name>"
+$env:OPENAI_API_KEY = "<access-key>"
 ```
 
 ## Generate synthetic data for evaluation
@@ -103,16 +104,17 @@ python -m evaluation generate-answers \
   --output=evaluation/output/qa_answers.jsonl
 ```
 
-## Run evaluation
+## Run evaluation and red teaming
 
-You can run the evaluation script with the following command, specifying the path to the configuration file
-(the provided [evaluation/config.json](./config.json) will be used by default; feel free to edit it or provide your
-own. You should specify the models you want to run evaluation on in the configuration file, with more than one models implying a comparison between them. You can view the available models names with the '--help' option), as well as the number of questions considered (by default, all questions found in the input file will be consumed).
+You can run the evaluation process with the following command. The provided configuration file
+[evaluation/config.json](./config.json) will be used by default; feel free to edit it or provide your own.
+You should specify the models you want to run evaluation on in the configuration file, with more than one
+models implying a comparison between them. You can view the available models' names, as well as all options
+provided by the CLI with the `--help` option. By default, the following command will run both the metrics-based
+GPT evaluation and the red teaming approach.
 
 ```shell
-python -m evaluation evaluate \
-  --config=evaluation/config.json \
-  --num-questions=2
+python -m evaluation run
 ```
 
 ### Specify desired evaluation metrics
@@ -134,10 +136,10 @@ These metrics are calculated by sending a call to the GPT model, asking it to pr
 - [`gpt_fluency`](https://learn.microsoft.com/azure/ai-studio/concepts/evaluation-metrics-built-in#ai-assisted-fluency) measures the grammatical proficiency of a generative AI's predicted answer.
 - [`f1_score`](https://learn.microsoft.com/azure/ai-studio/concepts/evaluation-metrics-built-in#traditional-machine-learning-f1-score) Measures the ratio of the number of shared words between the model generation and the ground truth answers.
 
-### GPT evaluation results
+### Evaluation results
 
-The results of each evaluation are stored in the specified results directory, in a timestamped
-`gpt_evaluation/experiment-XXXXXXXXXX` subdirectory that contains:
+The results of each evaluation run are stored in the specified results directory, in a timestamped
+`experiment-XXXXXXXXXX` subdirectory that contains:
 
 - `config.json`: The original config used for the run. This is useful for reproducing the run.
 - `eval_results.jsonl`: Each question and answer, along with the GPT metrics for each QA pair.
@@ -146,57 +148,7 @@ The results of each evaluation are stored in the specified results directory, in
 - `evaluation_results.png`: Bar charts for the pass count, pass rate and average rating of the evaluation metrics.
 - `evaluation_stat_boxplot.png`: Box charts for the evaluation results corresponding to the answer length, latency,
    and F1 score.
-- `summary.json`: The overall results, e.g. average GPT metrics.
-
-## Run red teaming evaluation
-
-When running the red teaming script, you can opt to execute it against the entire chat application (recommended) or
-just the model used as part of it.
-
-### Run the red teaming script against the entire application
-
-The default and recommended target of the red teaming attack is the entire application (specified explicitly below):
-
-```shell
-python -m evaluation red-teaming \
-  --prompt-target="application" \
-  --scorer-dir=evaluation/scorer_definitions \
-  --config=evaluation/config.json
-```
-
-`scorer-dir` is a directory that contains the customised scorer YAML files (set to the `evaluation/scorer_definitions` directory by default). Each scorer is defined by a YAML file that needs to contain the following fields:
-
-- `category`
-- `true_description`
-- `false_description`
-
-When running red teaming against the entire application, you can specify the models to be compared
-via the `models` list in [config.json](./config.json).
-You can view the available model names with the '--help' option.
-
-### Run the red teaming script against the target OpenAI model on Azure
-
-You can set the `--prompt-target` to `"azureopenai"` to target an Azure-hosted OpenAI model:
-
-```shell
-python -m evaluation red-teaming \
-  --prompt-target="azureopenai" \
-  --scorer-dir=evaluation/scorer_definitions \
-  --config=evaluation/config.json
-```
-
-### Run the red teaming script against other ML models on Azure
-
-You can set the `--prompt-target` to `"azureml"` to target a different Azure-hosted model:
-
-```shell
-python -m evaluation red-teaming \
-  --prompt-target="azureml" \
-  --scorer-dir=evaluation/scorer_definitions \
-  --config=evaluation/config.json
-```
-
-### View red teaming evaluation results
-
-The results of each red teaming experiment are stored in the specified results directory, in a timestamped
-`red_teaming/experiment-XXXXXXXXXX` subdirectory that contains a `scores.json` file with the result and a `red_teaming_results.png` with a tabular visualisation.
+- `summary.json`: The overall GPT evaluation results, e.g. average GPT metrics.
+- `scores.json`: The results of the red teaming approach.
+- `red_teaming_results.png`: A tabular visualisation of the red teaming results.
+- `evaluation_report.pdf`: A PDF report containing the graphs and aggregated metrics for the completed evaluation run.

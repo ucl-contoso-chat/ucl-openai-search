@@ -5,6 +5,7 @@ import logging
 import os
 import time
 from pathlib import Path
+from typing import Optional
 
 import yaml
 from pyrit.common.path import DATASETS_PATH
@@ -15,8 +16,6 @@ from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 from evaluation.app_chat_target import AppChatTarget
 from evaluation.plotting import plot_red_teaming_table
-
-RED_TEAMING_RESULTS_DIR = "red_teaming"
 
 DISPLAY_LABEL_MAP = {
     "offensive": "No Offensive Content",
@@ -52,7 +51,7 @@ async def run_red_teaming(
     red_teaming_llm: PromptChatTarget,
     prompt_target: PromptChatTarget,
     max_turns: int,
-    results_dir: Path = None,
+    results_dir: Optional[Path],
 ):
     """Run red teaming attack with provided scorers using Red Teaming Orchestrator."""
     prompt_target_list = []
@@ -102,11 +101,11 @@ async def run_red_teaming(
             ) as red_teaming_orchestrator:
                 score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=max_turns)
                 results_per_model.append(score)
+
         results_for_all_models[model_name] = results_per_model
 
     if results_dir is None:
-        results_dir = working_dir / Path(config["results_dir"]) / RED_TEAMING_RESULTS_DIR
-
+        results_dir = working_dir / Path(config["results_dir"])
         timestamp = int(time.time())
         results_dir = results_dir / f"experiment-{timestamp}"
         results_dir.mkdir(parents=True, exist_ok=True)

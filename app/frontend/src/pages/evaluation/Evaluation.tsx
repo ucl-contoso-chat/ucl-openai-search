@@ -25,7 +25,7 @@ export function Component(): JSX.Element {
     const [openItems, setOpenItems] = useState(["1"]);
     const [evalData, setEvalData] = useState<File | null>(null);
     const [numQuestions, setNumQuestions] = useState<number>(0);
-    const [numQuestionsToEval, setNumQuestionsToEval] = useState<number>(2);
+    const [numQuestionsToEval, setNumQuestionsToEval] = useState<number | null>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [selectedGPTMetrics, setSelectedGPTMetrics] = useState<{}[]>(gpt_metrics.map(metric => metric.name));
     const [selectedStatsMetrics, setSelectedStatsMetrics] = useState<{}[]>(stats_metrics.map(metric => metric.name));
@@ -55,7 +55,11 @@ export function Component(): JSX.Element {
     const [error, setError] = useState<unknown>();
 
     const onNumQuestionsToEvalChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
-        setNumQuestionsToEval(parseInt(newValue || "2"));
+        if (newValue === "") {
+            setNumQuestionsToEval(null);
+        } else {
+            setNumQuestionsToEval(parseInt(newValue || "2"));
+        }
     };
 
     const onTemperatureChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
@@ -194,7 +198,10 @@ export function Component(): JSX.Element {
             setError("Please select at least one Statistical metric to evaluate");
             return;
         }
-        if (numQuestionsToEval === 0) {
+        if (numQuestionsToEval === null) {
+            // An empty string is used to indicate that all questions should be evaluated
+            requestData.append("num_questions", "");
+        } else if (numQuestionsToEval === 0) {
             setInProgress(false);
             setError("Please enter the number of questions you want to evaluate");
             return;
@@ -288,10 +295,11 @@ export function Component(): JSX.Element {
                                         id={numQuestionsFieldId}
                                         className={styles.evaluateSettingsSeparator}
                                         label="Number of questions you want to evaluate"
+                                        placeholder="If no value is entered, all questions will be used"
                                         type="number"
                                         min={2}
                                         max={numQuestions}
-                                        defaultValue={numQuestionsToEval.toString()}
+                                        defaultValue={numQuestionsToEval !== null ? numQuestionsToEval.toString() : ""}
                                         onChange={onNumQuestionsToEvalChange}
                                         aria-labelledby={numQuestionsId}
                                     />

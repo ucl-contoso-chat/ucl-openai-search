@@ -60,9 +60,6 @@ param huggingFaceApiKey string = ''
 param defaultModel string = ''
 param useInjectionProtection bool = false
 
-param azureOpenaiEvalDeployment string = ''
-param azureOpenaiEvalEndpoint string = ''
-
 @description('Location for the OpenAI resource group')
 @allowed([ 'canadaeast', 'eastus', 'eastus2', 'francecentral', 'switzerlandnorth', 'uksouth', 'japaneast', 'northcentralus', 'australiaeast', 'swedencentral' ])
 @metadata({
@@ -103,9 +100,8 @@ param chatGptModelName string = ''
 param chatGptDeploymentName string = ''
 param chatGptDeploymentVersion string = ''
 param chatGptDeploymentCapacity int = 0
-var openaiGptModel = !empty(chatGptModelName) ? chatGptModelName : startsWith(openAiHost, 'azure') ? 'gpt-35-turbo' : 'gpt-3.5-turbo'
 var chatGpt = {
-  modelName: openaiGptModel
+  modelName: !empty(chatGptModelName) ? chatGptModelName : startsWith(openAiHost, 'azure') ? 'gpt-35-turbo' : 'gpt-3.5-turbo'
   deploymentName: !empty(chatGptDeploymentName) ? chatGptDeploymentName : 'chat'
   deploymentVersion: !empty(chatGptDeploymentVersion) ? chatGptDeploymentVersion : '0613'
   deploymentCapacity: chatGptDeploymentCapacity != 0 ? chatGptDeploymentCapacity : 30
@@ -334,7 +330,6 @@ module backend 'core/host/appservice.bicep' = {
       AZURE_AUTH_TENANT_ID: tenantIdForAuth
       AZURE_AUTHENTICATION_ISSUER_URI: authenticationIssuerUri
       HUGGINGFACE_API_KEY: huggingFaceApiKey
-      OPENAI_GPT_MODEL: openaiGptModel
       AZURE_OPENAI_EVAL_DEPLOYMENT: chatGpt.deploymentName
       AZURE_OPENAI_EVAL_ENDPOINT: openAi.outputs.endpoint
       DEFAULT_MODEL: defaultModel
@@ -841,6 +836,8 @@ output AZURE_OPENAI_RESOURCE_GROUP string = isAzureOpenAiHost ? openAiResourceGr
 output AZURE_OPENAI_CHATGPT_DEPLOYMENT string = isAzureOpenAiHost ? chatGpt.deploymentName : ''
 output AZURE_OPENAI_EMB_DEPLOYMENT string = isAzureOpenAiHost ? embedding.deploymentName : ''
 output AZURE_OPENAI_GPT4V_DEPLOYMENT string = isAzureOpenAiHost ? gpt4vDeploymentName : ''
+output AZURE_OPENAI_EVAL_DEPLOYMENT string = chatGpt.deploymentName
+output AZURE_OPENAI_EVAL_ENDPOINT string = openAi.outputs.endpoint
 
 output AZURE_SPEECH_SERVICE_ID string = useSpeechOutputAzure ? speech.outputs.resourceId : ''
 output AZURE_SPEECH_SERVICE_LOCATION string = useSpeechOutputAzure ? speech.outputs.location : ''

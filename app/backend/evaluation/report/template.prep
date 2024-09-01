@@ -1,5 +1,5 @@
 <!DOCTYPE document SYSTEM "rml.dtd">
-<document filename="eval_report.pdf">
+<document filename="evaluation_report.pdf">
 
     <template pageSize="a4" leftMargin="20mm" rightMargin="20mm" topMargin="20mm" bottomMargin="10mm" showBoundary="0">
         <pageTemplate id="main">
@@ -104,6 +104,7 @@
             </blockTable>
         {{endfor}}
 
+    <nextFrame/>
     <h2>Diagrams</h2>
 
     <illustration width="600" height="300">
@@ -122,6 +123,7 @@
     <para spaceAfter="5.0cm"></para>
 
     {{if include_conversation}}
+    <nextFrame/>
     <h2>Conversation Log</h2>
     {{for model, conversations in conversation_logs.items()}}
         <h3>Model: {{model}}</h3>
@@ -157,6 +159,7 @@
     {{endif}}
 
     {{if redteaming_results}}
+        <nextFrame/>
         <h2>Red Teaming Results</h2>
         {{for model, redteaming_result in redteaming_results.items()}}
         <h3>Model: {{model}}</h3>
@@ -172,10 +175,10 @@
             {{endfor}}
         {{endfor}}
     {{endif}}
-    {{if diagrams.redteaming_radar_path}}
-    <illustration width="480" height="360">
-        <image file="{{diagrams.redteaming_radar_path}}" preserveAspectRatio="1" x="30" y="0" width="480" height="360" />
-    </illustration>
+    {{if diagrams.redteaming_results_table_path}}
+        <illustration width="480" height="360">
+            <image file="{{diagrams.redteaming_results_table_path}}" preserveAspectRatio="1" x="30" y="0" width="480" height="360" />
+        </illustration>
     {{endif}}
     </story>
 
