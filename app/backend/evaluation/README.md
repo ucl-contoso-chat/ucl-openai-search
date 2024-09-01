@@ -115,14 +115,6 @@ python -m evaluation evaluate \
   --num-questions=2
 ```
 
-You can run the evaluation script on different models to compare between them. To do this, you need to specify the names of the models to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
-
-```shell
-python -m evaluation compare \
-  --config=evaluation/config.json \
-  --numquestions=2
-```
-
 ### Specify desired evaluation metrics
 
 The evaluation script will use the metrics specified in the `requested_metrics` field of the config JSON.
@@ -203,18 +195,6 @@ python -m evaluation red-teaming \
   --scorer-dir=evaluation/scorer_definitions \
   --config=evaluation/config.json
 ```
-
-### Run the red teaming comparison between different models
-
-When running the red teaming comparison, it is to run against the entire application:
-
-```shell
-python -m evaluation red-teaming-comparison \
-  --scorer-dir=evaluation/scorer_definitions \
-  --config=evaluation/config.json
-```
-
-You can specify the model names to be compared in [config.json](./config.json). You can view models names that you can choose from with the '--help' option.
 
 ### View red teaming evaluation results
 
