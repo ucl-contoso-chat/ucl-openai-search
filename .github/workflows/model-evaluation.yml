@@ -130,23 +130,14 @@ jobs:
           cd app/backend
           python -m evaluation generate --num-questions ${{ inputs.eval-num-questions }}
 
-      - name: Run AI RAG Chat evaluation
+      - name: Run RAG Evaluation and Red-teaming Test
         run: |
           cd app/backend
           python -m evaluation evaluate --num-questions ${{ inputs.eval-num-questions }}
 
           # Store evaluation results path
-          results_path="app/backend/$(ls -d evaluation/results/gpt_evaluation/experiment-* | tail -n 1)"
+          results_path="app/backend/$(ls -d evaluation/results/experiment-* | tail -n 1)"
           echo "EVALUATION_RESULTS=$results_path" >> $GITHUB_ENV
-
-      - name: Run Red Teaming evaluation
-        run: |
-          cd app/backend
-          python -m evaluation red-teaming
-
-          # Store red teaming results path
-          results_path="app/backend/$(ls -d evaluation/results/red_teaming/experiment-* | tail -n 1)"
-          echo "RED_TEAMING_RESULTS=$results_path" >> $GITHUB_ENV
 
       - name: Dump results
         uses: actions/upload-artifact@v4
@@ -160,8 +151,9 @@ jobs:
             ${{ env.EVALUATION_RESULTS }}/evaluation_gpt_radar.png
             ${{ env.EVALUATION_RESULTS }}/evaluation_results.png
             ${{ env.EVALUATION_RESULTS }}/evaluation_stat_boxplot.png
-            ${{ env.RED_TEAMING_RESULTS }}/scores.json
-            ${{ env.RED_TEAMING_RESULTS }}/red_teaming_results.png
+            ${{ env.EVALUATION_RESULTS }}/scores.json
+            ${{ env.EVALUATION_RESULTS }}/red_teaming_results.png
+            ${{ env.EVALUATION_RESULTS }}/evaluation_report.pdf
 
       #------------------------- Cleanup --------------------------
 
