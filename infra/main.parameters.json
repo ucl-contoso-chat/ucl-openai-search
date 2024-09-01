@@ -241,6 +241,9 @@
     },
     "runningOnAdo": {
       "value": "${TF_BUILD}"
+    },
+    "websitesContainerStartTimeLimit": {
+      "value": "${WEBSITES_CONTAINER_START_TIME_LIMIT=1200}"
     }
   }
 }

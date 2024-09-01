@@ -12,7 +12,7 @@
         "latency",
         "f1_score"
     ],
-    "models": ["GPT 3.5 Turbo", "Llama 3 8B Instruct", "Mistral AI 7B", "Phi 3 Mini 4K"],
+    "models": ["GPT 3.5 Turbo", "Llama 3 8B Instruct", "Llama 3 70B Instruct", "Mistral AI 7B", "Phi 3 Mini 4K"],
     "max_workers": 1,
     "include_conversation": false,
     "run_red_teaming": true,
