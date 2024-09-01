@@ -150,10 +150,9 @@ static/
 data/**/*.md5
 
 # Evaluation
-app/backend/evaluation/report
 app/backend/evaluation/results
 app/backend/evaluation/input
-app/backend/evaluation/config_temp.json
+app/backend/evaluation/output
 
 # VS Code
 .vscode/
