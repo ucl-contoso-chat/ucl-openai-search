@@ -66,20 +66,18 @@ def get_models(target_url: str) -> list:
 
 
 async def get_models_async(target_url: str) -> list:
-    """send request to /getmodels to determine whether the chosen model names are valid"""
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(target_url) as response:
-                response.encoding = "utf-8"
-                response.raise_for_status()
+    """Send async request to /getmodels to determine whether the chosen model names are valid."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(target_url) as response:
+            response.raise_for_status()
 
-                try:
-                    response_list = await response.json()
-                except json.JSONDecodeError:
-                    raise ValueError(f"Response is not valid JSON:\n\n{response.text} \n")
-    except Exception as e:
-        raise e
-    return response_list
+            try:
+                response_json = await response.json()
+                if not isinstance(response_json, list):
+                    raise ValueError(f"Expected a list, but got {type(response_json).__name__}")
+                return response_json
+            except aiohttp.ContentTypeError:
+                raise ValueError(f"Response is not valid JSON: {await response.text}")
 
 
 def get_openai_config() -> ModelConfiguration:
