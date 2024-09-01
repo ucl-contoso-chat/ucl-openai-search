@@ -50,7 +50,7 @@ One of the most important ones is tweaking the LLM used for evaluation, with a f
 In order to change the default behaviour, you will have to set the corresponding environment variables before running
 the `create_eval_dotenv` script.
 
-If you want to use other ML models deployed on Azure, you need to set the following environment varibles:
+If you want to use other ML models deployed on Azure, you need to set the following environment variables:
 
 ```shell
 # Shell
@@ -62,7 +62,7 @@ $env:AZURE_ML_ENDPOINT = "<deployment-endpoint>"
 $env:AZURE_ML_MANAGED_KEY = "<access-key>"
 ```
 
-On the other hand, to use instances deployed on openai.com, you need to set the following environment varibles:
+On the other hand, to use instances deployed on openai.com, you need to set the following environment variables:
 
 ```shell
 # Shell
@@ -94,7 +94,7 @@ Running the above will generate 200 question-answer pairs and store them in `eva
 
 ### Generate answers for Azure AI Studio evaluation
 
-After generating the questions, you can run the command below to instruct the LLM to gererate the answers in a format
+After generating the questions, you can run the command below to instruct the LLM to generate the answers in a format
 that can be used as raw data to conduct evaluation through the Azure AI Studio:
 
 ```shell

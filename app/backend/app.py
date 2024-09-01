@@ -401,7 +401,7 @@ if PYRIT_COMPATIBLE:
         report_path = result / "evaluation_report.pdf"
 
         try:
-            # Save the file in memory and remove the orignal file
+            # Save the file in memory and remove the original file
             return_data = io.BytesIO()
             with open(report_path, "rb") as fo:
                 return_data.write(fo.read())
@@ -432,7 +432,7 @@ async def generate_qa(auth_claims: dict[str, Any]):
     )
 
     try:
-        # Save the file in memory and remove the orignal file
+        # Save the file in memory and remove the original file
         return_data = io.BytesIO()
         with open(output_file, "rb") as fo:
             return_data.write(fo.read())

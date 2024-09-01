@@ -18,8 +18,8 @@ export const gpt_metrics = [
     },
     {
         name: "gpt_similarity",
-        display_name: "Simliarity",
-        description: "Simliarity measures the similarity between a source data (ground truth) sentence and the generated response by an AI model."
+        display_name: "Similarity",
+        description: "Similarity measures the similarity between a source data (ground truth) sentence and the generated response by an AI model."
     },
     {
         name: "gpt_fluency",

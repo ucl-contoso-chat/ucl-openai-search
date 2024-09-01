@@ -166,7 +166,7 @@
                     <b>{{rt_res.label}}: {{rt_res.value}}</b>
                 </para>
                 <para>
-                    Explaination: {{rt_res.description}}
+                    Explanation: {{rt_res.description}}
                 </para>
                 <para spaceAfter="1.0cm"></para>
             {{endfor}}
