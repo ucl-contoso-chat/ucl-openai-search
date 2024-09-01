@@ -29,7 +29,6 @@ def plot_bar_charts(
     width: float = 0.4,
 ):
     """Plot bar charts for the provided data."""
-
     results = list(data.values())
     init_len = len(results[0])
     for i in range(1, len(results)):
@@ -132,10 +131,12 @@ def plot_box_charts_grid(
                 whiskerprops=dict(color=f"C{j}"),
                 capprops=dict(color=f"C{j}"),
             )
+
         ax.set_title(titles[i])
         ax.autoscale(tight=True)
         ax.set_ylabel(y_labels[i])
         ax.set_xticklabels(data.keys(), rotation=20)
+
     save_figure(output_path)
     plt.close(fig)
 
@@ -174,6 +175,7 @@ def plot_box_chart(
             flierprops=dict(marker="o", color=f"C{i}", alpha=0.5),
         )
         plt.plot([], [], color=f"C{i}", label=key)
+
     plt.legend()
     plt.title(title)
     plt.ylabel(y_label)
@@ -200,6 +202,7 @@ def plot_radar_chart(metric_label_list: List[str], data: Dict[str, List], title:
         color = colors[idx % len(colors)]
         ax.plot(theta, data, color=color, label=label)
         ax.fill(theta, data, facecolor=color, alpha=0.25)
+
     ax.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
     ax.tick_params(pad=15)
     r_values = np.linspace(0, num, num + 1)
