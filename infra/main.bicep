@@ -189,6 +189,8 @@ param runningOnGh string = ''
 @description('Whether the deployment is running on Azure DevOps Pipeline')
 param runningOnAdo string = ''
 
+param websitesContainerStartTimeLimit int = 1200
+
 // Organize resources in a resource group
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: !empty(resourceGroupName) ? resourceGroupName : '${abbrs.resourcesResourceGroups}${environmentName}'
@@ -340,6 +342,8 @@ module backend 'core/host/appservice.bicep' = {
       AZURE_DOCUMENTINTELLIGENCE_SERVICE: documentIntelligence.outputs.name
       USE_LOCAL_PDF_PARSER: useLocalPdfParser
       USE_LOCAL_HTML_PARSER: useLocalHtmlParser
+      // Specific to the Azure App Service
+      WEBSITES_CONTAINER_START_TIME_LIMIT: websitesContainerStartTimeLimit
     }
   }
 }
