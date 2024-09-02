@@ -442,7 +442,7 @@ async def generate_qa(auth_claims: dict[str, Any]):
 
     num_questions = request_json.get("num_questions")
     per_source = request_json.get("per_source")
-    output_file = EVALUATION_DIR / "input" / " input_temp.jsonl"
+    output_file = EVALUATION_DIR / "input" / "input_temp.jsonl"
 
     generate_test_qa_data(
         openai_config=get_openai_config_dict(),
