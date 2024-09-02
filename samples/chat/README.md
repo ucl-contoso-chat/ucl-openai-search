@@ -64,7 +64,7 @@ The repo includes sample data so it's ready to try end to end. In this sample ap
 
 ![Chat screen](docs/images/chatscreen.png)
 
-[📺 Watch a video overview of the app.](https://youtu.be/3acB0OWmLvM)
+[📺 Watch a video overview of the app.](https://youtu.be/cmawd3u8hng)
 
 ## Azure account requirements
 
