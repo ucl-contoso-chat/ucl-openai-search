@@ -1,0 +1,30 @@
+.evaluateDataPivotContainer {
+    width: 100%;
+}
+
+.evaluateDataPivotItem {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5em 1rem;
+}
+
+.fileText {
+    margin: 0.5rem;
+}
+
+.errorContainer {
+    max-width: 50rem;
+    margin: 0.5rem;
+    padding: 1rem;
+}
+
+.evalDataList {
+    overflow: scroll;
+    max-height: 15rem;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.evalDataList::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}

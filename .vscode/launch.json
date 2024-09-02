@@ -45,19 +45,20 @@
             "name": "Debug RAG Evaluation",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/app/backend",
             "module": "evaluation",
             "args": [
                 "evaluate",
                 "--config=evaluation/config.json",
-                "--num_questions=2"
+                "--num-questions=2",
+                "--report-output=evaluation/report/evaluation-report.pdf"
             ]
           },
           {
             "name": "Debug Red-teaming Evaluation",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/app/backend",
             "module": "evaluation",
             "args": [
                 "red-teaming"

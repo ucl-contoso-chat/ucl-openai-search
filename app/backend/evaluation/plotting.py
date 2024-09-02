@@ -29,6 +29,12 @@ def plot_bar_charts(
     width: float = 0.4,
 ):
     """Plot bar charts for the provided data."""
+    results = list(data.values())
+    init_len = len(results[0])
+    for i in range(1, len(results)):
+        if len(results[i]) != init_len:
+            raise ValueError("Number of data points must match the layout")
+
     if layout[0] * layout[1] != len(data[next(iter(data))]):
         raise ValueError("Number of data points must match the layout")
 
@@ -95,6 +101,12 @@ def plot_box_charts_grid(
     output_path: Path,
 ):
     """Plot box charts for the provided data."""
+    results = list(data.values())
+    init_len = len(results[0])
+    for i in range(1, len(results)):
+        if len(results[i]) != init_len:
+            raise ValueError("Number of data points must match the layout")
+
     if layout[0] * layout[1] != len(data[next(iter(data))]):
         raise ValueError("Number of data points must match the layout")
 
@@ -124,6 +136,7 @@ def plot_box_charts_grid(
         ax.autoscale(tight=True)
         ax.set_ylabel(y_labels[i])
         ax.set_xticklabels(data.keys(), rotation=20)
+
     save_figure(output_path)
     plt.close(fig)
 
@@ -162,6 +175,7 @@ def plot_box_chart(
             flierprops=dict(marker="o", color=f"C{i}", alpha=0.5),
         )
         plt.plot([], [], color=f"C{i}", label=key)
+
     plt.legend()
     plt.title(title)
     plt.ylabel(y_label)

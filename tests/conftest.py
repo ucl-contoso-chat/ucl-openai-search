@@ -58,10 +58,13 @@ def pytest_configure(config):
             "pyrit",
             "pyrit.chat_message_normalizer",
             "pyrit.common",
+            "pyrit.common.path",
             "pyrit.exceptions",
             "pyrit.memory",
             "pyrit.models",
+            "pyrit.orchestrator",
             "pyrit.prompt_target",
+            "pyrit.score",
         ]
         for module in modules_to_mock:
             sys.modules[module] = mock.MagicMock()

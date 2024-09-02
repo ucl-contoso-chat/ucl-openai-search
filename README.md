@@ -179,7 +179,7 @@ either you or they can follow these steps:
 ## Evaluation and red teaming
 
 You can run the provided evaluation and red teaming scripts to gain insights into the app behaviour when using different LLMs.
-For detailed instructions, please refer to the [respective guide](/evaluation/README.md).
+For detailed instructions, please refer to the [respective guide](/app/backend/evaluation/README.md).
 
 ## Running locally
 

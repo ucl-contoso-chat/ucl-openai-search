@@ -17,7 +17,7 @@ $BACKEND_URI = az webapp show --resource-group $RESOURCE_GROUP --name $WEBAPP_NA
 # Populate the .env file
 $envContent = @"
 OPENAI_HOST="${env:OPENAI_HOST -replace '^\s*$', 'azure'}"
-OPENAI_GPT_MODEL="${env:OPENAI_GPT_MODEL -replace '^\s*$', 'gpt-35-turbo'}"
+AZURE_OPENAI_CHATGPT_MODEL="${env:AZURE_OPENAI_CHATGPT_MODEL -replace '^\s*$', 'gpt-35-turbo'}"
 
 # For generating QA based on AI Search index:
 AZURE_SEARCH_SERVICE="$AZURE_SEARCH_SERVICE"
@@ -36,8 +36,8 @@ AZURE_OPENAI_EVAL_DEPLOYMENT="$AZURE_OPENAI_EVAL_DEPLOYMENT"
 AZURE_OPENAI_EVAL_ENDPOINT="$AZURE_OPENAI_EVAL_ENDPOINT"
 
 # For openai.com only:
-OPENAICOM_KEY="${env:OPENAICOM_KEY -replace '^\s*$', ''}"
-OPENAICOM_ORGANIZATION="${env:OPENAICOM_ORGANIZATION -replace '^\s*$', ''}"
+OPENAI_API_KEY="${env:OPENAI_API_KEY -replace '^\s*$', ''}"
+OPENAI_ORGANIZATION="${env:OPENAI_ORGANIZATION -replace '^\s*$', ''}"
 
 # For PyRIT:
 # Azure ML Target (only needed when the model under evaluation is hosted on Azure ML)
@@ -45,6 +45,6 @@ AZURE_ML_ENDPOINT="${env:AZURE_ML_ENDPOINT -replace '^\s*$', ''}"
 AZURE_ML_MANAGED_KEY="${env:AZURE_ML_MANAGED_KEY -replace '^\s*$', ''}"
 "@
 
-Set-Content -Path "evaluation/.env" -Value $envContent
+Set-Content -Path "app/backend/evaluation/.env" -Value $envContent
 
-Write-Output "evaluation/.env file has been populated successfully"
+Write-Output "app/backend/evaluation/.env file has been populated successfully"

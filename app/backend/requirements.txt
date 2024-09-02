@@ -4,14 +4,27 @@
 #
 #    pip-compile requirements.in
 #
+adal==1.2.7
+    # via
+    #   azureml-core
+    #   msrestazure
+aioconsole==0.8.0
+    # via pyrit
 aiofiles==24.1.0
     # via quart
 aiohappyeyeballs==2.4.0
     # via aiohttp
 aiohttp==3.10.5
     # via
+    #   -r evaluation/requirements.in
     #   -r requirements.in
+    #   aiohttp-retry
+    #   azureml-metrics
+    #   datasets
+    #   fsspec
     #   microsoft-kiota-authentication-azure
+aiohttp-retry==2.8.3
+    # via promptflow-evals
 aiosignal==1.3.1
     # via aiohttp
 aniso8601==9.0.1
@@ -21,41 +34,132 @@ annotated-types==0.7.0
 anyio==4.4.0
     # via
     #   httpx
+    #   jupyter-server
     #   openai
     #   starlette
+appdirs==1.4.4
+    # via pyrit
+applicationinsights==0.11.10
+    # via azureml-telemetry
 argcomplete==3.5.0
-    # via promptflow-devkit
+    # via
+    #   azureml-core
+    #   knack
+    #   promptflow-devkit
+argon2-cffi==23.1.0
+    # via jupyter-server
+argon2-cffi-bindings==21.2.0
+    # via argon2-cffi
+arrow==1.3.0
+    # via isoduration
+art==6.1
+    # via pyrit
 asgiref==3.8.1
     # via opentelemetry-instrumentation-asgi
+asttokens==2.4.1
+    # via stack-data
+async-lru==2.0.4
+    # via jupyterlab
 attrs==24.2.0
     # via
     #   aiohttp
     #   jsonschema
     #   referencing
+azure-ai-contentsafety==1.0.0
+    # via pyrit
 azure-ai-documentintelligence==1.0.0b3
     # via -r requirements.in
+azure-ai-generative[evaluate]==1.0.0b3
+    # via -r evaluation/requirements.in
+azure-ai-ml==1.13.0
+    # via
+    #   azure-ai-resources
+    #   pyrit
+azure-ai-resources==1.0.0b7
+    # via azure-ai-generative
 azure-cognitiveservices-speech==1.40.0
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   pyrit
 azure-common==1.1.28
-    # via azure-search-documents
+    # via
+    #   azure-ai-ml
+    #   azure-graphrbac
+    #   azure-mgmt-authorization
+    #   azure-mgmt-containerregistry
+    #   azure-mgmt-keyvault
+    #   azure-mgmt-network
+    #   azure-mgmt-resource
+    #   azure-mgmt-storage
+    #   azure-search-documents
+    #   azureml-core
 azure-core==1.30.2
     # via
+    #   azure-ai-contentsafety
     #   azure-ai-documentintelligence
+    #   azure-ai-ml
     #   azure-core-tracing-opentelemetry
     #   azure-identity
+    #   azure-keyvault-certificates
+    #   azure-keyvault-keys
+    #   azure-keyvault-secrets
+    #   azure-mgmt-core
     #   azure-monitor-opentelemetry
     #   azure-monitor-opentelemetry-exporter
     #   azure-search-documents
     #   azure-storage-blob
     #   azure-storage-file-datalake
+    #   azure-storage-file-share
+    #   azureml-core
     #   microsoft-kiota-authentication-azure
     #   msrest
+    #   opencensus-ext-azure
+    #   promptflow-evals
+    #   pyrit
 azure-core-tracing-opentelemetry==1.0.0b11
     # via azure-monitor-opentelemetry
+azure-graphrbac==0.61.1
+    # via azureml-core
 azure-identity==1.17.1
     # via
+    #   -r evaluation/requirements.in
     #   -r requirements.in
+    #   azureml-metrics
     #   msgraph-sdk
+    #   opencensus-ext-azure
+    #   promptflow-evals
+    #   pyrit
+azure-keyvault==4.2.0
+    # via azureml-metrics
+azure-keyvault-certificates==4.8.0
+    # via azure-keyvault
+azure-keyvault-keys==4.9.0
+    # via azure-keyvault
+azure-keyvault-secrets==4.8.0
+    # via azure-keyvault
+azure-mgmt-authorization==4.0.0
+    # via azureml-core
+azure-mgmt-containerregistry==10.3.0
+    # via azureml-core
+azure-mgmt-core==1.4.0
+    # via
+    #   azure-ai-ml
+    #   azure-mgmt-authorization
+    #   azure-mgmt-containerregistry
+    #   azure-mgmt-keyvault
+    #   azure-mgmt-network
+    #   azure-mgmt-resource
+    #   azure-mgmt-storage
+azure-mgmt-keyvault==10.3.1
+    # via azureml-core
+azure-mgmt-network==26.0.0
+    # via azureml-core
+azure-mgmt-resource==22.0.0
+    # via
+    #   azure-ai-resources
+    #   azureml-core
+azure-mgmt-storage==21.2.1
+    # via azureml-core
 azure-monitor-opentelemetry==1.6.1
     # via -r requirements.in
 azure-monitor-opentelemetry-exporter==1.0.0b28
@@ -63,63 +167,160 @@ azure-monitor-opentelemetry-exporter==1.0.0b28
     #   azure-monitor-opentelemetry
     #   promptflow-devkit
 azure-search-documents==11.6.0b4
-    # via -r requirements.in
+    # via
+    #   -r evaluation/requirements.in
+    #   -r requirements.in
 azure-storage-blob==12.22.0
     # via
     #   -r requirements.in
+    #   azure-ai-ml
     #   azure-storage-file-datalake
+    #   pyrit
 azure-storage-file-datalake==12.16.0
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   azure-ai-ml
+azure-storage-file-share==12.17.0
+    # via azure-ai-ml
+azureml-core==1.57.0
+    # via
+    #   azureml-metrics
+    #   azureml-telemetry
+azureml-metrics[generative-ai]==0.0.59
+    # via azure-ai-generative
+azureml-telemetry==1.57.0
+    # via azureml-metrics
+babel==2.16.0
+    # via jupyterlab-server
+backports-tempfile==1.0
+    # via
+    #   azureml-core
+    #   z3c-rml
+backports-weakref==1.0.post1
+    # via backports-tempfile
+bcrypt==4.2.0
+    # via paramiko
 beautifulsoup4==4.12.3
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   nbconvert
+bleach==6.1.0
+    # via nbconvert
 blinker==1.8.2
     # via
     #   flask
     #   quart
-certifi==2024.7.4
+cachetools==5.5.0
+    # via
+    #   google-auth
+    #   mlflow-skinny
+certifi==2024.8.30
     # via
     #   httpcore
     #   httpx
     #   msrest
     #   requests
 cffi==1.17.0
-    # via cryptography
+    # via
+    #   argon2-cffi-bindings
+    #   cryptography
+    #   pynacl
+chardet==5.2.0
+    # via reportlab
 charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via
     #   flask
+    #   mlflow-skinny
     #   quart
+    #   typer
     #   uvicorn
+cloudpickle==3.0.0
+    # via mlflow-skinny
 colorama==0.4.6
-    # via promptflow-devkit
+    # via
+    #   azure-ai-ml
+    #   promptflow-devkit
+coloredlogs==15.0.1
+    # via onnxruntime
+comm==0.2.2
+    # via
+    #   ipykernel
+    #   ipywidgets
+confusables==1.2.0
+    # via pyrit
+contextlib2==21.6.0
+    # via azureml-core
+contourpy==1.3.0
+    # via matplotlib
 cryptography==43.0.0
     # via
     #   -r requirements.in
+    #   adal
     #   azure-identity
+    #   azure-keyvault-keys
     #   azure-storage-blob
+    #   azure-storage-file-share
     #   msal
+    #   paramiko
     #   promptflow-devkit
     #   pyjwt
+    #   pyopenssl
     #   python-jose
     #   secretstorage
+cssselect2==0.7.0
+    # via svglib
+cycler==0.12.1
+    # via matplotlib
+databricks-sdk==0.31.1
+    # via mlflow-skinny
+datasets==2.21.0
+    # via evaluate
+debugpy==1.8.5
+    # via ipykernel
+decorator==5.1.1
+    # via ipython
+defusedxml==0.7.1
+    # via nbconvert
 deprecated==1.2.14
     # via
     #   opentelemetry-api
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-semantic-conventions
+    #   pikepdf
+dill==0.3.8
+    # via
+    #   datasets
+    #   evaluate
+    #   multiprocess
 distro==1.9.0
     # via openai
+docker==7.1.0
+    # via azureml-core
 docstring-parser==0.16
     # via promptflow-core
+duckdb==0.10.0
+    # via
+    #   duckdb-engine
+    #   pyrit
+duckdb-engine==0.11.2
+    # via pyrit
 ecdsa==0.19.0
     # via python-jose
-fastapi==0.112.1
+evaluate==0.4.2
+    # via azureml-metrics
+executing==2.0.1
+    # via stack-data
+fastapi==0.112.2
     # via
     #   -r requirements.in
     #   promptflow-core
+fastjsonschema==2.20.0
+    # via nbformat
 filelock==3.15.4
     # via
+    #   datasets
     #   huggingface-hub
     #   promptflow-devkit
     #   transformers
@@ -133,22 +334,43 @@ flask==3.0.3
     #   flask-restx
     #   promptflow-core
     #   quart
-flask-cors==4.0.1
+flask-cors==4.0.2
     # via promptflow-devkit
 flask-restx==1.3.0
     # via promptflow-devkit
+flatbuffers==24.3.25
+    # via onnxruntime
+fonttools==4.53.1
+    # via matplotlib
+fqdn==1.5.1
+    # via jsonschema
+freetype-py==2.5.1
+    # via rlpycairo
 frozenlist==1.4.1
     # via
     #   aiohttp
     #   aiosignal
-fsspec==2024.6.1
-    # via huggingface-hub
+fsspec[http]==2024.6.1
+    # via
+    #   datasets
+    #   evaluate
+    #   huggingface-hub
 gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
-    # via promptflow-devkit
-googleapis-common-protos==1.63.2
-    # via opentelemetry-exporter-otlp-proto-http
+    # via
+    #   mlflow-skinny
+    #   promptflow-devkit
+google-api-core==2.19.2
+    # via opencensus
+google-auth==2.34.0
+    # via
+    #   databricks-sdk
+    #   google-api-core
+googleapis-common-protos==1.65.0
+    # via
+    #   google-api-core
+    #   opentelemetry-exporter-otlp-proto-http
 greenlet==3.0.3
     # via sqlalchemy
 h11==0.14.0
@@ -165,8 +387,10 @@ hpack==4.0.0
     # via h2
 httpcore==1.0.5
     # via httpx
-httpx[http2]==0.27.0
+httpx[http2]==0.27.2
     # via
+    #   -r evaluation/requirements.in
+    #   jupyterlab
     #   microsoft-kiota-http
     #   msgraph-core
     #   openai
@@ -174,63 +398,195 @@ httpx[http2]==0.27.0
 huggingface-hub==0.24.6
     # via
     #   -r requirements.in
+    #   datasets
+    #   evaluate
     #   tokenizers
     #   transformers
+humanfriendly==10.0
+    # via
+    #   azureml-core
+    #   coloredlogs
 hypercorn==0.17.3
     # via quart
 hyperframe==6.0.1
     # via h2
-idna==3.7
+idna==3.8
     # via
     #   anyio
     #   httpx
+    #   jsonschema
     #   requests
     #   yarl
-importlib-metadata==8.0.0
+importlib-metadata==8.4.0
     # via
     #   keyring
+    #   mlflow-skinny
     #   opentelemetry-api
     #   opentelemetry-instrumentation-flask
 importlib-resources==6.4.4
     # via flask-restx
+ipykernel==6.29.5
+    # via
+    #   jupyter
+    #   jupyter-console
+    #   jupyterlab
+    #   pyrit
+ipython==8.27.0
+    # via
+    #   ipykernel
+    #   ipywidgets
+    #   jupyter-console
+ipywidgets==8.1.5
+    # via jupyter
 isodate==0.6.1
     # via
+    #   azure-ai-contentsafety
     #   azure-ai-documentintelligence
+    #   azure-ai-ml
+    #   azure-keyvault-certificates
+    #   azure-keyvault-keys
+    #   azure-keyvault-secrets
+    #   azure-mgmt-authorization
+    #   azure-mgmt-containerregistry
+    #   azure-mgmt-keyvault
+    #   azure-mgmt-network
+    #   azure-mgmt-storage
     #   azure-search-documents
     #   azure-storage-blob
     #   azure-storage-file-datalake
+    #   azure-storage-file-share
     #   msrest
+isoduration==20.11.0
+    # via jsonschema
+isort==5.13.2
+    # via promptflow-evals
 itsdangerous==2.2.0
     # via
     #   flask
     #   quart
 jaraco-classes==3.4.0
     # via keyring
+jedi==0.19.1
+    # via ipython
 jeepney==0.8.0
     # via
     #   keyring
     #   secretstorage
 jinja2==3.1.4
     # via
+    #   azureml-metrics
     #   flask
+    #   jupyter-server
+    #   jupyterlab
+    #   jupyterlab-server
+    #   nbconvert
     #   quart
 jiter==0.5.0
     # via openai
-jsonschema==4.23.0
+jmespath==1.0.1
     # via
+    #   azureml-core
+    #   knack
+joblib==1.4.2
+    # via scikit-learn
+json5==0.9.25
+    # via jupyterlab-server
+jsonpath-ng==1.6.1
+    # via promptflow-evals
+jsonpickle==3.2.2
+    # via
+    #   azureml-core
+    #   pyrit
+jsonpointer==3.0.0
+    # via jsonschema
+jsonschema[format-nongpl]==4.23.0
+    # via
+    #   azure-ai-ml
     #   flask-restx
+    #   jupyter-events
+    #   jupyterlab-server
+    #   nbformat
     #   promptflow-core
 jsonschema-specifications==2023.12.1
     # via jsonschema
+jupyter==1.1.1
+    # via pyrit
+jupyter-client==8.6.2
+    # via
+    #   ipykernel
+    #   jupyter-console
+    #   jupyter-server
+    #   nbclient
+jupyter-console==6.6.3
+    # via jupyter
+jupyter-core==5.7.2
+    # via
+    #   ipykernel
+    #   jupyter-client
+    #   jupyter-console
+    #   jupyter-server
+    #   jupyterlab
+    #   nbclient
+    #   nbconvert
+    #   nbformat
+jupyter-events==0.10.0
+    # via jupyter-server
+jupyter-lsp==2.2.5
+    # via jupyterlab
+jupyter-server==2.14.2
+    # via
+    #   jupyter-lsp
+    #   jupyterlab
+    #   jupyterlab-server
+    #   notebook
+    #   notebook-shim
+jupyter-server-terminals==0.5.3
+    # via jupyter-server
+jupyterlab==4.2.5
+    # via
+    #   jupyter
+    #   notebook
+jupyterlab-pygments==0.3.0
+    # via nbconvert
+jupyterlab-server==2.27.3
+    # via
+    #   jupyterlab
+    #   notebook
+jupyterlab-widgets==3.0.13
+    # via ipywidgets
 keyring==24.3.1
     # via promptflow-devkit
+kiwisolver==1.4.5
+    # via matplotlib
+knack==0.11.0
+    # via azureml-core
+logzero==1.7.0
+    # via pyrit
+lxml==5.3.0
+    # via
+    #   pikepdf
+    #   svglib
+    #   z3c-rml
+markdown-it-py==3.0.0
+    # via rich
 markupsafe==2.1.5
     # via
     #   jinja2
+    #   nbconvert
     #   quart
     #   werkzeug
 marshmallow==3.22.0
-    # via promptflow-devkit
+    # via
+    #   azure-ai-ml
+    #   promptflow-devkit
+matplotlib==3.9.2
+    # via -r evaluation/requirements.in
+matplotlib-inline==0.1.7
+    # via
+    #   ipykernel
+    #   ipython
+mdurl==0.1.2
+    # via markdown-it-py
 microsoft-kiota-abstractions==1.3.3
     # via
     #   microsoft-kiota-authentication-azure
@@ -247,50 +603,139 @@ microsoft-kiota-http==1.3.3
     # via
     #   msgraph-core
     #   msgraph-sdk
-microsoft-kiota-serialization-json==1.3.0
+microsoft-kiota-serialization-json==1.3.1
     # via msgraph-sdk
 microsoft-kiota-serialization-text==1.0.0
     # via msgraph-sdk
+mistune==3.0.2
+    # via nbconvert
+mlflow-skinny==2.16.0
+    # via
+    #   azure-ai-generative
+    #   azure-ai-resources
 more-itertools==10.4.0
     # via jaraco-classes
+mpmath==1.3.0
+    # via sympy
 msal==1.30.0
     # via
     #   -r requirements.in
     #   azure-identity
+    #   azureml-core
     #   msal-extensions
 msal-extensions==1.2.0
-    # via azure-identity
+    # via
+    #   azure-identity
+    #   azureml-core
 msgraph-core==1.1.2
     # via msgraph-sdk
 msgraph-sdk==1.1.0
     # via -r requirements.in
 msrest==0.7.1
-    # via azure-monitor-opentelemetry-exporter
+    # via
+    #   azure-ai-ml
+    #   azure-graphrbac
+    #   azure-mgmt-resource
+    #   azure-monitor-opentelemetry-exporter
+    #   azureml-core
+    #   msrestazure
+msrestazure==0.6.4.post1
+    # via
+    #   azure-graphrbac
+    #   azureml-core
 multidict==6.0.5
     # via
     #   aiohttp
     #   yarl
-numpy==2.1.0
+multiprocess==0.70.16
     # via
+    #   datasets
+    #   evaluate
+mypy==1.11.2
+    # via sqlalchemy-stubs
+mypy-extensions==1.0.0
+    # via mypy
+nbclient==0.10.0
+    # via nbconvert
+nbconvert==7.16.4
+    # via
+    #   jupyter
+    #   jupyter-server
+nbformat==5.10.4
+    # via
+    #   jupyter-server
+    #   nbclient
+    #   nbconvert
+ndg-httpsclient==0.5.1
+    # via azureml-core
+nest-asyncio==1.6.0
+    # via
+    #   azureml-metrics
+    #   ipykernel
+notebook==7.2.2
+    # via jupyter
+notebook-shim==0.2.4
+    # via
+    #   jupyterlab
+    #   notebook
+numpy==1.26.4
+    # via
+    #   -r evaluation/requirements.in
     #   -r requirements.in
+    #   azureml-metrics
+    #   contourpy
+    #   datasets
+    #   evaluate
+    #   matplotlib
+    #   onnx
+    #   onnxruntime
     #   pandas
+    #   promptflow-evals
+    #   pyarrow
+    #   pyrit
+    #   scikit-learn
+    #   scipy
     #   transformers
 oauthlib==3.2.2
     # via requests-oauthlib
-openai==1.42.0
+onnx==1.16.2
+    # via pyrit
+onnxruntime==1.19.0
+    # via pyrit
+openai==1.43.0
     # via
+    #   -r evaluation/requirements.in
     #   -r requirements.in
+    #   azureml-metrics
     #   openai-messages-token-helper
     #   promptflow-tracing
+    #   pyrit
 openai-messages-token-helper==0.1.10
-    # via -r requirements.in
-opentelemetry-api==1.26.0
+    # via
+    #   -r evaluation/requirements.in
+    #   -r requirements.in
+opencensus==0.11.4
+    # via
+    #   opencensus-ext-azure
+    #   opencensus-ext-logging
+opencensus-context==0.1.3
+    # via opencensus
+opencensus-ext-azure==1.1.13
+    # via
+    #   azure-ai-generative
+    #   azure-ai-ml
+opencensus-ext-logging==0.1.1
+    # via
+    #   azure-ai-generative
+    #   azure-ai-resources
+opentelemetry-api==1.27.0
     # via
     #   azure-core-tracing-opentelemetry
     #   azure-monitor-opentelemetry-exporter
     #   microsoft-kiota-abstractions
     #   microsoft-kiota-authentication-azure
     #   microsoft-kiota-http
+    #   mlflow-skinny
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-aiohttp-client
@@ -308,11 +753,11 @@ opentelemetry-api==1.26.0
     #   opentelemetry-instrumentation-wsgi
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-opentelemetry-exporter-otlp-proto-common==1.26.0
+opentelemetry-exporter-otlp-proto-common==1.27.0
     # via opentelemetry-exporter-otlp-proto-http
-opentelemetry-exporter-otlp-proto-http==1.26.0
+opentelemetry-exporter-otlp-proto-http==1.27.0
     # via promptflow-devkit
-opentelemetry-instrumentation==0.47b0
+opentelemetry-instrumentation==0.48b0
     # via
     #   opentelemetry-instrumentation-aiohttp-client
     #   opentelemetry-instrumentation-asgi
@@ -327,55 +772,56 @@ opentelemetry-instrumentation==0.47b0
     #   opentelemetry-instrumentation-urllib
     #   opentelemetry-instrumentation-urllib3
     #   opentelemetry-instrumentation-wsgi
-opentelemetry-instrumentation-aiohttp-client==0.47b0
+opentelemetry-instrumentation-aiohttp-client==0.48b0
     # via -r requirements.in
-opentelemetry-instrumentation-asgi==0.47b0
+opentelemetry-instrumentation-asgi==0.48b0
     # via
     #   -r requirements.in
     #   opentelemetry-instrumentation-fastapi
-opentelemetry-instrumentation-dbapi==0.47b0
+opentelemetry-instrumentation-dbapi==0.48b0
     # via opentelemetry-instrumentation-psycopg2
-opentelemetry-instrumentation-django==0.47b0
+opentelemetry-instrumentation-django==0.48b0
     # via azure-monitor-opentelemetry
-opentelemetry-instrumentation-fastapi==0.47b0
+opentelemetry-instrumentation-fastapi==0.48b0
     # via azure-monitor-opentelemetry
-opentelemetry-instrumentation-flask==0.47b0
+opentelemetry-instrumentation-flask==0.48b0
     # via azure-monitor-opentelemetry
-opentelemetry-instrumentation-httpx==0.47b0
+opentelemetry-instrumentation-httpx==0.48b0
     # via -r requirements.in
-opentelemetry-instrumentation-openai==0.27.0
+opentelemetry-instrumentation-openai==0.29.2
     # via -r requirements.in
-opentelemetry-instrumentation-psycopg2==0.47b0
+opentelemetry-instrumentation-psycopg2==0.48b0
     # via azure-monitor-opentelemetry
-opentelemetry-instrumentation-requests==0.47b0
+opentelemetry-instrumentation-requests==0.48b0
     # via
     #   -r requirements.in
     #   azure-monitor-opentelemetry
-opentelemetry-instrumentation-urllib==0.47b0
+opentelemetry-instrumentation-urllib==0.48b0
     # via azure-monitor-opentelemetry
-opentelemetry-instrumentation-urllib3==0.47b0
+opentelemetry-instrumentation-urllib3==0.48b0
     # via azure-monitor-opentelemetry
-opentelemetry-instrumentation-wsgi==0.47b0
+opentelemetry-instrumentation-wsgi==0.48b0
     # via
     #   opentelemetry-instrumentation-django
     #   opentelemetry-instrumentation-flask
-opentelemetry-proto==1.26.0
+opentelemetry-proto==1.27.0
     # via
     #   opentelemetry-exporter-otlp-proto-common
     #   opentelemetry-exporter-otlp-proto-http
 opentelemetry-resource-detector-azure==0.1.5
     # via azure-monitor-opentelemetry
-opentelemetry-sdk==1.26.0
+opentelemetry-sdk==1.27.0
     # via
     #   azure-monitor-opentelemetry
     #   azure-monitor-opentelemetry-exporter
     #   microsoft-kiota-abstractions
     #   microsoft-kiota-authentication-azure
     #   microsoft-kiota-http
+    #   mlflow-skinny
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-resource-detector-azure
     #   promptflow-tracing
-opentelemetry-semantic-conventions==0.47b0
+opentelemetry-semantic-conventions==0.48b0
     # via
     #   opentelemetry-instrumentation-aiohttp-client
     #   opentelemetry-instrumentation-asgi
@@ -392,7 +838,7 @@ opentelemetry-semantic-conventions==0.47b0
     #   opentelemetry-sdk
 opentelemetry-semantic-conventions-ai==0.4.1
     # via opentelemetry-instrumentation-openai
-opentelemetry-util-http==0.47b0
+opentelemetry-util-http==0.48b0
     # via
     #   opentelemetry-instrumentation-aiohttp-client
     #   opentelemetry-instrumentation-asgi
@@ -404,71 +850,187 @@ opentelemetry-util-http==0.47b0
     #   opentelemetry-instrumentation-urllib
     #   opentelemetry-instrumentation-urllib3
     #   opentelemetry-instrumentation-wsgi
+overrides==7.7.0
+    # via jupyter-server
 packaging==24.1
     # via
+    #   azureml-core
+    #   datasets
+    #   evaluate
     #   huggingface-hub
+    #   ipykernel
+    #   jupyter-server
+    #   jupyterlab
+    #   jupyterlab-server
+    #   knack
     #   marshmallow
+    #   matplotlib
+    #   mlflow-skinny
+    #   nbconvert
+    #   onnxruntime
     #   opentelemetry-instrumentation-flask
+    #   pikepdf
     #   transformers
 pandas==2.2.2
-    # via promptflow-devkit
+    # via
+    #   -r evaluation/requirements.in
+    #   azureml-metrics
+    #   datasets
+    #   evaluate
+    #   promptflow-devkit
+pandocfilters==1.5.1
+    # via nbconvert
+paramiko==3.4.1
+    # via azureml-core
+parso==0.8.4
+    # via jedi
+pathspec==0.12.1
+    # via azureml-core
 pendulum==3.0.0
     # via microsoft-kiota-serialization-json
+pexpect==4.9.0
+    # via ipython
+pikepdf==9.2.0
+    # via z3c-rml
 pillow==10.4.0
     # via
     #   -r requirements.in
+    #   matplotlib
     #   openai-messages-token-helper
+    #   pikepdf
     #   promptflow-devkit
+    #   pyrit
+    #   reportlab
+pkginfo==1.11.1
+    # via azureml-core
+platformdirs==4.2.2
+    # via jupyter-core
+ply==3.11
+    # via jsonpath-ng
 portalocker==2.10.1
     # via msal-extensions
+preppy==4.2.3
+    # via -r evaluation/requirements.in
 priority==2.0.0
     # via hypercorn
+prometheus-client==0.20.0
+    # via jupyter-server
+prompt-toolkit==3.0.47
+    # via
+    #   ipython
+    #   jupyter-console
 promptflow==1.15.0
     # via -r requirements.in
 promptflow-core==1.15.0
     # via
+    #   -r evaluation/requirements.in
     #   promptflow
     #   promptflow-devkit
+    #   promptflow-evals
 promptflow-devkit==1.15.0
-    # via promptflow
+    # via
+    #   promptflow
+    #   promptflow-evals
+promptflow-evals==0.3.2
+    # via -r evaluation/requirements.in
 promptflow-tracing==1.15.0
     # via
     #   promptflow
     #   promptflow-core
+proto-plus==1.24.0
+    # via google-api-core
 protobuf==4.25.4
     # via
+    #   google-api-core
     #   googleapis-common-protos
+    #   mlflow-skinny
+    #   onnx
+    #   onnxruntime
     #   opentelemetry-proto
+    #   proto-plus
 psutil==5.9.8
     # via
     #   azure-monitor-opentelemetry-exporter
+    #   azureml-metrics
+    #   ipykernel
+    #   opencensus-ext-azure
     #   promptflow-core
+ptyprocess==0.7.0
+    # via
+    #   pexpect
+    #   terminado
+pure-eval==0.2.3
+    # via stack-data
+pyarrow==17.0.0
+    # via datasets
 pyasn1==0.6.0
     # via
+    #   ndg-httpsclient
+    #   pyasn1-modules
     #   python-jose
     #   rsa
+pyasn1-modules==0.4.0
+    # via google-auth
+pycairo==1.26.1
+    # via rlpycairo
+pycountry==24.6.1
+    # via pyrit
 pycparser==2.22
     # via cffi
 pydantic==2.8.2
     # via
     #   fastapi
     #   openai
+    #   pyrit
 pydantic-core==2.20.1
     # via pydantic
-pydash==7.0.7
-    # via promptflow-devkit
+pydash==7.0.5
+    # via
+    #   azure-ai-ml
+    #   promptflow-devkit
+pygments==2.18.0
+    # via
+    #   ipython
+    #   jupyter-console
+    #   knack
+    #   nbconvert
+    #   rich
+    #   z3c-rml
 pyjwt[crypto]==2.9.0
     # via
+    #   adal
+    #   azure-ai-ml
+    #   azureml-core
     #   msal
+    #   promptflow-evals
     #   pyjwt
 pymupdf==1.24.9
     # via -r requirements.in
 pymupdfb==1.24.9
     # via pymupdf
+pynacl==1.5.0
+    # via paramiko
+pyodbc==5.1.0
+    # via pyrit
+pyopenssl==24.2.1
+    # via
+    #   azureml-core
+    #   ndg-httpsclient
+pyparsing==3.1.4
+    # via matplotlib
 pypdf==4.3.1
     # via -r requirements.in
+pyrit==0.4.0 ; python_version >= "3.10" and python_version < "3.12"
+    # via -r evaluation/requirements.in
+pysocks==1.7.1
+    # via requests
 python-dateutil==2.9.0.post0
     # via
+    #   adal
+    #   arrow
+    #   azureml-core
+    #   jupyter-client
+    #   matplotlib
     #   microsoft-kiota-serialization-text
     #   pandas
     #   pendulum
@@ -476,17 +1038,34 @@ python-dateutil==2.9.0.post0
     #   strictyaml
     #   time-machine
 python-dotenv==1.0.1
-    # via promptflow-devkit
+    # via
+    #   -r evaluation/requirements.in
+    #   promptflow-devkit
+    #   pyrit
 python-jose[cryptography]==3.3.0
     # via -r requirements.in
+python-json-logger==2.0.7
+    # via jupyter-events
 pytz==2024.1
     # via
+    #   azureml-core
     #   flask-restx
     #   pandas
 pyyaml==6.0.2
     # via
+    #   azure-ai-ml
+    #   datasets
     #   huggingface-hub
+    #   jupyter-events
+    #   knack
+    #   mlflow-skinny
     #   transformers
+pyzmq==26.2.0
+    # via
+    #   ipykernel
+    #   jupyter-client
+    #   jupyter-console
+    #   jupyter-server
 quart==0.19.6
     # via
     #   -r requirements.in
@@ -497,44 +1076,93 @@ referencing==0.35.1
     # via
     #   jsonschema
     #   jsonschema-specifications
+    #   jupyter-events
 regex==2024.7.24
     # via
     #   tiktoken
     #   transformers
-requests==2.32.3
+reportlab==4.2.2
     # via
+    #   svglib
+    #   z3c-rml
+requests[socks]==2.32.3
+    # via
+    #   -r evaluation/requirements.in
+    #   adal
     #   azure-core
+    #   azureml-core
+    #   azureml-metrics
+    #   databricks-sdk
+    #   datasets
+    #   docker
+    #   evaluate
+    #   google-api-core
     #   huggingface-hub
+    #   jupyterlab-server
+    #   mlflow-skinny
     #   msal
     #   msrest
+    #   opencensus-ext-azure
     #   opentelemetry-exporter-otlp-proto-http
     #   requests-oauthlib
     #   tiktoken
     #   transformers
 requests-oauthlib==2.0.0
     # via msrest
+rfc3339-validator==0.1.4
+    # via
+    #   jsonschema
+    #   jupyter-events
+rfc3986-validator==0.1.1
+    # via
+    #   jsonschema
+    #   jupyter-events
+rich==13.8.0
+    # via
+    #   -r evaluation/requirements.in
+    #   typer
+rlpycairo==0.3.0
+    # via z3c-rml
 rpds-py==0.20.0
     # via
     #   jsonschema
     #   referencing
 rsa==4.9
-    # via python-jose
+    # via
+    #   google-auth
+    #   python-jose
 ruamel-yaml==0.18.6
     # via promptflow-core
 ruamel-yaml-clib==0.2.8
     # via ruamel-yaml
 safetensors==0.4.4
     # via transformers
+scikit-learn==1.5.1
+    # via pyrit
+scipy==1.14.1
+    # via scikit-learn
 secretstorage==3.3.3
-    # via keyring
+    # via
+    #   azureml-core
+    #   keyring
+send2trash==1.8.3
+    # via jupyter-server
 sentencepiece==0.2.0
     # via -r requirements.in
+shellingham==1.5.4
+    # via typer
 six==1.16.0
     # via
+    #   asttokens
     #   azure-core
+    #   bleach
     #   ecdsa
     #   isodate
+    #   msrestazure
+    #   opencensus
     #   python-dateutil
+    #   rfc3339-validator
+    #   treelib
 smmap==5.0.1
     # via gitdb
 sniffio==1.3.1
@@ -544,18 +1172,46 @@ sniffio==1.3.1
     #   openai
 soupsieve==2.6
     # via beautifulsoup4
-sqlalchemy==2.0.32
-    # via promptflow-devkit
-starlette==0.38.2
+sqlalchemy==2.0.28
+    # via
+    #   duckdb-engine
+    #   promptflow-devkit
+    #   pyrit
+sqlalchemy-stubs==0.4
+    # via pyrit
+sqlparse==0.5.1
+    # via mlflow-skinny
+stack-data==0.6.3
+    # via ipython
+starlette==0.38.3
     # via fastapi
-std-uritemplate==1.0.5
+std-uritemplate==1.0.6
     # via microsoft-kiota-abstractions
 strictyaml==1.7.3
-    # via promptflow-devkit
+    # via
+    #   azure-ai-ml
+    #   promptflow-devkit
+svglib==1.5.1
+    # via z3c-rml
+sympy==1.13.2
+    # via onnxruntime
 tabulate==0.9.0
-    # via promptflow-devkit
-tenacity==9.0.0
-    # via -r requirements.in
+    # via
+    #   knack
+    #   promptflow-devkit
+tenacity==8.5.0
+    # via
+    #   -r requirements.in
+    #   azureml-metrics
+    #   pyrit
+termcolor==2.4.0
+    # via pyrit
+terminado==0.18.1
+    # via
+    #   jupyter-server
+    #   jupyter-server-terminals
+threadpoolctl==3.5.0
+    # via scikit-learn
 tiktoken==0.7.0
     # via
     #   -r requirements.in
@@ -564,55 +1220,135 @@ tiktoken==0.7.0
     #   promptflow-tracing
 time-machine==2.15.0
     # via pendulum
+tinycss2==1.3.0
+    # via
+    #   cssselect2
+    #   nbconvert
+    #   svglib
 tokenizers==0.19.1
-    # via transformers
+    # via
+    #   pyrit
+    #   transformers
+toml==0.10.2
+    # via azureml-metrics
+tornado==6.4.1
+    # via
+    #   ipykernel
+    #   jupyter-client
+    #   jupyter-server
+    #   jupyterlab
+    #   notebook
+    #   terminado
 tqdm==4.66.5
     # via
+    #   azure-ai-ml
+    #   azureml-metrics
+    #   datasets
+    #   evaluate
     #   huggingface-hub
     #   openai
+    #   pyrit
     #   transformers
+traitlets==5.14.3
+    # via
+    #   comm
+    #   ipykernel
+    #   ipython
+    #   ipywidgets
+    #   jupyter-client
+    #   jupyter-console
+    #   jupyter-core
+    #   jupyter-events
+    #   jupyter-server
+    #   jupyterlab
+    #   matplotlib-inline
+    #   nbclient
+    #   nbconvert
+    #   nbformat
 transformers==4.44.2
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   pyrit
+treelib==1.7.0
+    # via pyrit
+typer==0.12.5
+    # via -r evaluation/requirements.in
 types-beautifulsoup4==4.12.0.20240511
     # via -r requirements.in
 types-html5lib==1.1.11.20240806
     # via types-beautifulsoup4
 types-pillow==10.2.0.20240822
     # via -r requirements.in
-types-pyasn1==0.6.0.20240402
+types-pyasn1==0.6.0.20240824
     # via types-python-jose
+types-python-dateutil==2.9.0.20240821
+    # via arrow
 types-python-jose==3.3.4.20240106
     # via -r requirements.in
+types-requests==2.32.0.20240712
+    # via pyrit
 typing-extensions==4.12.2
     # via
     #   azure-ai-documentintelligence
+    #   azure-ai-ml
     #   azure-core
     #   azure-identity
+    #   azure-keyvault-certificates
+    #   azure-keyvault-keys
+    #   azure-keyvault-secrets
+    #   azure-mgmt-keyvault
     #   azure-storage-blob
     #   azure-storage-file-datalake
+    #   azure-storage-file-share
     #   fastapi
     #   huggingface-hub
+    #   ipython
+    #   mypy
     #   openai
     #   opentelemetry-sdk
     #   pydantic
     #   pydantic-core
     #   pydash
     #   sqlalchemy
+    #   sqlalchemy-stubs
+    #   typer
 tzdata==2024.1
     # via
     #   pandas
     #   pendulum
+uri-template==1.3.0
+    # via jsonschema
 urllib3==2.2.2
-    # via requests
+    # via
+    #   azureml-core
+    #   docker
+    #   promptflow-evals
+    #   requests
+    #   types-requests
 uvicorn==0.30.6
     # via -r requirements.in
 waitress==2.1.2
     # via promptflow-devkit
+wcwidth==0.2.13
+    # via prompt-toolkit
+webcolors==24.8.0
+    # via jsonschema
+webencodings==0.5.1
+    # via
+    #   bleach
+    #   cssselect2
+    #   tinycss2
+websocket-client==1.8.0
+    # via
+    #   jupyter-server
+    #   promptflow-evals
 werkzeug==3.0.4
     # via
     #   flask
     #   flask-restx
     #   quart
+widgetsnbextension==4.0.13
+    # via ipywidgets
 wrapt==1.16.0
     # via
     #   deprecated
@@ -622,10 +1358,24 @@ wrapt==1.16.0
     #   opentelemetry-instrumentation-urllib3
 wsproto==1.2.0
     # via hypercorn
-yarl==1.9.4
+xxhash==3.5.0
+    # via
+    #   datasets
+    #   evaluate
+yarl==1.9.6
     # via aiohttp
-zipp==3.20.0
+z3c-rml==4.4.0
+    # via -r evaluation/requirements.in
+zipp==3.20.1
     # via importlib-metadata
+zope-event==5.0
+    # via zope-schema
+zope-interface==7.0.3
+    # via
+    #   z3c-rml
+    #   zope-schema
+zope-schema==7.0.1
+    # via z3c-rml
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

@@ -1,3 +1,4 @@
+aiohttp
 azure-ai-generative[evaluate]==1.0.0b3
 azure-identity
 azure-search-documents
@@ -7,6 +8,7 @@ numpy
 openai
 openai-messages-token-helper
 pandas
+preppy
 promptflow-core
 promptflow-evals
 pyrit>=0.4.0 ; python_version >= "3.10" and python_version < "3.12"
@@ -14,3 +16,4 @@ python-dotenv
 requests
 rich
 typer
+z3c.rml

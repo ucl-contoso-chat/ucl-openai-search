@@ -1,17 +1,23 @@
-import concurrent.futures
+import asyncio
 import json
 import logging
 import os
+import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Optional
 
+import aiofiles
+import aiohttp
 import numpy as np
 import pandas as pd
 import requests
+from promptflow.core import AzureOpenAIModelConfiguration
 from rich.progress import track
 
 from evaluation import service_setup
+from evaluation.config import EvaluationConfig, RedTeamingConfig
 from evaluation.evaluate_metrics import metrics_by_name
 from evaluation.evaluate_metrics.builtin_metrics import BuiltinRatingMetric
 from evaluation.plotting import (
@@ -20,10 +26,12 @@ from evaluation.plotting import (
     plot_box_charts_grid,
     plot_radar_chart,
 )
-from evaluation.service_setup import get_models
+from evaluation.red_teaming import run_red_teaming
+from evaluation.report.generate import (
+    generate_evaluation_report,
+)
+from evaluation.service_setup import get_models_async
 from evaluation.utils import load_jsonl
-
-EVALUATION_RESULTS_DIR = "gpt_evaluation"
 
 logger = logging.getLogger("evaluation")
 
@@ -40,13 +48,13 @@ def send_question_to_target(question: str, url: str, parameters: dict = None, ra
 
     try:
         r = requests.post(url, headers=headers, json=body)
-        latency = r.elapsed.total_seconds()
 
         r.raise_for_status()
+        latency = r.elapsed.total_seconds()
 
         try:
             response_dict = r.json()
-        except json.JSONDecodeError:
+        except aiohttp.ContentTypeError:
             raise ValueError(
                 f"Response from target {url} is not valid JSON:\n{r.text}"
                 "Make sure that your configuration points at a chat endpoint that returns a single JSON object.\n"
@@ -103,10 +111,88 @@ def evaluate_row(
     return output
 
 
-def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: int = None, target_url: str = None):
-    """Run evaluation using the provided configuration file."""
+async def run_evaluation(
+    openai_config: AzureOpenAIModelConfiguration,
+    testdata_path: Path,
+    results_dir: Path,
+    target_url: str,
+    passing_rate: int,
+    max_workers: int,
+    target_parameters: dict,
+    requested_metrics: list,
+    compared_models: list,
+    num_questions: int = None,
+):
+    """Run evaluation on the provided test data."""
+    logger.info("Running evaluation using data from %s", testdata_path)
+    testdata = load_jsonl(testdata_path)
+    if num_questions:
+        logger.info("Limiting evaluation to %s questions", num_questions)
+        testdata = testdata[:num_questions]
+
+    logger.info("Starting evaluation...")
+
+    questions_with_ratings_dict = {}
+    requested_metrics_list = requested_metrics
+    for model in compared_models:
+        target_parameters["overrides"]["set_model"] = model
+        for metric in requested_metrics_list:
+            if metric not in metrics_by_name:
+                logger.error(f"Requested metric {metric} is not available. Available metrics: {metrics_by_name.keys()}")
+                return False
+
+        requested_metrics = [
+            metrics_by_name[metric_name] for metric_name in requested_metrics_list if metric_name in metrics_by_name
+        ]
+
+        questions_per_model_with_ratings = []
+
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            coroutines = [
+                loop.run_in_executor(
+                    executor,
+                    evaluate_row,
+                    row,
+                    target_url,
+                    openai_config,
+                    requested_metrics,
+                    target_parameters,
+                )
+                for row in testdata
+            ]
+            for eval_cor in track(asyncio.as_completed(coroutines), description="Processing..."):
+                row_result = await eval_cor
+                questions_per_model_with_ratings.append(row_result)
+
+        logger.info("Evaluation calls have completed. Calculating overall metrics now...")
+        results_dir.mkdir(parents=True, exist_ok=True)
+
+        async with aiofiles.open(results_dir / "eval_results.jsonl", "a", encoding="utf-8") as results_file:
+            for row in questions_per_model_with_ratings:
+                await results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
+
+    summary = dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
+    plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
+
+    return (summary, questions_with_ratings_dict)
+
+
+async def run_evaluation_from_config(
+    working_dir: Path,
+    config: dict,
+    evaluation_config: EvaluationConfig,
+    red_teaming_config: RedTeamingConfig,
+    report_output: Optional[Path] = None,
+):
+    """Run evaluation using the provided configuration file. If run_red_teaming is enabled in config, run red teaming as well."""
+    if not evaluation_config.enabled and not red_teaming_config.enabled:
+        logger.error("Both evaluation and red teaming are disabled. Exiting...")
+        return None
     timestamp = int(time.time())
-    results_dir = working_dir / config["results_dir"] / EVALUATION_RESULTS_DIR / f"experiment-{timestamp}"
+    results_dir = working_dir / config["results_dir"] / f"experiment-{timestamp}"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     openai_config = service_setup.get_openai_config()
@@ -124,11 +210,11 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
             "latency",
         ],
     )
+    target_url = evaluation_config.target_url
     base_url = os.environ.get("BACKEND_URI") if target_url is None else target_url
     get_model_url = base_url + "/getmodels"
-
     compared_models = config.get("models")
-    all_models = get_models(get_model_url)
+    all_models = await get_models_async(get_model_url)
 
     unsupported_models = set(compared_models) - set(all_models)
     if unsupported_models:
@@ -138,59 +224,36 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
         )
         return False
 
-    target_url = base_url + "/ask"
+    ask_url = base_url + "/ask"
 
-    try:
-        logger.info("Running evaluation using data from %s", testdata_path)
-        testdata = load_jsonl(testdata_path)
-        if num_questions:
-            logger.info("Limiting evaluation to %s questions", num_questions)
-            testdata = testdata[:num_questions]
+    summary, question_results = None, None
+    if evaluation_config.enabled:
+        summary, question_results = await run_evaluation(
+            openai_config=openai_config,
+            testdata_path=testdata_path,
+            results_dir=results_dir,
+            target_url=ask_url,
+            passing_rate=passing_rate,
+            max_workers=max_workers,
+            target_parameters=target_parameters,
+            requested_metrics=requested_metrics,
+            compared_models=compared_models,
+            num_questions=evaluation_config.num_questions,
+        )
 
-        logger.info("Starting evaluation...")
+    red_teaming_results = None
+    if red_teaming_config.enabled:
+        red_teaming_results = await run_red_teaming(
+            working_dir=working_dir,
+            scorer_dir=red_teaming_config.scorer_dir,
+            config=config,
+            red_teaming_llm=red_teaming_config.red_teaming_llm,
+            prompt_target=red_teaming_config.prompt_target,
+            max_turns=red_teaming_config.max_turns,
+            results_dir=results_dir,
+        )
 
-        questions_with_ratings_dict = {}
-        requested_metrics_list = requested_metrics
-        unsupported_metrics = set(requested_metrics_list) - set(metrics_by_name.keys())
-
-        if unsupported_metrics:
-            logger.error(
-                f"Requested metrics {', '.join(unsupported_metrics)} are not available."
-                f" Available metrics: {', '.join(metrics_by_name.keys())}"
-            )
-            return False
-
-        requested_metrics = [
-            metrics_by_name[metric_name] for metric_name in requested_metrics_list if metric_name in metrics_by_name
-        ]
-        for model in compared_models:
-            if "overrides" not in target_parameters:
-                target_parameters["overrides"] = {}
-            target_parameters["overrides"]["set_model"] = model
-            questions_per_model_with_ratings = []
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {
-                    executor.submit(
-                        evaluate_row, row, target_url, openai_config, requested_metrics, target_parameters
-                    ): row
-                    for row in testdata
-                }
-                for future in track(concurrent.futures.as_completed(futures), description="Processing..."):
-                    row_result = future.result()
-                    questions_per_model_with_ratings.append(row_result)
-
-            logger.info("Evaluation calls have completed. Calculating overall metrics now...")
-            results_dir.mkdir(parents=True, exist_ok=True)
-
-            with open(results_dir / "eval_results.jsonl", "a", encoding="utf-8") as results_file:
-                for row in questions_per_model_with_ratings:
-                    results_file.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-            questions_with_ratings_dict.update({model: questions_per_model_with_ratings})
-
-        dump_summary(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
-        plot_diagrams(questions_with_ratings_dict, requested_metrics, passing_rate, results_dir)
-
+    if summary is not None or red_teaming_results is not None:
         results_config_path = results_dir / "config.json"
         logger.info("Saving original config file back to %s", results_config_path)
 
@@ -205,27 +268,45 @@ def run_evaluation_from_config(working_dir: Path, config: dict, num_questions: i
 
         with open(results_config_path, "w", encoding="utf-8") as output_config:
             output_config.write(json.dumps(config, indent=4))
-    except Exception as e:
+
+        if report_output is None:
+            report_output = results_dir / "evaluation_report.pdf"
+
+        include_conversation = config.get("include_conversation", False)
+        generate_evaluation_report(
+            summary,
+            question_results,
+            redteaming_result=red_teaming_results,
+            results_dir=results_dir,
+            output_path=report_output,
+            include_conversation=include_conversation,
+        )
+        logger.info("PDF Report generated at %s", os.path.abspath(report_output))
+
+        return report_output
+    else:
+        shutil.rmtree(results_dir)
         logger.error("Evaluation was terminated early due to an error ⬆")
-        raise e
-    return True
+        return None
 
 
-def dump_summary(rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path):
-    """Save the summary to a file."""
+def dump_summary(
+    rated_questions_for_models: dict, requested_metrics: list, passing_rate: float, results_dir: Path
+) -> dict:
+    """Save the summary to a file and return it as a dict."""
     summary = {}
-    for key in rated_questions_for_models:
-        rated_questions = rated_questions_for_models[key]
-        rated_questions_df = pd.DataFrame(rated_questions)
-        results_per_model = {}
-        for metric in requested_metrics:
-            metric_result = metric.get_aggregate_stats(rated_questions_df, passing_rate)
-            results_per_model[metric.METRIC_NAME] = metric_result
-        summary[key] = results_per_model
+    for model, results in rated_questions_for_models.items():
+        rated_questions_df = pd.DataFrame(results)
+        summary[model] = {
+            metric.METRIC_NAME: metric.get_aggregate_stats(rated_questions_df, passing_rate)
+            for metric in requested_metrics
+        }
 
     with open(results_dir / "summary.json", "w", encoding="utf-8") as summary_file:
         summary_file.write(json.dumps(summary, indent=4))
     logger.info("Evaluation results saved in %s", results_dir)
+
+    return summary
 
 
 def plot_diagrams(questions_with_ratings_dict: dict, requested_metrics: list, passing_rate: int, results_dir: Path):

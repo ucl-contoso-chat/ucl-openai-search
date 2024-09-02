@@ -35,3 +35,4 @@ huggingface-hub
 promptflow
 sentencepiece
 transformers
+-r evaluation/requirements.in

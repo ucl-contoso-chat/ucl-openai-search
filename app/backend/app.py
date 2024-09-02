@@ -1,9 +1,11 @@
+import asyncio
 import dataclasses
 import io
 import json
 import logging
 import mimetypes
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Union, cast
@@ -96,10 +98,29 @@ from prepdocslib.filestrategy import UploadUserFileStrategy
 from prepdocslib.listfilestrategy import File
 from templates.supported_models import get_supported_models
 
+PYRIT_COMPATIBLE = sys.version_info >= (3, 10) and sys.version_info < (3, 12)
+
+if PYRIT_COMPATIBLE:
+    from evaluation.config import get_evaluation_config, get_red_teaming_config
+    from evaluation.evaluate import run_evaluation_from_config
+    from evaluation.generate import generate_test_qa_data
+    from evaluation.service_setup import (
+        get_openai_config_dict,
+        get_search_client,
+    )
+    from evaluation.utils import save_jsonl
+
+    BACKEND_DIR = Path(__file__).parent
+    EVALUATION_DIR = BACKEND_DIR / "evaluation"
+
 bp = Blueprint("routes", __name__, static_folder="static")
 # Fix Windows registry issue with mimetypes
 mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
+
+os.environ["BACKEND_URI"] = (
+    f"https://{os.getenv('WEBSITE_HOSTNAME')}" if os.getenv("WEBSITE_HOSTNAME") else "http://localhost:50505"
+)
 
 
 @bp.route("/")
@@ -337,6 +358,112 @@ async def speech():
     except Exception as e:
         logging.exception("Exception in /speech")
         return jsonify({"error": str(e)}), 500
+
+
+if PYRIT_COMPATIBLE:
+
+    @bp.route("/evaluate", methods=["POST"])
+    @authenticated
+    async def evaluate(auth_claims: dict[str, Any]):
+        request_form = await request.form
+        request_files = await request.files
+        if "input_data" not in request_files:
+            return jsonify({"message": "No input_data part in the request", "status": "failed"}), 400
+        if "config" not in request_form:
+            return jsonify({"message": "No application setting config part in the request", "status": "failed"}), 400
+
+        input_data_file = request_files.get("input_data")
+        num_questions_str = request_form.get("num_questions", "")
+        num_questions = None if num_questions_str == "" else int(num_questions_str)
+        config = json.loads(request_form.get("config", "{}"))
+
+        if input_data_file is not None:
+            input_data = [json.loads(line) for line in input_data_file.readlines()]
+        save_jsonl(input_data, Path("./evaluation/input/input_temp.jsonl"))
+        config["testdata_path"] = "input/input_temp.jsonl"
+        config["results_dir"] = "results"
+        config["scorer_dir"] = "scorer_definitions"
+        config["prompt_target"] = "application"
+
+        evaluation_config = get_evaluation_config(
+            enabled=config.get("run_evaluation", True),
+            num_questions=num_questions,
+            target_url=config.get("target_url"),
+        )
+        red_teaming_config = get_red_teaming_config(
+            enabled=config.get("run_red_teaming", True),
+            scorer_dir=Path(config.get("scorer_dir")),
+            prompt_target=config.get("prompt_target"),
+            max_turns=config.get("red_teaming_max_turns"),
+            config=config,
+            target_url=config.get("target_url"),
+        )
+
+        evaluation_task = asyncio.create_task(
+            run_evaluation_from_config(
+                working_dir=EVALUATION_DIR,
+                config=config,
+                evaluation_config=evaluation_config,
+                red_teaming_config=red_teaming_config,
+            )
+        )
+
+        while not evaluation_task.done():
+            try:
+                await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                evaluation_task.cancel()
+                return jsonify({"error": "Connection Lost, evaluation task was cancelled"}), 500
+
+        report_path = await evaluation_task
+
+        # if evaluation failed
+        if not report_path:
+            evaluation_task.cancel()
+            return jsonify({"error": "Evaluation was terminated early due to an error"}), 500
+
+        try:
+            return_data = io.BytesIO()
+            with open(report_path, "rb") as fo:
+                return_data.write(fo.read())
+            return_data.seek(0)
+            result = await send_file(return_data, as_attachment=True, mimetype="application/pdf")
+            return result
+        except Exception:
+            return jsonify({"error": "Failed while writing the report file"}), 500
+
+
+@bp.route("/generate", methods=["POST"])
+@authenticated
+async def generate_qa(auth_claims: dict[str, Any]):
+    if not request.is_json:
+        return jsonify({"error": "request must be json"}), 415
+    request_json = await request.get_json()
+
+    num_questions = request_json.get("num_questions")
+    per_source = request_json.get("per_source")
+    output_file = EVALUATION_DIR / "input" / "input_temp.jsonl"
+
+    generate_test_qa_data(
+        openai_config=get_openai_config_dict(),
+        search_client=get_search_client(),
+        num_questions_total=num_questions,
+        num_questions_per_source=per_source,
+        output_file=output_file,
+    )
+
+    try:
+        # Save the file in memory and remove the original file
+        return_data = io.BytesIO()
+        with open(output_file, "rb") as fo:
+            return_data.write(fo.read())
+        return_data.seek(0)
+        os.remove(output_file)
+        result = await send_file(return_data, as_attachment=True, mimetype="application/jsonl")
+        return result
+    except Exception as e:
+        os.remove(output_file)
+        return error_response(e, "/generate")
 
 
 @bp.post("/upload")

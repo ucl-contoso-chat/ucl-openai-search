@@ -2,13 +2,6 @@
 .azure
 *_env
 
-# Previous evaluation results
-evaluation/results
-
-# Evaluation datasets
-evaluation/input
-evaluation/output
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -153,6 +146,16 @@ npm-debug.log*
 node_modules
 static/
 
+# Hash files
 data/**/*.md5
 
+# Evaluation
+app/backend/evaluation/results
+app/backend/evaluation/input
+app/backend/evaluation/output
+
+# VS Code
+.vscode/
+
+# macOS
 .DS_Store

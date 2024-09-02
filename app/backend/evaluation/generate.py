@@ -56,7 +56,7 @@ def generate_test_qa_answer(
     output_file: Path,
 ):
     """Generate answers for test QA data to use for evaluation on Azure AI Studio."""
-    logger.info("Generating answers based on the quesion of %s", question_path)
+    logger.info("Generating answers based on the question of %s", question_path)
 
     openai_client = service_setup.get_openai_client(openai_config)
 

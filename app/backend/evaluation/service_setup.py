@@ -2,6 +2,7 @@ import json
 import logging
 import os
 
+import aiohttp
 import openai
 import requests
 from azure.core.credentials import AzureKeyCredential
@@ -29,7 +30,6 @@ def _log_env_vars():
     """Log required environment variables for debugging."""
     vars = [
         "OPENAI_HOST",
-        "OPENAI_GPT_MODEL",
         "AZURE_SEARCH_SERVICE",
         "AZURE_SEARCH_INDEX",
         "AZURE_SEARCH_KEY",
@@ -38,8 +38,8 @@ def _log_env_vars():
         "AZURE_OPENAI_SERVICE",
         "AZURE_OPENAI_EVAL_DEPLOYMENT",
         "AZURE_OPENAI_EVAL_ENDPOINT",
-        "OPENAICOM_KEY",
-        "OPENAICOM_ORGANIZATION",
+        "OPENAI_API_KEY",
+        "OPENAI_ORGANIZATION",
         "AZURE_ML_ENDPOINT",
         "AZURE_ML_MANAGED_KEY",
         "TENANT_ID",
@@ -62,6 +62,21 @@ def get_models(target_url: str) -> list:
     except json.JSONDecodeError:
         raise ValueError(f"Response is not valid JSON: {r.text}")
     return response_list
+
+
+async def get_models_async(target_url: str) -> list:
+    """Send async request to /getmodels to determine whether the chosen model names are valid."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(target_url) as response:
+            response.raise_for_status()
+
+            try:
+                response_json = await response.json()
+                if not isinstance(response_json, list):
+                    raise ValueError(f"Expected a list, but got {type(response_json).__name__}")
+                return response_json
+            except aiohttp.ContentTypeError:
+                raise ValueError(f"Response is not valid JSON: {await response.text}")
 
 
 def get_openai_config() -> ModelConfiguration:
@@ -87,13 +102,13 @@ def get_openai_config() -> ModelConfiguration:
                 api_version=api_version,
             )
             # PromptFlow will call DefaultAzureCredential behind the scenes
-        openai_config.model = os.environ["OPENAI_GPT_MODEL"]
+        openai_config.model = os.environ["AZURE_OPENAI_CHATGPT_MODEL"]
     else:
-        logger.info("Using OpenAI Service with API Key from OPENAICOM_KEY")
+        logger.info("Using OpenAI Service with API Key from OPENAI_API_KEY")
         openai_config = OpenAIModelConfiguration(
-            model=os.environ["OPENAI_GPT_MODEL"],
-            api_key=os.environ.get("AZURE_OPENAI_KEY"),
-            organization=os.environ["OPENAICOM_ORGANIZATION"],
+            model=os.environ["AZURE_OPENAI_CHATGPT_MODEL"],
+            api_key=os.environ.get("OPENAI_API_KEY"),
+            organization=os.environ["OPENAI_ORGANIZATION"],
         )
     return openai_config
 
@@ -118,15 +133,15 @@ def get_openai_config_dict() -> dict:
             "api_key": api_key,
             "api_version": "2024-02-15-preview",
             "deployment": os.environ["AZURE_OPENAI_EVAL_DEPLOYMENT"],
-            "model": os.environ["OPENAI_GPT_MODEL"],
+            "model": os.environ["AZURE_OPENAI_CHATGPT_MODEL"],
         }
     else:
-        logger.info("Using OpenAI Service with API Key from OPENAICOM_KEY")
+        logger.info("Using OpenAI Service with API Key from OPENAI_API_KEY")
         openai_config = {
             "api_type": "openai",
-            "api_key": os.environ["OPENAICOM_KEY"],
-            "organization": os.environ["OPENAICOM_ORGANIZATION"],
-            "model": os.environ["OPENAI_GPT_MODEL"],
+            "api_key": os.environ["OPENAI_API_KEY"],
+            "organization": os.environ["OPENAI_ORGANIZATION"],
+            "model": os.environ["AZURE_OPENAI_CHATGPT_MODEL"],
             "deployment": "none-needed-for-openaicom",
         }
     return openai_config
@@ -188,7 +203,7 @@ def get_openai_target() -> PromptChatTarget:
             return AzureOpenAITextChatTarget(deployment_name=deployment, endpoint=endpoint, use_aad_auth=True)
     else:
         logger.info("Using OpenAI Chat Target")
-        return OpenAIChatTarget(api_key=os.environ["OPENAICOM_KEY"])
+        return OpenAIChatTarget(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def get_app_target(config: dict, target_url: str = None) -> PromptChatTarget:
