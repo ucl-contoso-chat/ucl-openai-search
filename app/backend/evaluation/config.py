@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from pyrit.prompt_target import PromptChatTarget
 
@@ -29,7 +30,7 @@ class RedTeamingConfig:
     max_turns: int = 3
 
 
-def get_evaluation_config(enabled: bool, num_questions: int, target_url: str) -> EvaluationConfig:
+def get_evaluation_config(enabled: bool, num_questions: Optional[int], target_url: str) -> EvaluationConfig:
     """Get the evaluation configuration."""
     return EvaluationConfig(enabled=enabled, num_questions=num_questions, target_url=target_url)
 

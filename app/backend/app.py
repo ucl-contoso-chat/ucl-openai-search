@@ -374,7 +374,7 @@ if PYRIT_COMPATIBLE:
 
         input_data_file = request_files.get("input_data")
         num_questions_str = request_form.get("num_questions", "")
-        num_questions = 0 if num_questions_str == "" else int(num_questions_str)
+        num_questions = None if num_questions_str == "" else int(num_questions_str)
         config = json.loads(request_form.get("config", "{}"))
 
         if input_data_file is not None:
